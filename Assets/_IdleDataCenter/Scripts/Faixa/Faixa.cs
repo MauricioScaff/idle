@@ -12,7 +12,7 @@ namespace IdleDataCenter
     {
         const int CenarioX = 8;
         const float IntervaloSalvamento = 30f;
-        const int LinhaHud = Cenario.Altura - 7;   // linha do dinheiro, receita e meta no topo do cenário
+        const int LinhaHud = Cenario.Altura - 9;   // linha do dinheiro, receita e meta no topo do cenário
 
         static readonly Color Amarelo = PixelArt.Hex("ffd65c"), VerdeClaro = PixelArt.Hex("9be89b"),
                               Laranja = PixelArt.Hex("ffbf3f"), Vermelho = PixelArt.Hex("ff3b4e"),
@@ -49,6 +49,7 @@ namespace IdleDataCenter
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0f, 0f, 0f, 0f); // preto puro = transparente na faixa
             janela = gameObject.AddComponent<JanelaDesktop>();
+            PixelTexto.EscalaTexto = EscalaRelativaDoPainel;
 
             MontarTudo();
             painel = new GameObject("Painel").AddComponent<Painel>();
@@ -92,10 +93,11 @@ namespace IdleDataCenter
         void MontarHud()
         {
             var raiz = cenario.transform;
-            textoDinheiro = PixelTexto.Criar(raiz, new Vector2(4, LinhaHud), Amarelo, 10);
-            textoReceita = PixelTexto.Criar(raiz, new Vector2(40, LinhaHud), VerdeClaro, 10);
-            textoAmbiente = PixelTexto.Criar(raiz, new Vector2(80, LinhaHud), Laranja, 10);
+            textoDinheiro = PixelTexto.Criar(raiz, new Vector2(4, LinhaHud), Amarelo, 10, true);
+            textoReceita = PixelTexto.Criar(raiz, new Vector2(40, LinhaHud), VerdeClaro, 10, true);
+            textoAmbiente = PixelTexto.Criar(raiz, new Vector2(80, LinhaHud), Laranja, 10, true);
             botaoMeta = BotaoTexto.Criar(raiz, new Vector2(100, LinhaHud), Azul, AoClicarMeta);
+            BotaoIcone.Criar(raiz, Arte.Ocultar, new Vector2(cenario.Largura - 24, LinhaHud - 1), Ocultar);
             BotaoIcone.Criar(raiz, Arte.AbrirPainel, new Vector2(cenario.Largura - 16, LinhaHud - 1), AlternarPainel);
             BotaoIcone.Criar(raiz, Arte.Fechar, new Vector2(cenario.Largura - 8, LinhaHud - 1), Application.Quit);
 
@@ -120,7 +122,7 @@ namespace IdleDataCenter
         /// <summary>Texto "+R$ X" subindo a partir de um ponto do cenário.</summary>
         void Ganho(double valor, Vector2 posicaoLocal)
         {
-            var texto = PixelTexto.Criar(cenario.transform, posicaoLocal, Amarelo, 13);
+            var texto = PixelTexto.Criar(cenario.transform, posicaoLocal, Amarelo, 13, true);
             texto.Definir("+" + Formatar(valor));
             Flutuante.Aplicar(texto.gameObject, 0.9f, 6f);
         }
@@ -231,12 +233,26 @@ namespace IdleDataCenter
             else AbrirPainel();
         }
 
+        // ---------------- Esconder ----------------
+
+        float ocultarEm = -1;
+
+        /// <summary>Botão de esconder: avisa como voltar e some logo depois. O jogo continua rendendo escondido.</summary>
+        void Ocultar()
+        {
+            if (painel.Aberto) FecharPainel();
+            Loja.MostrarAviso("Volta com " + JanelaDesktop.Atalho, 1.6f);
+            ocultarEm = Time.time + 1.6f;
+        }
+
         // ---------------- Laço ----------------
 
         void Update()
         {
+            if (ocultarEm > 0 && Time.time >= ocultarEm) { ocultarEm = -1; janela.AlternarOculta(); }
             AtualizarCamera();
             painel.transform.localScale = Vector3.one * EscalaRelativaDoPainel;
+            PixelTexto.EscalaTexto = EscalaRelativaDoPainel; // texto da faixa na mesma escala do painel
             ProcessarCursor();
 
             economia.Avancar(Time.deltaTime);
@@ -257,12 +273,12 @@ namespace IdleDataCenter
         {
             string dinheiro = "R$ " + Formatar(economia.Dinheiro);
             textoDinheiro.Definir(dinheiro);
-            float x = 4 + PixelTexto.Largura(dinheiro) + 5;
+            float x = 4 + PixelTexto.LarguraAmpliada(dinheiro) + 5;
 
             string receita = "+" + Formatar(economia.ReceitaPorSegundo) + "/s";
             textoReceita.Definir(receita);
             textoReceita.transform.localPosition = new Vector3(x, LinhaHud, 0);
-            x += PixelTexto.Largura(receita) + 6;
+            x += PixelTexto.LarguraAmpliada(receita) + 6;
 
             // Energia e temperatura só importam a partir de Sysadmin
             if (economia.Cargo >= 1)
@@ -291,7 +307,7 @@ namespace IdleDataCenter
             }
             else meta = "";
             botaoMeta.Definir(meta, cor);
-            botaoMeta.transform.localPosition = new Vector3(cenario.Largura - 28 - PixelTexto.Largura(meta), LinhaHud, 0); // longe do alerta da primeira torre
+            botaoMeta.transform.localPosition = new Vector3(cenario.Largura - 38 - PixelTexto.LarguraAmpliada(meta), LinhaHud, 0); // longe do alerta da primeira torre
         }
 
         /// <summary>

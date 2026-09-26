@@ -47,6 +47,7 @@ namespace IdleDataCenter.Simulacao
         public const string Servidor1U = "servidor1u";
         public const string NoBreak = "nobreak";
         public const string ArCondicionado = "arcond";
+        public const string Estagiario = "estagiario";
 
         // --- Receita ---
         public const double ReceitaBaseServidor = 1;   // servidor torre sem melhorias (R$/s)
@@ -77,6 +78,7 @@ namespace IdleDataCenter.Simulacao
         public const double MtbfServidor1U = 900;
         public const double MultiplicadorQuente = 3;
         public const double TempoConsertoTecnico = 30; // o técnico resolve sozinho depois disso
+        public const double TempoConsertoComEstagiario = 15;
 
         // --- Progresso offline ---
         public const double TaxaOffline = 0.5;
@@ -103,6 +105,7 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Ssd, Nome = "SSD", Efeito = "Torres ×2", Cargo = 0, NivelMaximo = 1, CustoBase = 100, FatorCusto = 1 },
             new MelhoriaDef { Id = Ventoinha, Nome = "Ventoinha", Efeito = "Torres +50%", Cargo = 0, NivelMaximo = 3, CustoBase = 250, FatorCusto = 2.2 },
             new MelhoriaDef { Id = Servidor, Nome = "Servidor", Efeito = "+1 torre", Cargo = 0, NivelMaximo = 2, CustoBase = 1000, FatorCusto = 3 },
+            new MelhoriaDef { Id = Estagiario, Nome = "Estagiário", Efeito = "Conserto em 15s", Cargo = 0, NivelMaximo = 1, CustoBase = 2500, FatorCusto = 1 },
 
             new MelhoriaDef { Id = Rack, Nome = "Rack 42U", Efeito = "5 vagas 1U", Cargo = 1, NivelMaximo = 1, CustoBase = 8000, FatorCusto = 1 },
             new MelhoriaDef { Id = Servidor1U, Nome = "Servidor 1U", Efeito = "+9/s, 0.4 kW", Cargo = 1, Requisito = Rack, NivelMaximo = VagasNoRack, CustoBase = 7000, FatorCusto = 1.5 },

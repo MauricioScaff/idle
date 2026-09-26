@@ -105,7 +105,7 @@ namespace IdleDataCenter
             {
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
                 if (!Ativa) return Application.isFocused;
-                if (escondida || !GetCursorPos(out var p)) return false;
+                if (!visivel || !GetCursorPos(out var p)) return false;
                 return GetAncestor(WindowFromPoint(p), GA_ROOT) == hwnd;
 #else
                 return true;
@@ -161,21 +161,48 @@ namespace IdleDataCenter
 #endif
         }
 
+        /// <summary>O jogador escondeu a faixa (botão ou Ctrl+Alt+D). O jogo continua rodando e rendendo.</summary>
+        public bool OcultaPeloJogador { get; private set; }
+
+        /// <summary>Atalho global para esconder e mostrar a faixa.</summary>
+        public const string Atalho = "Ctrl+Alt+D";
+
+        public void AlternarOculta()
+        {
+            OcultaPeloJogador = !OcultaPeloJogador;
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+            AplicarVisibilidade();
+#endif
+        }
+
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+        bool atalhoPressionado, visivel = true;
+
+        void AplicarVisibilidade()
+        {
+            bool mostrar = !escondida && !OcultaPeloJogador;
+            if (mostrar == visivel) return;
+            visivel = mostrar;
+            ShowWindow(hwnd, mostrar ? SW_SHOWNA : SW_HIDE);
+            Application.targetFrameRate = mostrar ? 30 : 5;
+        }
+
         void Update()
         {
-            if (!Ativa || Time.unscaledTime < proximaChecagem) return;
+            if (!Ativa) return;
+
+            // Ctrl+Alt+D, lido direto do Windows para funcionar mesmo sem foco (só essas três teclas são consultadas)
+            bool atalho = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 && (GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState(VK_D) & 0x8000) != 0;
+            if (atalho && !atalhoPressionado) AlternarOculta();
+            atalhoPressionado = atalho;
+
+            if (Time.unscaledTime < proximaChecagem) return;
             proximaChecagem = Time.unscaledTime + 2f;
 
             // Some quando outro programa está em tela cheia (jogo, vídeo, apresentação)
-            bool telaCheia = SHQueryUserNotificationState(out int estado) == 0 && (estado == 2 || estado == 3 || estado == 4);
-            if (telaCheia != escondida)
-            {
-                escondida = telaCheia;
-                ShowWindow(hwnd, escondida ? SW_HIDE : SW_SHOWNA);
-                Application.targetFrameRate = escondida ? 5 : 30;
-            }
-            if (escondida) return;
+            escondida = SHQueryUserNotificationState(out int estado) == 0 && (estado == 2 || estado == 3 || estado == 4);
+            AplicarVisibilidade();
+            if (!visivel) return;
 
             // Barra de tarefas mudou (resolução, DPI, barra oculta)? Reposiciona.
             var area = AreaDeTrabalho();
@@ -259,6 +286,8 @@ namespace IdleDataCenter
         [DllImport("user32.dll")] static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint corChave, byte alfa, uint flags);
         [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hWnd, int comando);
         [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT p);
+        [DllImport("user32.dll")] static extern short GetAsyncKeyState(int tecla);
+        const int VK_CONTROL = 0x11, VK_MENU = 0x12, VK_D = 0x44;
         [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(POINT p);
         [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr hWnd, uint flags);
         const uint GA_ROOT = 2;

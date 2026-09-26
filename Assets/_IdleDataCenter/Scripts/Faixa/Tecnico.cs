@@ -19,7 +19,7 @@ namespace IdleDataCenter
         const float VelocidadeCorrendo = 34f;
         const float MatizSysadmin = 0.46f;     // verde-água
 
-        static readonly Dictionary<int, Quadros> cache = new Dictionary<int, Quadros>();
+        static readonly Dictionary<string, Quadros> cache = new Dictionary<string, Quadros>();
 
         Faixa faixa;
         Cenario cenario;
@@ -30,34 +30,41 @@ namespace IdleDataCenter
         float x, alvoX;
         float tempoEstado, proximaFaisca, pulo;
         bool indoParaMesa, indoConferir;
+        float deslocamento;   // o estagiário para um pouco antes, para não ficar em cima do técnico
+        bool usaMesa;
 
         public int Ordem => 5;
 
         float MinX => cenario.PosicaoMesa;
-        float MaxX => cenario.LimiteTecnico;
+        float MaxX => cenario.LimiteTecnico - deslocamento;
 
-        static Quadros Carregar(int cargo)
+        /// <summary>Carrega os quadros de um personagem (prefixo dos arquivos em Resources/Arte). Só o técnico troca de uniforme.</summary>
+        static Quadros Carregar(string prefixo, int cargo)
         {
-            if (cache.TryGetValue(cargo, out var q)) return q;
-            Sprite S(string nome)
+            string chave = prefixo + "#" + cargo;
+            if (cache.TryGetValue(chave, out var q)) return q;
+            Sprite S(string sufixo)
             {
-                var t = ArteGerada.Textura(nome);
-                if (cargo >= 1) t = ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
-                return ArteGerada.Personagem(t, nome + "#" + cargo);
+                var t = ArteGerada.Textura(prefixo + sufixo);
+                if (cargo >= 1 && prefixo == "tecnico") t = ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
+                return ArteGerada.Personagem(t, prefixo + sufixo + "#" + cargo);
             }
-            return cache[cargo] = new Quadros
+            return cache[chave] = new Quadros
             {
-                Parado = S("tecnico_lado"),
-                Andar = new[] { S("tecnico_andar_0"), S("tecnico_andar_1"), S("tecnico_andar_2"), S("tecnico_andar_3") },
-                Digitar = new[] { S("tecnico_digitando_0"), S("tecnico_digitando_1") },
+                Parado = S("_lado"),
+                Andar = new[] { S("_andar_0"), S("_andar_1"), S("_andar_2"), S("_andar_3") },
+                Digitar = new[] { S("_digitando_0"), S("_digitando_1") },
             };
         }
 
-        public void Iniciar(Faixa faixa, Cenario cenario, int cargo)
+        /// <param name="prefixo">"tecnico" (o personagem principal, que também digita na mesa) ou "estagiario".</param>
+        public void Iniciar(Faixa faixa, Cenario cenario, int cargo, string prefixo = "tecnico", float deslocamento = 0f)
         {
             this.faixa = faixa;
             this.cenario = cenario;
-            quadros = Carregar(cargo);
+            this.deslocamento = deslocamento;
+            usaMesa = prefixo == "tecnico";
+            quadros = Carregar(prefixo, cargo);
             transform.SetParent(cenario.transform, false);
             sr = gameObject.AddComponent<SpriteRenderer>();
             sr.sprite = quadros.Parado;
@@ -85,7 +92,7 @@ namespace IdleDataCenter
             bool temIncidente = cenario.AlvoDeConserto(out float xIncidente);
             if (temIncidente && estado != Estado.Emergencia)
             {
-                if (estado == Estado.Digitando) cenario.Tela.Digitando = false;
+                if (estado == Estado.Digitando && usaMesa) cenario.Tela.Digitando = false;
                 estado = Estado.Emergencia;
             }
 
@@ -117,7 +124,7 @@ namespace IdleDataCenter
 
                 case Estado.Emergencia:
                     if (!temIncidente) { Parar(); break; }
-                    float destino = Mathf.Clamp(xIncidente, MinX, MaxX);
+                    float destino = Mathf.Clamp(xIncidente - deslocamento, MinX, MaxX);
                     sr.flipX = destino < x;
                     x = Mathf.MoveTowards(x, destino, VelocidadeCorrendo * dt);
                     if (Mathf.Approximately(x, destino))
@@ -145,7 +152,7 @@ namespace IdleDataCenter
         {
             float sorteio = Random.value;
             indoConferir = sorteio < 0.3f;
-            indoParaMesa = sorteio >= 0.3f && sorteio < 0.6f;
+            indoParaMesa = usaMesa && sorteio >= 0.3f && sorteio < 0.6f;
             alvoX = indoConferir ? MaxX : indoParaMesa ? MinX : Mathf.Round(Random.Range(MinX + 8f, MaxX));
             estado = Estado.Andando;
             sr.flipX = alvoX < x;
@@ -153,7 +160,7 @@ namespace IdleDataCenter
 
         void Parar()
         {
-            if (estado == Estado.Digitando) cenario.Tela.Digitando = false;
+            if (estado == Estado.Digitando && usaMesa) cenario.Tela.Digitando = false;
             estado = Estado.Parado;
             indoParaMesa = indoConferir = false;
             tempoEstado = Random.Range(1.5f, 4.5f);

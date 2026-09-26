@@ -9,9 +9,10 @@ Jogo idle para Windows que vive numa faixa acima da barra de tarefas. Você come
 
 - **Faixa:** o cômodo do técnico (armário, depois salinha) e a loja de melhorias, sempre acima da barra de tarefas.
 - **Painel:** clique no ícone ▲ da faixa (ou em "Meta x/3"). Abas Visão geral, Melhorias e Carreira. Fecha com Esc, com o "x" ou clicando fora.
-- **Incidentes:** servidores travam de vez em quando. O técnico corre e conserta em 30 s, ou você clica no servidor e reinicia na hora.
+- **Incidentes:** servidores travam de vez em quando. O técnico corre e conserta em 30 s, ou você clica no servidor e reinicia na hora. Contratando o **estagiário** (loja do Técnico), o conserto cai para 15 s e ele corre junto.
 - **Carreira:** Técnico de TI → Sysadmin. A promoção pede 3 servidores, R$ 20K faturados e 8 incidentes resolvidos.
 - **Sysadmin:** rack 42U com servidores 1U, energia (no-break) e temperatura (ar-condicionado).
+- **Esconder:** a setinha "v" na faixa, ou **Ctrl+Alt+D** de qualquer lugar (o mesmo atalho traz de volta). Escondido, o jogo continua rendendo.
 - Save automático e ganho offline (50% da receita, até 12 h).
 
 ## Como rodar

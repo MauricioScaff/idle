@@ -48,18 +48,31 @@ namespace IdleDataCenter
         /// <summary>Largura em pixels que um texto ocupa (3 px por letra + 1 de espaço).</summary>
         public static int Largura(string texto) => Mathf.Max(0, Normalizar(texto).Length * 4 - 1);
 
+        /// <summary>
+        /// Tamanho dos textos "ampliados" da faixa em relação à arte da faixa (a Faixa atualiza todo quadro).
+        /// Com a faixa em 2× e o texto em 3× na tela, vale 1,5: cada pixel da letra continua um quadrado inteiro.
+        /// </summary>
+        public static float EscalaTexto = 1f;
+
+        /// <summary>Largura de um texto ampliado, em pixels de arte da faixa.</summary>
+        public static float LarguraAmpliada(string texto) => Largura(texto) * EscalaTexto;
+
         SpriteRenderer frente, sombra;
         Texture2D textura;
         string atual;
+        bool ampliado;
 
         public string Texto => atual;
 
-        public static PixelTexto Criar(Transform pai, Vector2 posicaoLocal, Color cor, int ordem)
+        /// <param name="ampliado">Segue PixelTexto.EscalaTexto (textos da faixa e da loja, para ficarem legíveis).</param>
+        public static PixelTexto Criar(Transform pai, Vector2 posicaoLocal, Color cor, int ordem, bool ampliado = false)
         {
             var go = new GameObject("Texto");
             go.transform.SetParent(pai, false);
             go.transform.localPosition = posicaoLocal;
             var t = go.AddComponent<PixelTexto>();
+            t.ampliado = ampliado;
+            if (ampliado) go.transform.localScale = Vector3.one * EscalaTexto;
             t.frente = go.AddComponent<SpriteRenderer>();
             t.frente.sortingOrder = ordem;
             var s = new GameObject("Sombra");
@@ -69,6 +82,11 @@ namespace IdleDataCenter
             t.sombra.sortingOrder = ordem - 1;
             t.DefinirCor(cor);
             return t;
+        }
+
+        void LateUpdate()
+        {
+            if (ampliado) transform.localScale = Vector3.one * EscalaTexto;
         }
 
         public void DefinirCor(Color c)

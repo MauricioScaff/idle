@@ -16,7 +16,7 @@ namespace IdleDataCenter
 
         public static BotaoTexto Criar(Transform pai, Vector2 posicao, Color cor, Action acao)
         {
-            var t = PixelTexto.Criar(pai, posicao, cor, 10);
+            var t = PixelTexto.Criar(pai, posicao, cor, 10, true);
             var b = t.gameObject.AddComponent<BotaoTexto>();
             b.texto = t;
             b.cor = cor;
@@ -29,7 +29,7 @@ namespace IdleDataCenter
         {
             cor = c;
             texto.Definir(s);
-            int w = PixelTexto.Largura(s);
+            int w = PixelTexto.Largura(s); // em unidades do texto (o colisor escala junto)
             colisor.size = new Vector2(w + 2, 7);
             colisor.offset = new Vector2(w / 2f, 2.5f);
             texto.DefinirCor(destacado ? Color.white : cor);

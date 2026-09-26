@@ -22,6 +22,7 @@ namespace IdleDataCenter
         float[] posicoesTorres;
         RackVisual rack;
         EquipamentoVisual noBreak, refrigeracao;
+        Tecnico estagiario;
 
         public int Largura { get; private set; }
         public TelaTerminal Tela { get; private set; }
@@ -58,6 +59,7 @@ namespace IdleDataCenter
 
             Tecnico = new GameObject("Tecnico").AddComponent<Tecnico>();
             Tecnico.Iniciar(faixa, this, economia.Cargo);
+            AtualizarEquipamentos(); // o estagiário, se já foi contratado, entra depois do técnico
         }
 
         /// <summary>Mesa com o CRT (arte do PixelLab); a tela ganha um terminal animado por cima do texto desenhado.</summary>
@@ -122,6 +124,11 @@ namespace IdleDataCenter
             {
                 refrigeracao = new GameObject("Refrigeracao").AddComponent<EquipamentoVisual>();
                 refrigeracao.Iniciar(transform, "refrigeracao", new Vector2(262, AlturaPiso), true);
+            }
+            if (economia.TemEstagiario && estagiario == null && Tecnico != null)
+            {
+                estagiario = new GameObject("Estagiario").AddComponent<Tecnico>();
+                estagiario.Iniciar(faixa, this, economia.Cargo, "estagiario", 14f);
             }
             return nova;
         }

@@ -94,7 +94,7 @@ namespace IdleDataCenter.Testes
         public void LojaMostraSoAsMelhoriasDoCargo()
         {
             var e = Nova();
-            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor },
+            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.Estagiario },
                 System.Linq.Enumerable.Select(e.MelhoriasDoCargo(), m => m.Id));
             e.Estado.cargo = 1;
             Assert.AreEqual(4, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()));
@@ -190,6 +190,18 @@ namespace IdleDataCenter.Testes
             e.Avancar(1.5);
             Assert.IsFalse(e.Travado(0));
             Assert.AreEqual(true, peloTecnico);
+        }
+
+        [Test]
+        public void EstagiarioFazOConsertoSairEm15Segundos()
+        {
+            var e = Nova(1_000_000);
+            Assert.IsTrue(e.Comprar(Catalogo.Estagiario));
+            e.Travar(0);
+            e.Avancar(14);
+            Assert.IsTrue(e.Travado(0));
+            e.Avancar(1.5);
+            Assert.IsFalse(e.Travado(0));
         }
 
         [Test]

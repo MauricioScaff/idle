@@ -279,7 +279,7 @@ namespace IdleDataCenter
                 bool piscar = Mathf.FloorToInt(t * 3) % 2 == 0;
                 R(x + 5, y + 2, 3, 3, piscar ? "#ff3b4e" : "#6b1a24");
                 T(NomeServidor(s), x + 11, y + 1, "#fdf6e3", false);
-                T($"{Catalogo.TempoConsertoTecnico - lista[i].segundos:0}s", x + 11, y + 8, "#7d82ad", false);
+                T($"{economia.TempoConserto - lista[i].segundos:0}s", x + 11, y + 8, "#7d82ad", false);
                 int idx = s;
                 Botao(new RectInt(x + 70, y, 57, 14), "Reiniciar", "#fdf6e3", "#7a2a3a", () => faixa.Reiniciar(idx));
             }
@@ -401,20 +401,39 @@ namespace IdleDataCenter
 
         // ---------------- Cena da era (arte do PixelLab) com animações por cima ----------------
 
+        /// <summary>Onde procurar o que animar em cada cena (frações da imagem, origem em cima à esquerda).</summary>
+        class ConfigCena
+        {
+            public string Arte;
+            public Rect Terminal, Leds, Luzes, Pele;   // Terminal vazio = a cena não tem CRT
+            public bool TemGato;
+        }
+
+        static readonly ConfigCena[] Cenas =
+        {
+            new ConfigCena { Arte = "cena_homelab", Terminal = new Rect(0, 0, 0.35f, 1), Leds = new Rect(0.72f, 0.25f, 0.28f, 0.75f), Luzes = new Rect(0.39f, 0, 0.30f, 0.47f), Pele = new Rect(0.33f, 0, 0.12f, 1), TemGato = true },
+            new ConfigCena { Arte = "cena_sysadmin", Terminal = Rect.zero, Leds = new Rect(0.42f, 0.2f, 0.58f, 0.8f), Luzes = new Rect(0, 0, 0.15f, 0.6f), Pele = new Rect(0.36f, 0, 0.12f, 0.35f) },
+        };
+
         Color32[] cenaPx;
-        int cenaW, cenaH;
+        int cenaW, cenaH, cenaCargo = -1;
         readonly List<Vector2Int> ledsCena = new List<Vector2Int>(), luzesCena = new List<Vector2Int>();
         RectInt telaCrt;
         Color32 fundoCrt;
         Vector2Int cabecaDev, gato;
+        bool cenaTemGato;
 
         /// <summary>
         /// Carrega a cena e acha, pela cor, onde animar: o texto verde do CRT (esquerda), os LEDs do rack
         /// (direita) e as janelas acesas da cidade (janela do meio). Assim a imagem pode ser trocada sem mexer no código.
         /// </summary>
-        void CarregarCena()
+        void CarregarCena(int cargo)
         {
-            var t = ArteGerada.Textura("cena_homelab");
+            var cfg = Cenas[Mathf.Clamp(cargo, 0, Cenas.Length - 1)];
+            cenaCargo = cargo;
+            ledsCena.Clear();
+            luzesCena.Clear();
+            var t = ArteGerada.Textura(cfg.Arte);
             cenaW = t.width; cenaH = t.height;
             cenaPx = ArteGerada.PixelsDeCimaParaBaixo(t);
             int tx0 = cenaW, ty0 = cenaH, tx1 = -1, ty1 = -1, peleY = cenaH, peleX = 0, peleN = 0;
@@ -423,13 +442,14 @@ namespace IdleDataCenter
             {
                 var c = cenaPx[y * cenaW + x];
                 int max = Mathf.Max(c.r, Mathf.Max(c.g, c.b)), min = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
-                if (x < cenaW * 0.35f && c.g > 140 && c.r < 120 && c.b < 140)
+                float fx = x / (float)cenaW, fy = y / (float)cenaH;
+                if (cfg.Terminal.Contains(new Vector2(fx, fy)) && c.g > 140 && c.r < 120 && c.b < 140)
                 { tx0 = Mathf.Min(tx0, x); ty0 = Mathf.Min(ty0, y); tx1 = Mathf.Max(tx1, x); ty1 = Mathf.Max(ty1, y); }
-                else if (x > cenaW * 0.72f && y > cenaH * 0.25f && max - min > 110 && (c.g > 170 || c.b > 200))
+                else if (cfg.Leds.Contains(new Vector2(fx, fy)) && max - min > 110 && (c.g > 170 || c.b > 200))
                     ledsCena.Add(new Vector2Int(x, y));
-                else if (x > cenaW * 0.39f && x < cenaW * 0.69f && y < cenaH * 0.47f && ((c.r > 150 && c.g > 130 && c.b < 110) || (c.g > 150 && c.r < 120)))
+                else if (cfg.Luzes.Contains(new Vector2(fx, fy)) && ((c.r > 150 && c.g > 130 && c.b < 110) || (c.g > 150 && c.r < 120)))
                     luzesCena.Add(new Vector2Int(x, y));
-                if (x > cenaW * 0.33f && x < cenaW * 0.45f && c.r > 200 && c.g > 140 && c.g < 200 && c.b > 100 && c.b < 170)
+                if (cfg.Pele.Contains(new Vector2(fx, fy)) && c.r > 200 && c.g > 140 && c.g < 200 && c.b > 100 && c.b < 170)
                 { peleY = Mathf.Min(peleY, y); peleX += x; peleN++; }
             }
             telaCrt = tx1 < 0 ? new RectInt(0, 0, 0, 0) : new RectInt(tx0 - 1, ty0 - 1, tx1 - tx0 + 3, ty1 - ty0 + 3);
@@ -444,6 +464,7 @@ namespace IdleDataCenter
             fundoCrt = contagem.Count > 0 ? contagem.OrderByDescending(k => k.Value).First().Key : C("#0b1a14");
             cabecaDev = new Vector2Int(peleN > 0 ? peleX / peleN : cenaW / 2, Mathf.Max(2, peleY - 22));
             gato = new Vector2Int(Mathf.RoundToInt(cenaW * 0.9f), 12);
+            cenaTemGato = cfg.TemGato;
         }
 
         static int Sorteio(int a, int b) => Mathf.Abs(a * 7919 + b * 104729) % 11;
@@ -451,7 +472,7 @@ namespace IdleDataCenter
         void Cena(int x0, int y0)
         {
             const int SW = 344, SH = 150;
-            if (cenaPx == null) CarregarCena();
+            if (cenaPx == null || cenaCargo != economia.Cargo) CarregarCena(economia.Cargo);
             bool alerta = economia.Travamentos.Count > 0;
             tela.Recortar(x0, y0, SW, SH);
             tela.Imagem(cenaPx, cenaW, cenaH, x0, y0);
@@ -498,9 +519,9 @@ namespace IdleDataCenter
             // o dev se assusta quando algo trava
             if (alerta && piscar) T("!", x0 + cabecaDev.x, y0 + cabecaDev.y, "#ff3b4e", true, 2);
 
-            // o gato sonhando
+            // o gato sonhando (só na cena que tem gato)
             float zz = (t * 0.6f) % 1f;
-            tela.Texto("Z", x0 + gato.x + Mathf.RoundToInt(zz * 4), y0 + gato.y - Mathf.RoundToInt(zz * 10), new Color32(201, 212, 255, (byte)((1 - zz) * 255)), false);
+            if (cenaTemGato) tela.Texto("Z", x0 + gato.x + Mathf.RoundToInt(zz * 4), y0 + gato.y - Mathf.RoundToInt(zz * 10), new Color32(201, 212, 255, (byte)((1 - zz) * 255)), false);
 
             tela.SemRecorte();
             R(x0 - 1, y0 - 1, SW + 2, 1, "#1b1a2e");

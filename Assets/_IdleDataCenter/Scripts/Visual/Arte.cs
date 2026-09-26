@@ -62,7 +62,8 @@ namespace IdleDataCenter
         }, Canto);
 
         public static readonly Sprite AbrirPainel = PixelArt.Criar(new[] { "..S..", ".SSS.", "SSSSS", ".....", "SSSSS" }, Canto);
-        public static readonly Sprite Seta = PixelArt.Criar(new[] { "YYYYY", ".YYY.", "..Y.." }, Canto);
+        public static readonly Sprite Ocultar = PixelArt.Criar(new[] { ".....", "S...S", ".S.S.", "..S..", "....." }, Canto);
+        public static readonly Sprite Seta =PixelArt.Criar(new[] { "YYYYY", ".YYY.", "..Y.." }, Canto);
 
         public static readonly Sprite Coracao = PixelArt.Criar(new[]
         {

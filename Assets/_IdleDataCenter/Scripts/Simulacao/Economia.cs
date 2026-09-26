@@ -44,6 +44,10 @@ namespace IdleDataCenter.Simulacao
         public bool TemSsd => Nivel(Catalogo.Ssd) > 0;
         public int Ventoinhas => Nivel(Catalogo.Ventoinha);
         public bool TemRack => Nivel(Catalogo.Rack) > 0;
+        public bool TemEstagiario => Nivel(Catalogo.Estagiario) > 0;
+
+        /// <summary>Quanto tempo o técnico leva para consertar sozinho (com estagiário, metade).</summary>
+        public double TempoConserto => TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
 
         public double ReceitaTorre =>
             Catalogo.ReceitaBaseServidor
@@ -137,7 +141,7 @@ namespace IdleDataCenter.Simulacao
             {
                 var t = Estado.travamentos[i];
                 t.segundos += segundos;
-                if (t.segundos >= Catalogo.TempoConsertoTecnico) Resolver(t.servidor, porTecnico: true);
+                if (t.segundos >= TempoConserto) Resolver(t.servidor, porTecnico: true);
             }
 
             // Novas travadas: cada servidor tem uma chance por segundo (maior se estiver quente)

@@ -11,7 +11,7 @@ namespace IdleDataCenter
     /// </summary>
     public class Loja : MonoBehaviour
     {
-        public const int Largura = 112, Altura = 60;
+        public const int Largura = 150, Altura = 60;
 
         static readonly Color CorTitulo = PixelArt.Hex("a9c7ff");
 
@@ -30,7 +30,7 @@ namespace IdleDataCenter
             var fundo = gameObject.AddComponent<SpriteRenderer>();
             fundo.sprite = PixelArt.Painel(Largura, Altura);
             gameObject.AddComponent<BoxCollider2D>(); // o painel inteiro "segura" o clique
-            titulo = PixelTexto.Criar(transform, new Vector2(4, Altura - 7), CorTitulo, 5);
+            titulo = PixelTexto.Criar(transform, new Vector2(4, Altura - 9), CorTitulo, 5, true);
             Reconstruir();
         }
 
@@ -124,16 +124,16 @@ namespace IdleDataCenter
             fundo.sprite = PixelArt.Retangulo(largura, altura);
             fundo.sortingOrder = 1;
             gameObject.AddComponent<BoxCollider2D>();
-            margemTexto = (altura - 5) / 2;
-            nome = PixelTexto.Criar(transform, new Vector2(3, margemTexto), TextoDisponivel, 3);
-            custo = PixelTexto.Criar(transform, new Vector2(0, margemTexto), Preco, 3);
+            margemTexto = Mathf.RoundToInt((altura - 5 * PixelTexto.EscalaTexto) / 2f);
+            nome = PixelTexto.Criar(transform, new Vector2(3, margemTexto), TextoDisponivel, 3, true);
+            custo = PixelTexto.Criar(transform, new Vector2(0, margemTexto), Preco, 3, true);
         }
 
         public void Mostrar(string textoNome, string textoCusto, Situacao s)
         {
             nome.Definir(textoNome);
             custo.Definir(textoCusto);
-            custo.transform.localPosition = new Vector3(largura - 3 - PixelTexto.Largura(textoCusto), margemTexto, 0);
+            custo.transform.localPosition = new Vector3(largura - 3 - PixelTexto.LarguraAmpliada(textoCusto), margemTexto, 0);
             nome.DefinirCor(s == Situacao.Disponivel ? TextoDisponivel : s == Situacao.Completo ? TextoCompleto : TextoApagado);
             custo.DefinirCor(s == Situacao.Disponivel ? Preco : s == Situacao.Completo ? TextoCompleto : TextoApagado);
             fundo.color = s != Situacao.Disponivel ? FundoApagado : destacado ? FundoDestaque : FundoDisponivel;
