@@ -59,6 +59,24 @@ namespace IdleDataCenter
             return c;
         }
 
+        // Digitando: a mão da frente sobe e desce (virado para a direita; flipX vira para a esquerda)
+        static readonly string[] CorpoDigitandoA =
+        {
+            "...cccccc...",
+            "..cccccccc..",
+            ".sccccccccs.",
+            ".sCCCCCCCCss",
+        };
+        static readonly string[] CorpoDigitandoB =
+        {
+            "...cccccc...",
+            "..cccccccc..",
+            ".sccccccccss",
+            ".sCCCCCCCC..",
+        };
+
+        public static readonly Sprite TecnicoDigitandoA = PixelArt.Criar(Juntar(Cabeca, CorpoDigitandoA, PernasJuntas), Base);
+        public static readonly Sprite TecnicoDigitandoB = PixelArt.Criar(Juntar(Cabeca, CorpoDigitandoB, PernasJuntas), Base);
         public static readonly Sprite TecnicoParado = PixelArt.Criar(Juntar(Cabeca, Corpo, PernasJuntas), Base);
         public static readonly Sprite TecnicoPiscando = PixelArt.Criar(Juntar(SemOlhos(Cabeca), Corpo, PernasJuntas), Base);
         public static readonly Sprite TecnicoPasso = PixelArt.Criar(Juntar(Cabeca, Corpo, PernasAbertas), Base);
@@ -108,6 +126,77 @@ namespace IdleDataCenter
             "mmmmmm",
             "MMMM..",
         }, Base);
+
+        // --- Era 1: TI improvisada ---
+        /// <summary>Mesa de madeira (26×10), vista de lado.</summary>
+        public static readonly Sprite Mesa = PixelArt.Criar(new[]
+        {
+            "nnnnnnnnnnnnnnnnnnnnnnnnnn",
+            "NNNNNNNNNNNNNNNNNNNNNNNNNN",
+            ".NN...............NNNNNNN.",
+            ".NN...............NnnnnNN.",
+            ".NN...............NNNNNNN.",
+            ".NN...............NnnnnNN.",
+            ".NN...............NNNNNNN.",
+            ".NN....................NN.",
+            ".NN....................NN.",
+            ".NN....................NN.",
+        }, Canto);
+
+        /// <summary>Monitor CRT bege (14×12). A tela (8×5) fica em x = 3..10, y = 4..8 a partir do canto de baixo.</summary>
+        public static readonly Sprite MonitorCrt = PixelArt.Criar(new[]
+        {
+            ".kkkkkkkkkkkk.",
+            "kbbbbbbbbbbbbk",
+            "kbkkkkkkkkkkbk",
+            "kbkooooooookbk",
+            "kbkooooooookbk",
+            "kbkooooooookbk",
+            "kbkooooooookbk",
+            "kbkooooooookbk",
+            "kbkkkkkkkkkkbk",
+            "kbbbbbbbbbgbbk",
+            ".kkkkkkkkkkkk.",
+            "....kbbbbk....",
+        }, Canto);
+
+        public static readonly Sprite PostIt = PixelArt.Criar(new[] { "YYY", "YYY", "YY." }, Canto);
+
+        /// <summary>Ventilador de chão (7×13) em dois quadros.</summary>
+        public static readonly Sprite VentiladorA = PixelArt.Criar(new[]
+        {
+            ".kkkkk.", "kvy.yvk", "ky.v.yk", "k.vkv.k", "ky.v.yk", "kvy.yvk", ".kkkkk.",
+            "...k...", "...k...", "...k...", "...k...", "...k...", ".kkkkk.",
+        }, Canto);
+        public static readonly Sprite VentiladorB = PixelArt.Criar(new[]
+        {
+            ".kkkkk.", "k.yvy.k", "kvy.yvk", "ky.k.yk", "kvy.yvk", "k.yvy.k", ".kkkkk.",
+            "...k...", "...k...", "...k...", "...k...", "...k...", ".kkkkk.",
+        }, Canto);
+
+        public static readonly Sprite CaixaFerramentas = PixelArt.Criar(new[]
+        {
+            "...kkkk...",
+            "...k..k...",
+            "kkkkkkkkkk",
+            "krrrrrrrrk",
+            "krrrryrrrk",
+            "kkkkkkkkkk",
+        }, Canto);
+
+        /// <summary>Mostrador do relógio de parede (7×7); os ponteiros são pixels animados por cima.</summary>
+        public static readonly Sprite Relogio = PixelArt.Criar(new[]
+        {
+            ".kkkkk.", "kyyyyyk", "kyyyyyk", "kyyyyyk", "kyyyyyk", "kyyyyyk", ".kkkkk.",
+        }, Canto);
+
+        /// <summary>Cabo solto descendo da mesa e serpenteando no chão (16×3).</summary>
+        public static readonly Sprite CaboSolto = PixelArt.Criar(new[]
+        {
+            "o...............",
+            "o......oo.......",
+            ".oooooo..oooooo.",
+        }, Canto);
 
         /// <summary>Quadrinho de paisagem carimbado na parede do armário (14×10).</summary>
         public static readonly string[] Quadrinho =

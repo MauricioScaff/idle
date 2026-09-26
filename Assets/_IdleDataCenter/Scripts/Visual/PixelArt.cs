@@ -23,6 +23,8 @@ namespace IdleDataCenter
             // planta, vaso e caneca
             ['l'] = Hex("6fd36f"), ['L'] = Hex("3f9b54"), ['t'] = Hex("e0805a"), ['T'] = Hex("b85c3a"),
             ['m'] = Hex("ff8c7a"), ['M'] = Hex("d9604f"),
+            // madeira e LED
+            ['n'] = Hex("b07a52"), ['N'] = Hex("7d5238"), ['g'] = Hex("5cff8a"),
             // efeitos
             ['r'] = Hex("ff5d7a"), ['Y'] = Hex("ffd65c"), ['X'] = Hex("ff7a8a"),
             // quadrinho
@@ -77,7 +79,7 @@ namespace IdleDataCenter
                 if (x == 0 || x == w - 1 || y == h - 1) c = CorContorno;
                 px[y * w + x] = c;
             }
-            Carimbar(px, w, Arte.Quadrinho, 34, 24);
+            Carimbar(px, w, Arte.Quadrinho, 48, 26);
             return Finalizar(tex, px, Vector2.zero);
         }
 

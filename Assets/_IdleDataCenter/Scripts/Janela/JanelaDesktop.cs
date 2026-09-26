@@ -25,7 +25,6 @@ namespace IdleDataCenter
         bool escondida;
         float proximaChecagem;
         RECT ultimaArea;
-        int modoTeste;
 #endif
 
         /// <summary>Posição do cursor em coordenadas de tela do Unity (origem embaixo à esquerda).</summary>
@@ -38,6 +37,25 @@ namespace IdleDataCenter
                     return new Vector2(p.x, Screen.height - p.y);
 #endif
                 return Input.mousePosition;
+            }
+        }
+
+        /// <summary>
+        /// True só se um clique agora iria de fato para a faixa: janela visível e ela mesma sob o cursor.
+        /// A Unity lê o mouse mesmo em segundo plano, então sem essa checagem cliques feitos em
+        /// outros programas (ou com a faixa escondida) seriam contados como cliques no jogo.
+        /// </summary>
+        public bool CursorSobreAJanela
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                if (!Ativa) return Application.isFocused;
+                if (escondida || !GetCursorPos(out var p)) return false;
+                return GetAncestor(WindowFromPoint(p), GA_ROOT) == hwnd;
+#else
+                return true;
+#endif
             }
         }
 
@@ -61,40 +79,13 @@ namespace IdleDataCenter
             yield return null;
             yield return null;
 
-            // TEMPORÁRIO: testa combinações de transparência (-modo N na linha de comando)
-            int modo = 0;
-            var args = Environment.GetCommandLineArgs();
-            for (int i = 0; i < args.Length - 1; i++) if (args[i] == "-modo") int.TryParse(args[i + 1], out modo);
-            Debug.Log("JanelaDesktop modo " + modo);
-            var margens = new MARGINS { cxLeftWidth = -1 };
+            // Validado no Unity 6.6 + D3D11 (sem flip model): janela "layered" com cor-chave preta,
+            // mais o quadro do DWM estendido sobre toda a área. Preto puro vira transparente.
             SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(WS_POPUP | WS_VISIBLE));
-            switch (modo)
-            {
-                case 1: // só DWM, sem layered
-                    SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_TOOLWINDOW));
-                    DwmExtendFrameIntoClientArea(hwnd, ref margens);
-                    break;
-                case 2: // DWM + layered com alfa 255
-                    DwmExtendFrameIntoClientArea(hwnd, ref margens);
-                    SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW));
-                    SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
-                    break;
-                case 3: // DWM primeiro, depois layered com cor-chave
-                    DwmExtendFrameIntoClientArea(hwnd, ref margens);
-                    SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW));
-                    SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
-                    break;
-                case 4: // layered com cor-chave, sem DWM
-                    SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW));
-                    SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
-                    break;
-                default:
-                    SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW));
-                    SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY); // preto puro = transparente
-                    DwmExtendFrameIntoClientArea(hwnd, ref margens);
-                    break;
-            }
-            modoTeste = modo;
+            SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW));
+            SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
+            var margens = new MARGINS { cxLeftWidth = -1 };
+            DwmExtendFrameIntoClientArea(hwnd, ref margens);
             Posicionar();
             Ativa = true;
 #else
@@ -109,7 +100,7 @@ namespace IdleDataCenter
         public void DefinirClicavel(bool sim)
         {
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
-            if (!Ativa || sim == clicavel || modoTeste == 1) return;
+            if (!Ativa || sim == clicavel) return;
             clicavel = sim;
             long ex = WS_EX_LAYERED | WS_EX_TOOLWINDOW | (sim ? 0 : WS_EX_TRANSPARENT);
             SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(ex));
@@ -189,7 +180,7 @@ namespace IdleDataCenter
         const int GWL_STYLE = -16, GWL_EXSTYLE = -20;
         const long WS_POPUP = 0x80000000L, WS_VISIBLE = 0x10000000L;
         const long WS_EX_LAYERED = 0x80000L, WS_EX_TRANSPARENT = 0x20L, WS_EX_TOOLWINDOW = 0x80L;
-        const uint LWA_COLORKEY = 0x1, LWA_ALPHA = 0x2;
+        const uint LWA_COLORKEY = 0x1;
         const uint SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20, SWP_SHOWWINDOW = 0x40;
         const uint SPI_GETWORKAREA = 0x30;
         const int SW_HIDE = 0, SW_SHOWNA = 8;
@@ -219,6 +210,9 @@ namespace IdleDataCenter
         [DllImport("user32.dll")] static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint corChave, byte alfa, uint flags);
         [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hWnd, int comando);
         [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT p);
+        [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(POINT p);
+        [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr hWnd, uint flags);
+        const uint GA_ROOT = 2;
         [DllImport("user32.dll")] static extern bool ScreenToClient(IntPtr hWnd, ref POINT p);
         [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr hWnd);
         [DllImport("user32.dll")] static extern bool SystemParametersInfo(uint acao, uint param, ref RECT r, uint winIni);

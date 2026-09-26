@@ -8,10 +8,10 @@ namespace IdleDataCenter
     /// </summary>
     public class Tecnico : MonoBehaviour, IClicavel
     {
-        enum Estado { Parado, Andando, Consertando }
+        enum Estado { Parado, Andando, Consertando, Digitando }
 
         const float Velocidade = 12f;     // pixels por segundo
-        const float MinX = 24f;           // não passa da planta
+        const float MinX = 44f;           // em frente à mesa (não passa dela)
         const float DistanciaServidor = 11f;
 
         Faixa faixa;
@@ -19,6 +19,7 @@ namespace IdleDataCenter
         Destaque destaque;
         Estado estado;
         ServidorVelho servidorAlvo;
+        bool indoParaMesa;
         float x, alvoX;
         float tempoEstado, proximaPiscada, proximaFaisca, pulo;
 
@@ -58,6 +59,7 @@ namespace IdleDataCenter
                     if (Mathf.Approximately(x, alvoX))
                     {
                         if (servidorAlvo != null) { estado = Estado.Consertando; tempoEstado = 2.5f; sr.flipX = false; }
+                        else if (indoParaMesa) { estado = Estado.Digitando; tempoEstado = Random.Range(3f, 6f); sr.flipX = true; faixa.Tela.Digitando = true; }
                         else Parar();
                     }
                     break;
@@ -71,6 +73,10 @@ namespace IdleDataCenter
                     }
                     if (tempoEstado <= 0f) Parar();
                     break;
+
+                case Estado.Digitando:
+                    if (tempoEstado <= 0f) Parar();
+                    break;
             }
 
             AtualizarSprite();
@@ -81,17 +87,21 @@ namespace IdleDataCenter
 
         void EscolherDestino()
         {
-            // Às vezes vai até o servidor mais próximo dele (o da esquerda) para "consertar"
-            servidorAlvo = Random.value < 0.35f ? faixa.ServidorMaisAEsquerda : null;
-            alvoX = servidorAlvo != null ? MaxX : Mathf.Round(Random.Range(MinX, MaxX));
+            // Às vezes vai "consertar" o servidor mais próximo, às vezes digitar na mesa, às vezes só passeia
+            float sorteio = Random.value;
+            servidorAlvo = sorteio < 0.3f ? faixa.ServidorMaisAEsquerda : null;
+            indoParaMesa = sorteio >= 0.3f && sorteio < 0.6f;
+            alvoX = servidorAlvo != null ? MaxX : indoParaMesa ? MinX : Mathf.Round(Random.Range(MinX + 6f, MaxX));
             estado = Estado.Andando;
             sr.flipX = alvoX < x;
         }
 
         void Parar()
         {
+            if (estado == Estado.Digitando) faixa.Tela.Digitando = false;
             estado = Estado.Parado;
             servidorAlvo = null;
+            indoParaMesa = false;
             tempoEstado = Random.Range(1.5f, 4.5f);
         }
 
@@ -100,6 +110,11 @@ namespace IdleDataCenter
             if (estado == Estado.Andando)
             {
                 sr.sprite = Mathf.FloorToInt(Time.time / 0.2f) % 2 == 0 ? Arte.TecnicoPasso : Arte.TecnicoParado;
+                return;
+            }
+            if (estado == Estado.Digitando)
+            {
+                sr.sprite = Mathf.FloorToInt(Time.time / 0.15f) % 2 == 0 ? Arte.TecnicoDigitandoA : Arte.TecnicoDigitandoB;
                 return;
             }
             // Piscada de vez em quando

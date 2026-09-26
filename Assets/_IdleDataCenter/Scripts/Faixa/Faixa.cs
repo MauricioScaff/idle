@@ -11,17 +11,18 @@ namespace IdleDataCenter
     /// </summary>
     public class Faixa : MonoBehaviour
     {
-        const int ArmarioX = 8, ArmarioLargura = 120, ArmarioAltura = 44;
+        const int ArmarioX = 8, ArmarioLargura = 160, ArmarioAltura = 44;
         const float IntervaloSalvamento = 30f;
 
         // Servidores do armário, da direita para a esquerda
-        static readonly float[] PosicoesServidores = { 100, 84, 68 };
+        static readonly float[] PosicoesServidores = { 140, 124, 108 };
 
         static readonly Color Amarelo = PixelArt.Hex("ffd65c"), VerdeClaro = PixelArt.Hex("9be89b");
 
         public int AlturaPiso => 5;
         public ServidorVelho ServidorMaisAEsquerda => servidores[servidores.Count - 1];
         public float XServidorMaisAEsquerda => ServidorMaisAEsquerda.transform.localPosition.x;
+        public TelaTerminal Tela { get; private set; }
 
         Economia economia;
         Camera cam;
@@ -71,7 +72,8 @@ namespace IdleDataCenter
             fundo.sprite = PixelArt.Armario(ArmarioLargura, ArmarioAltura, AlturaPiso);
             armario.gameObject.AddComponent<BoxCollider2D>(); // o armário inteiro "segura" o clique
 
-            Decoracao("Planta", Arte.Planta, new Vector2(12, AlturaPiso), 2);
+            Decoracao("Planta", Arte.Planta, new Vector2(8, AlturaPiso), 2);
+            MontarEra1();
 
             for (int i = 0; i < economia.Servidores; i++) AdicionarServidor();
             AtualizarServidores();
@@ -92,6 +94,23 @@ namespace IdleDataCenter
             // Dica do primeiro clique: setinha pulando sobre o servidor
             setaDica = Decoracao("Dica", Arte.Seta, servidores[0].Topo + new Vector2(-10, 3), 11);
             setaDica.enabled = !economia.Estado.jaClicouNoServidor;
+        }
+
+        /// <summary>Decoração da Era 1 (TI improvisada): mesa com CRT, ventilador, ferramentas, relógio e cabo solto.</summary>
+        void MontarEra1()
+        {
+            Decoracao("Mesa", Arte.Mesa, new Vector2(14, AlturaPiso), 2);
+            Decoracao("Ferramentas", Arte.CaixaFerramentas, new Vector2(18, AlturaPiso), 3);
+            Decoracao("Cabo", Arte.CaboSolto, new Vector2(38, AlturaPiso), 1);
+
+            var monitor = Decoracao("Monitor", Arte.MonitorCrt, new Vector2(20, AlturaPiso + 10), 3);
+            Tela = TelaTerminal.Criar(monitor.transform);
+            Decoracao("PostIt", Arte.PostIt, new Vector2(31, AlturaPiso + 19), 5);
+
+            var ventilador = Decoracao("Ventilador", Arte.VentiladorA, new Vector2(150, AlturaPiso), 2);
+            Animacao.Aplicar(ventilador, 10f, Arte.VentiladorA, Arte.VentiladorB);
+
+            RelogioParede.Criar(Decoracao("Relogio", Arte.Relogio, new Vector2(68, 29), 1));
         }
 
         void AdicionarServidor()
@@ -191,6 +210,8 @@ namespace IdleDataCenter
             Vector2 mundo = cam.ScreenToWorldPoint(janela.PosicaoCursor);
             var colisores = Physics2D.OverlapPointAll(mundo);
             janela.DefinirClicavel(colisores.Length > 0);
+            // Com a faixa escondida ou o cursor em outro programa, nada de destaque nem clique
+            if (!janela.CursorSobreAJanela) colisores = System.Array.Empty<Collider2D>();
 
             IClicavel escolhido = null;
             foreach (var c in colisores)
