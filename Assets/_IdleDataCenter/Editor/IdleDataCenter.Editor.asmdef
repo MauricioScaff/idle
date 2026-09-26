@@ -1,0 +1,10 @@
+{
+    "name": "IdleDataCenter.Editor",
+    "rootNamespace": "IdleDataCenter.Ferramentas",
+    "references": ["IdleDataCenter"],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "autoReferenced": false,
+    "noEngineReferences": false
+}

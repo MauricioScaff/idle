@@ -32,7 +32,7 @@ namespace IdleDataCenter
         // Cores do cenário (armário)
         static readonly Color32 Parede = Hex("2d3057"), Parede2 = Hex("33376a"), ParedeLinha = Hex("262949");
         static readonly Color32 Rodape = Hex("1f2140"), Piso = Hex("6b4a4f"), PisoClaro = Hex("82595c"), PisoJunta = Hex("573c41");
-        static readonly Color32 Contorno = Hex("1b1a2e");
+        static readonly Color32 CorContorno = Hex("1b1a2e");
 
         static Sprite pixel;
 
@@ -74,11 +74,65 @@ namespace IdleDataCenter
                 else if (y == alturaPiso - 1) c = PisoClaro;
                 else if (y == alturaPiso) c = Rodape;
                 else c = x % 10 == 0 ? ParedeLinha : (x / 10) % 2 == 0 ? Parede : Parede2;
-                if (x == 0 || x == w - 1 || y == h - 1) c = Contorno;
+                if (x == 0 || x == w - 1 || y == h - 1) c = CorContorno;
                 px[y * w + x] = c;
             }
             Carimbar(px, w, Arte.Quadrinho, 34, 24);
             return Finalizar(tex, px, Vector2.zero);
+        }
+
+        /// <summary>Painel de interface: fundo escuro, borda e uma faixa de título no topo.</summary>
+        public static Sprite Painel(int w, int h)
+        {
+            var tex = NovaTextura(w, h);
+            var px = new Color32[w * h];
+            var fundo = Hex("232548");
+            var titulo = Hex("2f3263");
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                bool borda = x == 0 || x == w - 1 || y == 0 || y == h - 1;
+                px[y * w + x] = borda ? CorContorno : y >= h - 10 ? titulo : fundo;
+            }
+            return Finalizar(tex, px, Vector2.zero);
+        }
+
+        /// <summary>Retângulo de cor sólida (fundo de botão, destaque de linha).</summary>
+        public static Sprite Retangulo(int w, int h)
+        {
+            var tex = NovaTextura(w, h);
+            var px = new Color32[w * h];
+            for (int i = 0; i < px.Length; i++) px[i] = new Color32(255, 255, 255, 255);
+            return Finalizar(tex, px, Vector2.zero);
+        }
+
+        static readonly Dictionary<Sprite, Sprite> contornos = new Dictionary<Sprite, Sprite>();
+
+        /// <summary>
+        /// Sprite com 1 pixel de contorno branco em volta da silhueta do original (para destacar
+        /// o que é clicável). Mesmo pivô do original, então basta colocar como filho na posição zero.
+        /// </summary>
+        public static Sprite Contorno(Sprite original)
+        {
+            if (contornos.TryGetValue(original, out var pronto)) return pronto;
+            var fonte = original.texture;
+            var r = original.rect;
+            int w = (int)r.width, h = (int)r.height, W = w + 2, H = h + 2;
+            var origem = fonte.GetPixels32();
+            bool Opaco(int x, int y) =>
+                x >= 0 && y >= 0 && x < w && y < h && origem[((int)r.y + y) * fonte.width + (int)r.x + x].a > 0;
+
+            var tex = NovaTextura(W, H);
+            var px = new Color32[W * H];
+            for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+            {
+                int ox = x - 1, oy = y - 1;
+                bool vizinho = Opaco(ox - 1, oy) || Opaco(ox + 1, oy) || Opaco(ox, oy - 1) || Opaco(ox, oy + 1);
+                if (!Opaco(ox, oy) && vizinho) px[y * W + x] = new Color32(255, 255, 255, 255);
+            }
+            var pivo = new Vector2((original.pivot.x + 1) / W, (original.pivot.y + 1) / H);
+            return contornos[original] = Finalizar(tex, px, pivo);
         }
 
         static void Carimbar(Color32[] px, int w, string[] linhas, int x0, int y0)

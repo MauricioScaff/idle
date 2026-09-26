@@ -124,7 +124,14 @@ namespace IdleDataCenter
             "kkkkkkkkkkkkkk",
         };
 
+        // --- Melhorias do servidor ---
+        /// <summary>Ventoinha 4×4 em dois quadros: as pás alternam na diagonal e parecem girar.</summary>
+        public static readonly Sprite VentoinhaA = PixelArt.Criar(new[] { "kkkk", "kyvk", "kvyk", "kkkk" }, Canto);
+        public static readonly Sprite VentoinhaB = PixelArt.Criar(new[] { "kkkk", "kvyk", "kyvk", "kkkk" }, Canto);
+
         // --- Efeitos e interface ---
+        public static readonly Sprite Seta = PixelArt.Criar(new[] { "YYYYY", ".YYY.", "..Y.." }, Canto);
+
         public static readonly Sprite Coracao = PixelArt.Criar(new[]
         {
             "rr.rr",

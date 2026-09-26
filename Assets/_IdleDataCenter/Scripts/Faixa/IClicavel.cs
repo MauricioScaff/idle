@@ -6,5 +6,7 @@ namespace IdleDataCenter
         /// <summary>Quando vários estão sob o cursor, ganha o de maior ordem (o que está na frente).</summary>
         int Ordem { get; }
         void Clicar();
+        /// <summary>Liga/desliga o destaque de "isto é clicável" quando o cursor passa por cima.</summary>
+        void DefinirDestaque(bool ligado);
     }
 }

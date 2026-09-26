@@ -13,23 +13,9 @@ namespace IdleDataCenter.Ferramentas
         const string CaminhoCena = "Assets/_IdleDataCenter/Scenes/Faixa.unity";
         const string CaminhoBuild = "Builds/IdleDataCenter.exe";
 
-        [MenuItem("Idle Data Center/Configurar projeto e cena")]
-        public static void ProjetoECena()
-        {
-            ConfigurarPlayer();
-            CriarCena();
-        }
-
-        /// <summary>A transparência da faixa só aparece no build (o editor não fica transparente).</summary>
-        [MenuItem("Idle Data Center/Gerar build de Windows")]
-        public static void GerarBuild()
-        {
-            ProjetoECena();
-            var r = BuildPipeline.BuildPlayer(new[] { CaminhoCena }, CaminhoBuild, BuildTarget.StandaloneWindows64, BuildOptions.None);
-            Debug.Log($"Build: {r.summary.result} ({r.summary.totalErrors} erros) em {Path.GetFullPath(CaminhoBuild)}");
-        }
-
-        static void ConfigurarPlayer()
+        /// <summary>Aplica as configurações de janela e gráficos que a faixa precisa. Seguro de rodar sempre.</summary>
+        [MenuItem("Idle Data Center/Configurar projeto")]
+        public static void ConfigurarPlayer()
         {
             PlayerSettings.productName = "Idle Data Center";
             PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
@@ -44,6 +30,29 @@ namespace IdleDataCenter.Ferramentas
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64, new[] { GraphicsDeviceType.Direct3D11 });
             PlayerSettings.SplashScreen.show = false;
+        }
+
+        /// <summary>
+        /// A transparência da faixa só aparece no build (o editor não fica transparente).
+        /// Nunca mexe na cena: só cria uma se ela ainda não existir.
+        /// </summary>
+        [MenuItem("Idle Data Center/Gerar build de Windows")]
+        public static void GerarBuild()
+        {
+            ConfigurarPlayer();
+            if (!File.Exists(CaminhoCena)) CriarCena();
+            var r = BuildPipeline.BuildPlayer(new[] { CaminhoCena }, CaminhoBuild, BuildTarget.StandaloneWindows64, BuildOptions.None);
+            Debug.Log($"Build: {r.summary.result} ({r.summary.totalErrors} erros) em {Path.GetFullPath(CaminhoBuild)}");
+        }
+
+        /// <summary>Recria a cena do zero. Pede confirmação, porque apaga qualquer edição feita nela.</summary>
+        [MenuItem("Idle Data Center/Recriar cena do zero")]
+        public static void RecriarCena()
+        {
+            if (File.Exists(CaminhoCena) && !Application.isBatchMode &&
+                !EditorUtility.DisplayDialog("Recriar cena", "Isso apaga todas as mudanças feitas na cena Faixa. Continuar?", "Recriar", "Cancelar"))
+                return;
+            CriarCena();
         }
 
         static void CriarCena()
