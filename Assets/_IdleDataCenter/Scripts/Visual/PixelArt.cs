@@ -1,0 +1,115 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace IdleDataCenter
+{
+    /// <summary>
+    /// Transforma "mapas de caracteres" em sprites de pixel art. Cada caractere é uma cor
+    /// da paleta; '.' é transparente. 1 pixel da arte = 1 unidade de mundo.
+    /// Evite preto puro (#000000): na faixa, ele vira transparente.
+    /// </summary>
+    public static class PixelArt
+    {
+        public static readonly Dictionary<char, Color32> Paleta = new Dictionary<char, Color32>
+        {
+            ['k'] = Hex("1b1a2e"), // contorno
+            ['#'] = Hex("ffffff"), // branco puro (para pintar com cor)
+            ['y'] = Hex("fdf6e3"), // branco quente
+            // servidor bege dos anos 2000
+            ['b'] = Hex("dccca6"), ['B'] = Hex("b9a67f"), ['d'] = Hex("8c7a58"), ['v'] = Hex("6e6250"),
+            // técnico
+            ['h'] = Hex("5a3a2e"), ['s'] = Hex("f6cfa9"), ['e'] = Hex("2a2238"), ['x'] = Hex("ff9fae"),
+            ['c'] = Hex("5aa9ff"), ['C'] = Hex("3a7ad6"), ['p'] = Hex("3d4273"), ['o'] = Hex("2a2336"),
+            // planta, vaso e caneca
+            ['l'] = Hex("6fd36f"), ['L'] = Hex("3f9b54"), ['t'] = Hex("e0805a"), ['T'] = Hex("b85c3a"),
+            ['m'] = Hex("ff8c7a"), ['M'] = Hex("d9604f"),
+            // efeitos
+            ['r'] = Hex("ff5d7a"), ['Y'] = Hex("ffd65c"), ['X'] = Hex("ff7a8a"),
+            // quadrinho
+            ['S'] = Hex("7cc8ff"), ['G'] = Hex("5cc26a"),
+        };
+
+        // Cores do cenário (armário)
+        static readonly Color32 Parede = Hex("2d3057"), Parede2 = Hex("33376a"), ParedeLinha = Hex("262949");
+        static readonly Color32 Rodape = Hex("1f2140"), Piso = Hex("6b4a4f"), PisoClaro = Hex("82595c"), PisoJunta = Hex("573c41");
+        static readonly Color32 Contorno = Hex("1b1a2e");
+
+        static Sprite pixel;
+
+        /// <summary>Sprite de 1×1 pixel branco (pivô embaixo à esquerda), para LEDs, vapor, etc.</summary>
+        public static Sprite Pixel
+        {
+            get
+            {
+                if (pixel == null) pixel = Criar(new[] { "#" }, Vector2.zero);
+                return pixel;
+            }
+        }
+
+        /// <param name="pivo">(0.5, 0) = centro da base. Use larguras pares para manter o pixel alinhado.</param>
+        public static Sprite Criar(string[] linhas, Vector2 pivo)
+        {
+            int h = linhas.Length, w = linhas[0].Length;
+            var tex = NovaTextura(w, h);
+            var px = new Color32[w * h];
+            for (int y = 0; y < h; y++)
+            {
+                string linha = linhas[h - 1 - y]; // a primeira linha do mapa é o topo
+                for (int x = 0; x < w; x++)
+                    px[y * w + x] = x < linha.Length && Paleta.TryGetValue(linha[x], out var c) ? c : new Color32(0, 0, 0, 0);
+            }
+            return Finalizar(tex, px, pivo);
+        }
+
+        /// <summary>Fundo do armário: parede de tábuas, rodapé, piso de madeira, contorno e um quadrinho.</summary>
+        public static Sprite Armario(int w, int h, int alturaPiso)
+        {
+            var tex = NovaTextura(w, h);
+            var px = new Color32[w * h];
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                Color32 c;
+                if (y < alturaPiso - 1) c = (x + y * 7) % 14 == 0 ? PisoJunta : Piso;
+                else if (y == alturaPiso - 1) c = PisoClaro;
+                else if (y == alturaPiso) c = Rodape;
+                else c = x % 10 == 0 ? ParedeLinha : (x / 10) % 2 == 0 ? Parede : Parede2;
+                if (x == 0 || x == w - 1 || y == h - 1) c = Contorno;
+                px[y * w + x] = c;
+            }
+            Carimbar(px, w, Arte.Quadrinho, 34, 24);
+            return Finalizar(tex, px, Vector2.zero);
+        }
+
+        static void Carimbar(Color32[] px, int w, string[] linhas, int x0, int y0)
+        {
+            int h = linhas.Length;
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < linhas[h - 1 - y].Length; x++)
+                if (Paleta.TryGetValue(linhas[h - 1 - y][x], out var c))
+                    px[(y0 + y) * w + x0 + x] = c;
+        }
+
+        static Texture2D NovaTextura(int w, int h) => new Texture2D(w, h, TextureFormat.RGBA32, false)
+        {
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp,
+            hideFlags = HideFlags.DontUnloadUnusedAsset,
+        };
+
+        static Sprite Finalizar(Texture2D tex, Color32[] px, Vector2 pivo)
+        {
+            tex.SetPixels32(px);
+            tex.Apply();
+            var s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), pivo, 1f, 0, SpriteMeshType.FullRect);
+            s.hideFlags = HideFlags.DontUnloadUnusedAsset;
+            return s;
+        }
+
+        public static Color32 Hex(string hex)
+        {
+            ColorUtility.TryParseHtmlString("#" + hex, out var c);
+            return c;
+        }
+    }
+}
