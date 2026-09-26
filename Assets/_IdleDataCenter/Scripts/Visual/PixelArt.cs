@@ -25,6 +25,8 @@ namespace IdleDataCenter
             ['m'] = Hex("ff8c7a"), ['M'] = Hex("d9604f"),
             // madeira e LED
             ['n'] = Hex("b07a52"), ['N'] = Hex("7d5238"), ['g'] = Hex("5cff8a"),
+            // uniforme de Sysadmin e equipamentos de rack
+            ['q'] = Hex("4fc9a8"), ['Q'] = Hex("2e9a80"), ['w'] = Hex("8d92ab"), ['W'] = Hex("5d6178"),
             // efeitos
             ['r'] = Hex("ff5d7a"), ['Y'] = Hex("ffd65c"), ['X'] = Hex("ff7a8a"),
             // quadrinho
@@ -80,6 +82,48 @@ namespace IdleDataCenter
                 px[y * w + x] = c;
             }
             Carimbar(px, w, Arte.Quadrinho, 48, 26);
+            return Finalizar(tex, px, Vector2.zero);
+        }
+
+        /// <summary>Salinha do Sysadmin: parede de azulejo, rodapé e piso elevado de datacenter.</summary>
+        public static Sprite Salinha(int w, int h, int alturaPiso)
+        {
+            var tex = NovaTextura(w, h);
+            var px = new Color32[w * h];
+            Color32 azulejo = Hex("3b4270"), azulejo2 = Hex("414a7c"), rejunte = Hex("343a63");
+            Color32 piso = Hex("7c8198"), pisoLinha = Hex("5f6479"), furo = Hex("6b7088");
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                Color32 c;
+                if (y < alturaPiso)
+                    c = x % 8 == 0 || y == alturaPiso - 1 ? pisoLinha : (x % 2 == 0 && y % 2 == 1) ? furo : piso;
+                else if (y == alturaPiso) c = Rodape;
+                else if (x % 8 == 0 || (y - alturaPiso) % 8 == 0) c = rejunte;
+                else c = ((x / 8) + (y - alturaPiso) / 8) % 2 == 0 ? azulejo : azulejo2;
+                if (x == 0 || x == w - 1 || y == h - 1) c = CorContorno;
+                px[y * w + x] = c;
+            }
+            Carimbar(px, w, Arte.Quadrinho, 48, 26);
+            return Finalizar(tex, px, Vector2.zero);
+        }
+
+        /// <summary>Estrutura de rack 42U (24×36) com 8 vagas de 3 pixels, vista de frente.</summary>
+        public static Sprite Rack()
+        {
+            const int w = 24, h = 36;
+            var tex = NovaTextura(w, h);
+            var px = new Color32[w * h];
+            Color32 moldura = Hex("3a3d52"), fundo = Hex("1d1f33"), furo = Hex("565a74");
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                Color32 c = x == 0 || x == w - 1 || y == 0 || y == h - 1 ? CorContorno
+                          : x == 1 || x == w - 2 || y == 1 || y == h - 2 ? moldura
+                          : fundo;
+                if ((x == 2 || x == w - 3) && y > 1 && y < h - 2 && y % 2 == 0) c = furo; // trilhos
+                px[y * w + x] = c;
+            }
             return Finalizar(tex, px, Vector2.zero);
         }
 

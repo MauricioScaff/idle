@@ -12,7 +12,7 @@ namespace IdleDataCenter
     public class PixelTexto : MonoBehaviour
     {
         // Cada glifo: 5 linhas de 3 colunas, de cima para baixo.
-        static readonly Dictionary<char, string> Glifos = new Dictionary<char, string>
+        internal static readonly Dictionary<char, string> Glifos = new Dictionary<char, string>
         {
             ['A'] = G(".#.", "#.#", "###", "#.#", "#.#"), ['B'] = G("##.", "#.#", "##.", "#.#", "##."),
             ['C'] = G(".##", "#..", "#..", "#..", ".##"), ['D'] = G("##.", "#.#", "#.#", "#.#", "##."),
@@ -38,6 +38,9 @@ namespace IdleDataCenter
             ['/'] = G("..#", "..#", ".#.", "#..", "#.."), ['!'] = G(".#.", ".#.", ".#.", "...", ".#."),
             ['?'] = G("##.", "..#", ".#.", "...", ".#."), ['%'] = G("#.#", "..#", ".#.", "#..", "#.#"),
             ['x'] = G("...", "#.#", ".#.", "#.#", "..."), [' '] = G("...", "...", "...", "...", "..."),
+            ['>'] = G("#..", ".#.", "..#", ".#.", "#.."), ['<'] = G("..#", ".#.", "#..", ".#.", "..#"),
+            ['('] = G(".#.", "#..", "#..", "#..", ".#."), [')'] = G(".#.", "..#", "..#", "..#", ".#."),
+            ['_'] = G("...", "...", "...", "...", "###"),
         };
 
         static string G(params string[] linhas) => string.Concat(linhas);
@@ -102,14 +105,14 @@ namespace IdleDataCenter
             sombra.sprite = sprite;
         }
 
-        /// <summary>Maiúsculas sem acento; o "x" minúsculo é mantido como sinal de multiplicação.</summary>
-        static string Normalizar(string texto)
+        /// <summary>Maiúsculas sem acento; o caractere "×" vira o sinal de multiplicação da fonte.</summary>
+        public static string Normalizar(string texto)
         {
             var sb = new StringBuilder(texto.Length);
             foreach (char c in texto.Normalize(NormalizationForm.FormD))
             {
                 if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark) continue;
-                sb.Append(c == 'x' ? 'x' : char.ToUpperInvariant(c));
+                sb.Append(c == '×' ? 'x' : char.ToUpperInvariant(c)); // '×' vira o glifo de multiplicação
             }
             return sb.ToString();
         }

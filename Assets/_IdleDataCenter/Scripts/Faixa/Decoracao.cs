@@ -87,6 +87,27 @@ namespace IdleDataCenter
         }
     }
 
+    /// <summary>Fumacinha saindo da caneca: pixels que sobem e somem, alternando de lado.</summary>
+    public class Vapor : MonoBehaviour
+    {
+        float proximo;
+        int lado;
+
+        void Update()
+        {
+            if (Time.time < proximo) return;
+            proximo = Time.time + 0.6f;
+            lado = 1 - lado;
+            var p = new GameObject("Vapor").AddComponent<SpriteRenderer>();
+            p.transform.SetParent(transform.parent, false);
+            p.transform.localPosition = transform.localPosition + new Vector3(-2 + lado * 2, 6f, 0f);
+            p.sprite = PixelArt.Pixel;
+            p.color = new Color(1f, 1f, 1f, 0.8f);
+            p.sortingOrder = 4;
+            Flutuante.Aplicar(p.gameObject, 1.2f, 4f);
+        }
+    }
+
     /// <summary>Relógio de parede: ponteiro dos segundos dá a volta em 8 passos, um por segundo.</summary>
     public class RelogioParede : MonoBehaviour
     {

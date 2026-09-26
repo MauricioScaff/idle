@@ -75,14 +75,50 @@ namespace IdleDataCenter
             ".sCCCCCCCC..",
         };
 
-        public static readonly Sprite TecnicoDigitandoA = PixelArt.Criar(Juntar(Cabeca, CorpoDigitandoA, PernasJuntas), Base);
-        public static readonly Sprite TecnicoDigitandoB = PixelArt.Criar(Juntar(Cabeca, CorpoDigitandoB, PernasJuntas), Base);
-        public static readonly Sprite TecnicoParado = PixelArt.Criar(Juntar(Cabeca, Corpo, PernasJuntas), Base);
-        public static readonly Sprite TecnicoPiscando = PixelArt.Criar(Juntar(SemOlhos(Cabeca), Corpo, PernasJuntas), Base);
-        public static readonly Sprite TecnicoPasso = PixelArt.Criar(Juntar(Cabeca, Corpo, PernasAbertas), Base);
+        /// <summary>Quadros de animação do técnico com o uniforme de um cargo.</summary>
+        public class Visual
+        {
+            public Sprite Parado, Passo, Piscando, DigitandoA, DigitandoB;
+        }
+
+        static readonly System.Collections.Generic.Dictionary<int, Visual> visuais = new System.Collections.Generic.Dictionary<int, Visual>();
+
+        /// <summary>
+        /// Cargo 0: camiseta azul. Cargo 1 (Sysadmin): camisa verde-água com crachá.
+        /// </summary>
+        public static Visual Tecnico(int cargo)
+        {
+            if (visuais.TryGetValue(cargo, out var v)) return v;
+            string[] U(string[] mapa) => cargo == 0 ? mapa : Uniforme(mapa);
+            return visuais[cargo] = new Visual
+            {
+                Parado = PixelArt.Criar(U(Juntar(Cabeca, Corpo, PernasJuntas)), Base),
+                Passo = PixelArt.Criar(U(Juntar(Cabeca, Corpo, PernasAbertas)), Base),
+                Piscando = PixelArt.Criar(U(Juntar(SemOlhos(Cabeca), Corpo, PernasJuntas)), Base),
+                DigitandoA = PixelArt.Criar(U(Juntar(Cabeca, CorpoDigitandoA, PernasJuntas)), Base),
+                DigitandoB = PixelArt.Criar(U(Juntar(Cabeca, CorpoDigitandoB, PernasJuntas)), Base),
+            };
+        }
+
+        static string[] Uniforme(string[] mapa)
+        {
+            var m = new string[mapa.Length];
+            for (int i = 0; i < mapa.Length; i++) m[i] = mapa[i].Replace('c', 'q').Replace('C', 'Q');
+            // crachá branco no peito (linha 10, coluna 4)
+            var linha = m[10].ToCharArray();
+            linha[4] = 'y';
+            m[10] = new string(linha);
+            return m;
+        }
+
+        public static Sprite TecnicoDigitandoA => Tecnico(0).DigitandoA;
+        public static Sprite TecnicoDigitandoB => Tecnico(0).DigitandoB;
+        public static Sprite TecnicoParado => Tecnico(0).Parado;
+        public static Sprite TecnicoPiscando => Tecnico(0).Piscando;
+        public static Sprite TecnicoPasso => Tecnico(0).Passo;
 
         // --- Servidor velho (12×18), com baia de CD e grades de ventilação ---
-        public static readonly Sprite Servidor = PixelArt.Criar(new[]
+        public static readonly string[] MapaServidor =
         {
             ".kkkkkkkkkk.",
             "kbbbbbbbbbbk",
@@ -102,10 +138,11 @@ namespace IdleDataCenter
             "kBBBBBBBBBBk",
             "kkkkkkkkkkkk",
             ".kk......kk.",
-        }, Base);
+        };
+        public static readonly Sprite Servidor = PixelArt.Criar(MapaServidor, Base);
 
         // --- Decoração ---
-        public static readonly Sprite Planta = PixelArt.Criar(new[]
+        public static readonly string[] MapaPlanta =
         {
             "...l.l..",
             "..lLlLl.",
@@ -116,7 +153,8 @@ namespace IdleDataCenter
             ".tTTTTt.",
             ".tTTTTt.",
             "..tttt..",
-        }, Base);
+        };
+        public static readonly Sprite Planta = PixelArt.Criar(MapaPlanta, Base);
 
         public static readonly Sprite Caneca = PixelArt.Criar(new[]
         {
@@ -218,8 +256,62 @@ namespace IdleDataCenter
         public static readonly Sprite VentoinhaA = PixelArt.Criar(new[] { "kkkk", "kyvk", "kvyk", "kkkk" }, Canto);
         public static readonly Sprite VentoinhaB = PixelArt.Criar(new[] { "kkkk", "kvyk", "kyvk", "kkkk" }, Canto);
 
+        // --- Era 1, segunda metade: salinha do Sysadmin ---
+        public static readonly Sprite Rack = PixelArt.Rack();
+
+        /// <summary>Servidor 1U (20×3) que encaixa numa vaga do rack.</summary>
+        public static readonly Sprite Servidor1U = PixelArt.Criar(new[]
+        {
+            "wwwwwwwwwwwwwwwwwwww",
+            "wkkkwkkkwwwwwwwwwwww",
+            "WWWWWWWWWWWWWWWWWWWW",
+        }, Canto);
+
+        /// <summary>No-break (16×12). O visor (x = 3..12, 2 linhas a partir de y = 7) mostra as baterias.</summary>
+        public static readonly Sprite NoBreak = PixelArt.Criar(new[]
+        {
+            "kkkkkkkkkkkkkkkk",
+            "kWWWWWWWWWWWWWWk",
+            "kWkkkkkkkkkkkkWk",
+            "kWkooooooooookWk",
+            "kWkooooooooookWk",
+            "kWkkkkkkkkkkkkWk",
+            "kWWWWWWWWWWWWWWk",
+            "kWwWwWwWwWwWwWWk",
+            "kWWWWWWWWWWWWWWk",
+            "kWWWWWWWWWWgWWWk",
+            "kWWWWWWWWWWWWWWk",
+            "kkkkkkkkkkkkkkkk",
+        }, Canto);
+
+        /// <summary>Ar-condicionado split de parede (24×8).</summary>
+        public static readonly Sprite ArCondicionado = PixelArt.Criar(new[]
+        {
+            "kkkkkkkkkkkkkkkkkkkkkkkk",
+            "kyyyyyyyyyyyyyyyyyyyyyyk",
+            "kyyyyyyyyyyyyyyyyyggyyyk",
+            "kyyyyyyyyyyyyyyyyyyyyyyk",
+            "kbbbbbbbbbbbbbbbbbbbbbbk",
+            "kbvvvvvvvvvvvvvvvvvvvvbk",
+            "kbbbbbbbbbbbbbbbbbbbbbbk",
+            ".kkkkkkkkkkkkkkkkkkkkkk.",
+        }, Canto);
+
+        /// <summary>Alerta de incidente (5×7) que flutua sobre o servidor travado.</summary>
+        public static readonly Sprite Alerta = PixelArt.Criar(new[]
+        {
+            "..r..",
+            ".ryr.",
+            ".ryr.",
+            "rryrr",
+            "rrrrr",
+            "rryrr",
+            "rrrrr",
+        }, Canto);
+
         // --- Efeitos e interface ---
-        public static readonly Sprite Seta = PixelArt.Criar(new[] { "YYYYY", ".YYY.", "..Y.." }, Canto);
+        public static readonly Sprite AbrirPainel = PixelArt.Criar(new[] { "..S..", ".SSS.", "SSSSS", ".....", "SSSSS" }, Canto);
+        public static readonly Sprite Seta =PixelArt.Criar(new[] { "YYYYY", ".YYY.", "..Y.." }, Canto);
 
         public static readonly Sprite Coracao = PixelArt.Criar(new[]
         {

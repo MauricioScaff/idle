@@ -19,6 +19,48 @@ namespace IdleDataCenter
         /// <summary>True quando a janela já foi convertida em faixa (build de Windows).</summary>
         public bool Ativa { get; private set; }
 
+        /// <summary>Altura atual da janela em pixels de arte: só a faixa, ou faixa + painel aberto.</summary>
+        public int AlturaVirtualAtual { get; private set; } = AlturaVirtual;
+
+        /// <summary>Quantos pixels de tela vale cada pixel de arte (sempre inteiro, para a pixel art ficar nítida).</summary>
+        public int Escala
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                if (Ativa)
+                {
+                    uint dpi = GetDpiForWindow(hwnd);
+                    return Mathf.Max(2, Mathf.RoundToInt(3f * (dpi == 0 ? 96 : dpi) / 96f));
+                }
+#endif
+                return Mathf.Max(1, Screen.height / Mathf.Max(AlturaVirtual, AlturaVirtualAtual));
+            }
+        }
+
+        /// <summary>A maior altura (em pixels de arte) que cabe acima da barra de tarefas.</summary>
+        public int AlturaVirtualMaxima
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                if (Ativa) return (ultimaArea.Bottom - ultimaArea.Top) / Escala;
+#endif
+                return 10000;
+            }
+        }
+
+        /// <summary>Muda a altura da janela (em pixels de arte). A base continua colada na barra de tarefas.</summary>
+        public void DefinirAlturaVirtual(int altura)
+        {
+            AlturaVirtualAtual = Mathf.Clamp(altura, AlturaVirtual, AlturaVirtualMaxima);
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+            if (!Ativa) return;
+            Screen.SetResolution(ultimaArea.Largura, AlturaFisica(), FullScreenMode.Windowed);
+            Posicionar();
+#endif
+        }
+
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
         IntPtr hwnd;
         bool clicavel = true;
@@ -137,7 +179,7 @@ namespace IdleDataCenter
         {
             uint dpi = GetDpiForWindow(hwnd);
             int escala = Mathf.Max(2, Mathf.RoundToInt(3f * (dpi == 0 ? 96 : dpi) / 96f));
-            return AlturaVirtual * escala;
+            return AlturaVirtualAtual * escala;
         }
 
         void Posicionar()

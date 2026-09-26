@@ -1,47 +1,44 @@
-using System.Collections.Generic;
+using System;
 using IdleDataCenter.Simulacao;
 using UnityEngine;
 
 namespace IdleDataCenter
 {
     /// <summary>
-    /// Monta e liga a faixa: câmera pixel-perfect, o armário do técnico, a loja, os cliques
-    /// (com "clique atravessando" nas áreas vazias), o save e o progresso offline.
-    /// A economia em si fica em Simulacao.Economia.
+    /// Liga tudo: a economia, o cenário do cargo atual, a loja, o painel de gestão, o HUD da faixa,
+    /// os cliques (com "clique atravessando" nas áreas vazias), o save e o progresso offline.
     /// </summary>
     public class Faixa : MonoBehaviour
     {
-        const int ArmarioX = 8, ArmarioLargura = 160, ArmarioAltura = 44;
+        const int CenarioX = 8;
         const float IntervaloSalvamento = 30f;
 
-        // Servidores do armário, da direita para a esquerda
-        static readonly float[] PosicoesServidores = { 140, 124, 108 };
-
-        static readonly Color Amarelo = PixelArt.Hex("ffd65c"), VerdeClaro = PixelArt.Hex("9be89b");
-
-        public int AlturaPiso => 5;
-        public ServidorVelho ServidorMaisAEsquerda => servidores[servidores.Count - 1];
-        public float XServidorMaisAEsquerda => ServidorMaisAEsquerda.transform.localPosition.x;
-        public TelaTerminal Tela { get; private set; }
+        static readonly Color Amarelo = PixelArt.Hex("ffd65c"), VerdeClaro = PixelArt.Hex("9be89b"),
+                              Laranja = PixelArt.Hex("ffbf3f"), Vermelho = PixelArt.Hex("ff3b4e"),
+                              Azul = PixelArt.Hex("a9c7ff");
 
         Economia economia;
         Camera cam;
         JanelaDesktop janela;
-        Transform armario;
-        Loja loja;
-        Tecnico tecnico;
-        readonly List<ServidorVelho> servidores = new List<ServidorVelho>();
-        PixelTexto textoDinheiro, textoReceita;
+        Cenario cenario;
+        Painel painel;
+        PixelTexto textoDinheiro, textoReceita, textoAmbiente;
+        BotaoTexto botaoMeta;
         SpriteRenderer setaDica;
         IClicavel sobCursor;
         float proximoSalvamento;
         double ganhoOffline;
+
+        public Loja Loja { get; private set; }
 
         void Awake()
         {
             economia = new Economia(Salvamento.Carregar());
             ganhoOffline = economia.AplicarOffline(Salvamento.AgoraUnix);
             economia.Comprou += AoComprar;
+            economia.Travou += AoTravar;
+            economia.Voltou += AoVoltar;
+            economia.Promoveu += AoPromover;
         }
 
         void Start()
@@ -52,124 +49,185 @@ namespace IdleDataCenter
             cam.backgroundColor = new Color(0f, 0f, 0f, 0f); // preto puro = transparente na faixa
             janela = gameObject.AddComponent<JanelaDesktop>();
 
-            MontarArmario();
-            loja = new GameObject("Loja").AddComponent<Loja>();
-            loja.Iniciar(economia, new Vector2(ArmarioX + ArmarioLargura + 4, 0));
+            MontarTudo();
+            painel = new GameObject("Painel").AddComponent<Painel>();
+            painel.Iniciar(this, economia, new Vector2(CenarioX, JanelaDesktop.AlturaVirtual + Painel.Espaco));
 
             if (ganhoOffline > 0)
             {
-                loja.MostrarAviso("Voltou! +R$ " + Formatar(ganhoOffline), 8f);
-                Ganho(ganhoOffline, servidores[0].Topo + new Vector2(-8, 3));
+                Loja.MostrarAviso("Voltou! +R$ " + Formatar(ganhoOffline), 8f);
+                Ganho(ganhoOffline, cenario.PrimeiraTorre.Topo + new Vector2(-8, 3));
             }
             proximoSalvamento = Time.time + IntervaloSalvamento;
+
+            // Opções para testes: -painel=<aba> abre o painel, -incidente trava o primeiro servidor
+            foreach (var arg in Environment.GetCommandLineArgs())
+            {
+                if (arg.StartsWith("-painel"))
+                {
+                    AbrirPainel();
+                    painel.AbrirAba(arg.Contains("=") ? arg.Substring(arg.IndexOf('=') + 1) : "visao");
+                }
+                if (arg == "-incidente") economia.Travar(0);
+            }
         }
 
-        void MontarArmario()
+        /// <summary>Monta (ou remonta, na promoção) o cenário do cargo atual, o HUD e a loja.</summary>
+        void MontarTudo()
         {
-            armario = new GameObject("Armario").transform;
-            armario.position = new Vector3(ArmarioX, 0f, 0f);
-            var fundo = armario.gameObject.AddComponent<SpriteRenderer>();
-            fundo.sprite = PixelArt.Armario(ArmarioLargura, ArmarioAltura, AlturaPiso);
-            armario.gameObject.AddComponent<BoxCollider2D>(); // o armário inteiro "segura" o clique
+            if (cenario != null) Destroy(cenario.gameObject);
+            if (Loja != null) Destroy(Loja.gameObject);
+            sobCursor = null;
 
-            Decoracao("Planta", Arte.Planta, new Vector2(8, AlturaPiso), 2);
-            MontarEra1();
+            cenario = new GameObject("Cenario").AddComponent<Cenario>();
+            cenario.Montar(this, economia, new Vector2(CenarioX, 0));
+            MontarHud();
 
-            for (int i = 0; i < economia.Servidores; i++) AdicionarServidor();
-            AtualizarServidores();
+            Loja = new GameObject("Loja").AddComponent<Loja>();
+            Loja.Iniciar(economia, new Vector2(CenarioX + cenario.Largura + 4, 0));
+            cenario.AtualizarIncidentes();
+        }
 
-            Decoracao("Caneca", Arte.Caneca, servidores[0].Topo + new Vector2(-3, 0), 4)
-                .gameObject.AddComponent<Vapor>();
-
-            tecnico = new GameObject("Tecnico").AddComponent<Tecnico>();
-            tecnico.Iniciar(this, armario);
-
-            textoDinheiro = PixelTexto.Criar(armario, new Vector2(4, 37), Amarelo, 10);
-            textoReceita = PixelTexto.Criar(armario, new Vector2(40, 37), VerdeClaro, 10);
-
-            var fechar = Decoracao("Fechar", Arte.Fechar, new Vector2(ArmarioLargura - 8, 36), 10);
-            fechar.gameObject.AddComponent<BoxCollider2D>();
-            fechar.gameObject.AddComponent<BotaoFechar>();
+        void MontarHud()
+        {
+            var raiz = cenario.transform;
+            textoDinheiro = PixelTexto.Criar(raiz, new Vector2(4, 37), Amarelo, 10);
+            textoReceita = PixelTexto.Criar(raiz, new Vector2(40, 37), VerdeClaro, 10);
+            textoAmbiente = PixelTexto.Criar(raiz, new Vector2(80, 37), Laranja, 10);
+            botaoMeta = BotaoTexto.Criar(raiz, new Vector2(100, 37), Azul, AoClicarMeta);
+            BotaoIcone.Criar(raiz, Arte.AbrirPainel, new Vector2(cenario.Largura - 16, 36), AlternarPainel);
+            BotaoIcone.Criar(raiz, Arte.Fechar, new Vector2(cenario.Largura - 8, 36), Application.Quit);
 
             // Dica do primeiro clique: setinha pulando sobre o servidor
-            setaDica = Decoracao("Dica", Arte.Seta, servidores[0].Topo + new Vector2(-10, 3), 11);
+            setaDica = cenario.Decoracao("Dica", Arte.Seta, cenario.PrimeiraTorre.Topo + new Vector2(-10, 3), 11);
             setaDica.enabled = !economia.Estado.jaClicouNoServidor;
         }
 
-        /// <summary>Decoração da Era 1 (TI improvisada): mesa com CRT, ventilador, ferramentas, relógio e cabo solto.</summary>
-        void MontarEra1()
+        // ---------------- Efeitos ----------------
+
+        /// <summary>Solta um sprite que sobe e some (posição em coordenadas do objeto pai).</summary>
+        public void Efeito(Transform pai, Sprite sprite, Vector2 posicaoLocal, float duracao, float subida)
         {
-            Decoracao("Mesa", Arte.Mesa, new Vector2(14, AlturaPiso), 2);
-            Decoracao("Ferramentas", Arte.CaixaFerramentas, new Vector2(18, AlturaPiso), 3);
-            Decoracao("Cabo", Arte.CaboSolto, new Vector2(38, AlturaPiso), 1);
-
-            var monitor = Decoracao("Monitor", Arte.MonitorCrt, new Vector2(20, AlturaPiso + 10), 3);
-            Tela = TelaTerminal.Criar(monitor.transform);
-            Decoracao("PostIt", Arte.PostIt, new Vector2(31, AlturaPiso + 19), 5);
-
-            var ventilador = Decoracao("Ventilador", Arte.VentiladorA, new Vector2(150, AlturaPiso), 2);
-            Animacao.Aplicar(ventilador, 10f, Arte.VentiladorA, Arte.VentiladorB);
-
-            RelogioParede.Criar(Decoracao("Relogio", Arte.Relogio, new Vector2(68, 29), 1));
-        }
-
-        void AdicionarServidor()
-        {
-            var s = new GameObject("Servidor").AddComponent<ServidorVelho>();
-            s.Iniciar(this, armario, new Vector2(PosicoesServidores[servidores.Count], AlturaPiso));
-            servidores.Add(s);
-        }
-
-        void AtualizarServidores()
-        {
-            foreach (var s in servidores) s.AtualizarVisual(economia.TemSsd, economia.Ventoinhas);
-        }
-
-        SpriteRenderer Decoracao(string nome, Sprite sprite, Vector2 posicaoLocal, int ordem)
-        {
-            var sr = new GameObject(nome).AddComponent<SpriteRenderer>();
-            sr.transform.SetParent(armario, false);
+            var sr = new GameObject("Efeito").AddComponent<SpriteRenderer>();
+            sr.transform.SetParent(pai, false);
             sr.transform.localPosition = posicaoLocal;
             sr.sprite = sprite;
-            sr.sortingOrder = ordem;
-            return sr;
-        }
-
-        /// <summary>Solta um sprite que sobe e some (posição em coordenadas do armário).</summary>
-        public void Efeito(Sprite sprite, Vector2 posicaoLocal, float duracao, float subida)
-        {
-            var sr = Decoracao("Efeito", sprite, posicaoLocal, 12);
+            sr.sortingOrder = 12;
             Flutuante.Aplicar(sr.gameObject, duracao, subida);
         }
 
-        /// <summary>Texto "+R$ X" subindo a partir de um ponto do armário.</summary>
+        /// <summary>Texto "+R$ X" subindo a partir de um ponto do cenário.</summary>
         void Ganho(double valor, Vector2 posicaoLocal)
         {
-            var texto = PixelTexto.Criar(armario, posicaoLocal, Amarelo, 13);
+            var texto = PixelTexto.Criar(cenario.transform, posicaoLocal, Amarelo, 13);
             texto.Definir("+" + Formatar(valor));
             Flutuante.Aplicar(texto.gameObject, 0.9f, 6f);
         }
 
-        public void ClicarServidor(ServidorVelho servidor)
+        void Faiscas(Vector2 topo, int quantidade)
         {
-            double valor = economia.Clicar();
-            Ganho(valor, servidor.Topo + new Vector2(-4, 1));
+            for (int i = 0; i < quantidade; i++)
+                Efeito(cenario.transform, Arte.Faisca, topo + new Vector2(UnityEngine.Random.Range(-8, 6), UnityEngine.Random.Range(-12, 0)), 0.5f, 3f);
+        }
+
+        // ---------------- Ações do jogador ----------------
+
+        public void ClicarServidor(int servidor, Vector2 topo)
+        {
+            bool estavaTravado = economia.Travado(servidor);
+            double valor = economia.Clicar(servidor);
+            if (estavaTravado)
+            {
+                Faiscas(topo, 3);
+                Loja.MostrarAviso("Reiniciado!", 1.2f, VerdeClaro);
+            }
+            else Ganho(valor, topo + new Vector2(-4, 1));
             setaDica.enabled = false;
         }
 
+        /// <summary>Clique no rack: reinicia o primeiro 1U travado, ou rende um clique normal.</summary>
+        public void ClicarRack(Vector2 topo)
+        {
+            int alvo = economia.Torres;
+            for (int s = economia.Torres; s < economia.TotalServidores; s++)
+                if (economia.Travado(s)) { alvo = s; break; }
+            ClicarServidor(alvo, topo);
+        }
+
+        /// <summary>Reiniciar pelo painel.</summary>
+        public void Reiniciar(int servidor)
+        {
+            if (economia.Travado(servidor)) ClicarServidor(servidor, cenario.TopoDoServidor(servidor));
+        }
+
+        public void Promover() => economia.Promover();
+
+        void AoClicarMeta()
+        {
+            if (economia.PodePromover) Promover();
+            else AbrirCarreira();
+        }
+
+        // ---------------- Eventos da economia ----------------
+
         void AoComprar(string id)
         {
-            if (id == Catalogo.Servidor)
-            {
-                AdicionarServidor();
-                var novo = ServidorMaisAEsquerda;
-                for (int i = 0; i < 4; i++) Efeito(Arte.Faisca, novo.Topo + new Vector2(Random.Range(-8, 6), Random.Range(-12, 0)), 0.5f, 3f);
-            }
-            AtualizarServidores();
-            foreach (var s in servidores) s.Pular();
-            tecnico.Comemorar();
+            var nova = cenario.AtualizarEquipamentos();
+            if (nova != null) Faiscas(nova.Topo, 4);
+            if (id == Catalogo.Rack || id == Catalogo.Servidor1U) Faiscas(cenario.TopoDoServidor(economia.TotalServidores - 1), 4);
+            cenario.PularTudo();
+            cenario.Tecnico.Comemorar();
             Salvamento.Salvar(economia.Estado);
         }
+
+        void AoTravar(int servidor) => Loja.MostrarAviso("Servidor travou!", 2f, Vermelho);
+
+        void AoVoltar(int servidor, bool peloTecnico)
+        {
+            if (!peloTecnico) return;
+            Loja.MostrarAviso("Técnico consertou", 1.5f, VerdeClaro);
+            cenario.Tecnico.Comemorar();
+        }
+
+        void AoPromover(int cargo)
+        {
+            MontarTudo();
+            Loja.MostrarAviso("Promovido! " + economia.CargoAtual.Nome, 5f);
+            // festa: faíscas por todo o cenário e um coração do técnico
+            for (int i = 0; i < 12; i++)
+                Efeito(cenario.transform, i % 3 == 0 ? Arte.Coracao : Arte.Faisca,
+                    new Vector2(UnityEngine.Random.Range(10, cenario.Largura - 10), UnityEngine.Random.Range(8, 32)), 1.2f, 6f);
+            cenario.Tecnico.Comemorar();
+            Salvamento.Salvar(economia.Estado);
+        }
+
+        // ---------------- Painel ----------------
+
+        void AbrirPainel()
+        {
+            painel.Abrir();
+            janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual + Painel.Espaco + Painel.Altura + 2);
+        }
+
+        void AbrirCarreira()
+        {
+            AbrirPainel();
+            painel.AbrirCarreira();
+        }
+
+        void FecharPainel()
+        {
+            painel.Fechar();
+            janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual);
+        }
+
+        void AlternarPainel()
+        {
+            if (painel.Aberto) FecharPainel();
+            else AbrirPainel();
+        }
+
+        // ---------------- Laço ----------------
 
         void Update()
         {
@@ -177,13 +235,11 @@ namespace IdleDataCenter
             ProcessarCursor();
 
             economia.Avancar(Time.deltaTime);
-            string dinheiro = "R$ " + Formatar(economia.Dinheiro);
-            textoDinheiro.Definir(dinheiro);
-            textoReceita.Definir("+" + Formatar(economia.ReceitaPorSegundo) + "/s");
-            textoReceita.transform.localPosition = new Vector3(4 + PixelTexto.Largura(dinheiro) + 5, 37, 0);
+            cenario.AtualizarIncidentes();
+            AtualizarHud();
 
             if (setaDica.enabled)
-                setaDica.transform.localPosition = servidores[0].Topo + new Vector2(-10, 3 + (Mathf.FloorToInt(Time.time / 0.4f) % 2));
+                setaDica.transform.localPosition = cenario.PrimeiraTorre.Topo + new Vector2(-10, 3 + (Mathf.FloorToInt(Time.time / 0.4f) % 2));
 
             if (Time.time >= proximoSalvamento)
             {
@@ -192,7 +248,46 @@ namespace IdleDataCenter
             }
         }
 
-        void OnApplicationQuit() => Salvamento.Salvar(economia.Estado);
+        void AtualizarHud()
+        {
+            string dinheiro = "R$ " + Formatar(economia.Dinheiro);
+            textoDinheiro.Definir(dinheiro);
+            float x = 4 + PixelTexto.Largura(dinheiro) + 5;
+
+            string receita = "+" + Formatar(economia.ReceitaPorSegundo) + "/s";
+            textoReceita.Definir(receita);
+            textoReceita.transform.localPosition = new Vector3(x, 37, 0);
+            x += PixelTexto.Largura(receita) + 6;
+
+            // Energia e temperatura só importam a partir de Sysadmin
+            if (economia.Cargo >= 1)
+            {
+                string ambiente = $"{economia.ConsumoKw:0.0}/{economia.CapacidadeKw:0.0}kW {economia.Temperatura:0}C";
+                textoAmbiente.Definir(ambiente);
+                textoAmbiente.DefinirCor(economia.Sobrecarga || economia.Quente ? Vermelho : Laranja);
+                textoAmbiente.transform.localPosition = new Vector3(x, 37, 0);
+            }
+            else textoAmbiente.Definir("");
+
+            // Meta de promoção, alinhada à direita (antes dos ícones)
+            var metas = economia.CargoAtual.MetasParaPromocao;
+            string meta;
+            Color cor = Azul;
+            if (economia.PodePromover)
+            {
+                meta = "Promoção!";
+                cor = Mathf.FloorToInt(Time.time / 0.4f) % 2 == 0 ? Amarelo : Color.white;
+            }
+            else if (metas.Length > 0)
+            {
+                int feitas = 0;
+                foreach (var m in metas) if (economia.Cumprida(m)) feitas++;
+                meta = $"Meta {feitas}/{metas.Length}";
+            }
+            else meta = "";
+            botaoMeta.Definir(meta, cor);
+            botaoMeta.transform.localPosition = new Vector3(cenario.Largura - 28 - PixelTexto.Largura(meta), 37, 0); // longe do alerta da primeira torre
+        }
 
         /// <summary>
         /// Câmera pixel-perfect: cada pixel da arte vira um quadrado inteiro de pixels na tela,
@@ -200,7 +295,7 @@ namespace IdleDataCenter
         /// </summary>
         void AtualizarCamera()
         {
-            int escala = Mathf.Max(1, Screen.height / JanelaDesktop.AlturaVirtual);
+            int escala = janela.Escala;
             cam.orthographicSize = Screen.height / (2f * escala);
             cam.transform.position = new Vector3(Screen.width / (2f * escala), cam.orthographicSize, -10f);
         }
@@ -211,7 +306,8 @@ namespace IdleDataCenter
             var colisores = Physics2D.OverlapPointAll(mundo);
             janela.DefinirClicavel(colisores.Length > 0);
             // Com a faixa escondida ou o cursor em outro programa, nada de destaque nem clique
-            if (!janela.CursorSobreAJanela) colisores = System.Array.Empty<Collider2D>();
+            bool nosso = janela.CursorSobreAJanela;
+            if (!nosso) colisores = Array.Empty<Collider2D>();
 
             IClicavel escolhido = null;
             foreach (var c in colisores)
@@ -220,12 +316,29 @@ namespace IdleDataCenter
 
             if (escolhido != sobCursor)
             {
-                sobCursor?.DefinirDestaque(false);
+                if (sobCursor as UnityEngine.Object != null) sobCursor.DefinirDestaque(false);
                 escolhido?.DefinirDestaque(true);
                 sobCursor = escolhido;
             }
-            if (escolhido != null && Input.GetMouseButtonDown(0)) escolhido.Clicar();
+            if (escolhido is Painel p) p.DefinirCursor(mundo);
+
+            if (painel.Aberto && Input.GetKeyDown(KeyCode.Escape)) FecharPainel();
+            if (!Input.GetMouseButtonDown(0)) return;
+            if (escolhido == null)
+            {
+                // clique fora de tudo (em outro programa ou na área transparente): fecha o painel
+                if (painel.Aberto) FecharPainel();
+                return;
+            }
+            if (escolhido is Painel painelClicado)
+            {
+                painelClicado.ClicarEm(mundo);
+                if (!painel.Aberto) janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual); // fechou pelo "x"
+            }
+            else escolhido.Clicar();
         }
+
+        void OnApplicationQuit() => Salvamento.Salvar(economia.Estado);
 
         public static string Formatar(double v)
         {
@@ -235,35 +348,5 @@ namespace IdleDataCenter
             while (v >= 1000 && i < sufixos.Length - 1) { v /= 1000; i++; }
             return v.ToString(v < 10 ? "0.0" : "0", System.Globalization.CultureInfo.InvariantCulture) + sufixos[i];
         }
-    }
-
-    /// <summary>Fumacinha saindo da caneca: pixels que sobem e somem, alternando de lado.</summary>
-    public class Vapor : MonoBehaviour
-    {
-        float proximo;
-        int lado;
-
-        void Update()
-        {
-            if (Time.time < proximo) return;
-            proximo = Time.time + 0.6f;
-            lado = 1 - lado;
-            var p = new GameObject("Vapor").AddComponent<SpriteRenderer>();
-            p.transform.SetParent(transform.parent, false);
-            p.transform.localPosition = transform.localPosition + new Vector3(-2 + lado * 2, 6f, 0f);
-            p.sprite = PixelArt.Pixel;
-            p.color = new Color(1f, 1f, 1f, 0.8f);
-            p.sortingOrder = 4;
-            Flutuante.Aplicar(p.gameObject, 1.2f, 4f);
-        }
-    }
-
-    public class BotaoFechar : MonoBehaviour, IClicavel
-    {
-        public int Ordem => 10;
-        public void Clicar() => Application.Quit();
-        // A cor do renderizador multiplica a do sprite: cinza = apagado, branco = cor original acesa
-        void Start() => DefinirDestaque(false);
-        public void DefinirDestaque(bool ligado) => GetComponent<SpriteRenderer>().color = ligado ? Color.white : new Color(0.7f, 0.7f, 0.7f);
     }
 }

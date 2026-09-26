@@ -5,17 +5,32 @@ Jogo idle para Windows que vive numa faixa acima da barra de tarefas. Você come
 - **Engine:** Unity 6.6 (6000.6.3f1), só Windows
 - **Arte:** pixel art fofa, gerada por código enquanto não há arte final (`Scripts/Visual/Arte.cs`)
 
+## O que já dá pra jogar
+
+- **Faixa:** o cômodo do técnico (armário, depois salinha) e a loja de melhorias, sempre acima da barra de tarefas.
+- **Painel:** clique no ícone ▲ da faixa (ou em "Meta x/3"). Abas Visão geral, Melhorias e Carreira. Fecha com Esc, com o "x" ou clicando fora.
+- **Incidentes:** servidores travam de vez em quando. O técnico corre e conserta em 30 s, ou você clica no servidor e reinicia na hora.
+- **Carreira:** Técnico de TI → Sysadmin. A promoção pede 3 servidores, R$ 20K faturados e 8 incidentes resolvidos.
+- **Sysadmin:** rack 42U com servidores 1U, energia (no-break) e temperatura (ar-condicionado).
+- Save automático e ganho offline (50% da receita, até 12 h).
+
 ## Como rodar
 
 - **No editor:** abra a cena `Assets/_IdleDataCenter/Scenes/Faixa` e aperte Play. No editor a janela não fica transparente.
 - **Na faixa de verdade:** menu **Idle Data Center → Gerar build de Windows** e abra `Builds/IdleDataCenter.exe`.
+- **Opções de teste** (linha de comando do build): `-painel=visao|melhorias|carreira` abre o painel numa aba; `-incidente` trava o primeiro servidor.
+- **Zerar o progresso:** apague `%USERPROFILE%\AppData\LocalLow\DefaultCompany\Idle Data Center\save.json`.
 
 ## Estrutura
 
 ```
 Assets/_IdleDataCenter/
-  Scripts/Janela/   janela transparente acima da barra de tarefas (Win32)
-  Scripts/Visual/   pixel art, paleta e fonte de pixel
-  Scripts/Faixa/    cenário, técnico, servidor e cliques
-  Editor/           menu "Idle Data Center" (configurar projeto, gerar build)
+  Scripts/Simulacao/  regras do jogo em C# puro: economia, incidentes, energia, carreira, save
+  Scripts/Janela/     janela transparente acima da barra de tarefas (Win32)
+  Scripts/Visual/     pixel art, paleta, fonte de pixel e a "tela de desenho" do painel
+  Scripts/Faixa/      cenário, técnico, servidores, loja, painel e cliques
+  Testes/             testes da economia e do ritmo (Window > General > Test Runner)
+  Editor/             menu "Idle Data Center" (configurar projeto, gerar build)
 ```
+
+Balanceamento: todos os números ficam em `Scripts/Simulacao/Catalogo.cs`. O teste `RitmoTestes` simula um jogador ocioso e confere se a promoção sai entre 10 e 90 minutos.
