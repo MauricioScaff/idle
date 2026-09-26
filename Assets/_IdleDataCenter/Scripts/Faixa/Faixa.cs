@@ -12,6 +12,7 @@ namespace IdleDataCenter
     {
         const int CenarioX = 8;
         const float IntervaloSalvamento = 30f;
+        const int LinhaHud = Cenario.Altura - 7;   // linha do dinheiro, receita e meta no topo do cenário
 
         static readonly Color Amarelo = PixelArt.Hex("ffd65c"), VerdeClaro = PixelArt.Hex("9be89b"),
                               Laranja = PixelArt.Hex("ffbf3f"), Vermelho = PixelArt.Hex("ff3b4e"),
@@ -91,12 +92,12 @@ namespace IdleDataCenter
         void MontarHud()
         {
             var raiz = cenario.transform;
-            textoDinheiro = PixelTexto.Criar(raiz, new Vector2(4, 37), Amarelo, 10);
-            textoReceita = PixelTexto.Criar(raiz, new Vector2(40, 37), VerdeClaro, 10);
-            textoAmbiente = PixelTexto.Criar(raiz, new Vector2(80, 37), Laranja, 10);
-            botaoMeta = BotaoTexto.Criar(raiz, new Vector2(100, 37), Azul, AoClicarMeta);
-            BotaoIcone.Criar(raiz, Arte.AbrirPainel, new Vector2(cenario.Largura - 16, 36), AlternarPainel);
-            BotaoIcone.Criar(raiz, Arte.Fechar, new Vector2(cenario.Largura - 8, 36), Application.Quit);
+            textoDinheiro = PixelTexto.Criar(raiz, new Vector2(4, LinhaHud), Amarelo, 10);
+            textoReceita = PixelTexto.Criar(raiz, new Vector2(40, LinhaHud), VerdeClaro, 10);
+            textoAmbiente = PixelTexto.Criar(raiz, new Vector2(80, LinhaHud), Laranja, 10);
+            botaoMeta = BotaoTexto.Criar(raiz, new Vector2(100, LinhaHud), Azul, AoClicarMeta);
+            BotaoIcone.Criar(raiz, Arte.AbrirPainel, new Vector2(cenario.Largura - 16, LinhaHud - 1), AlternarPainel);
+            BotaoIcone.Criar(raiz, Arte.Fechar, new Vector2(cenario.Largura - 8, LinhaHud - 1), Application.Quit);
 
             // Dica do primeiro clique: setinha pulando sobre o servidor
             setaDica = cenario.Decoracao("Dica", Arte.Seta, cenario.PrimeiraTorre.Topo + new Vector2(-10, 3), 11);
@@ -203,10 +204,13 @@ namespace IdleDataCenter
 
         // ---------------- Painel ----------------
 
+        /// <summary>O painel usa uma escala maior que a faixa (texto legível); na tela, cada pixel dele vale EscalaPainel pixels.</summary>
+        float EscalaRelativaDoPainel => janela.EscalaPainel / (float)janela.Escala;
+
         void AbrirPainel()
         {
             painel.Abrir();
-            janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual + Painel.Espaco + Painel.Altura + 2);
+            janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual + Painel.Espaco + Mathf.CeilToInt(Painel.Altura * EscalaRelativaDoPainel) + 2);
         }
 
         void AbrirCarreira()
@@ -232,6 +236,7 @@ namespace IdleDataCenter
         void Update()
         {
             AtualizarCamera();
+            painel.transform.localScale = Vector3.one * EscalaRelativaDoPainel;
             ProcessarCursor();
 
             economia.Avancar(Time.deltaTime);
@@ -256,7 +261,7 @@ namespace IdleDataCenter
 
             string receita = "+" + Formatar(economia.ReceitaPorSegundo) + "/s";
             textoReceita.Definir(receita);
-            textoReceita.transform.localPosition = new Vector3(x, 37, 0);
+            textoReceita.transform.localPosition = new Vector3(x, LinhaHud, 0);
             x += PixelTexto.Largura(receita) + 6;
 
             // Energia e temperatura só importam a partir de Sysadmin
@@ -265,7 +270,7 @@ namespace IdleDataCenter
                 string ambiente = $"{economia.ConsumoKw:0.0}/{economia.CapacidadeKw:0.0}kW {economia.Temperatura:0}C";
                 textoAmbiente.Definir(ambiente);
                 textoAmbiente.DefinirCor(economia.Sobrecarga || economia.Quente ? Vermelho : Laranja);
-                textoAmbiente.transform.localPosition = new Vector3(x, 37, 0);
+                textoAmbiente.transform.localPosition = new Vector3(x, LinhaHud, 0);
             }
             else textoAmbiente.Definir("");
 
@@ -286,7 +291,7 @@ namespace IdleDataCenter
             }
             else meta = "";
             botaoMeta.Definir(meta, cor);
-            botaoMeta.transform.localPosition = new Vector3(cenario.Largura - 28 - PixelTexto.Largura(meta), 37, 0); // longe do alerta da primeira torre
+            botaoMeta.transform.localPosition = new Vector3(cenario.Largura - 28 - PixelTexto.Largura(meta), LinhaHud, 0); // longe do alerta da primeira torre
         }
 
         /// <summary>

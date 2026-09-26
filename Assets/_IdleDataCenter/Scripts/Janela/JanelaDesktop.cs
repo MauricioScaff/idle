@@ -14,7 +14,7 @@ namespace IdleDataCenter
     public class JanelaDesktop : MonoBehaviour
     {
         /// <summary>Altura da faixa em "pixels de arte" (cada um vira Escala × Escala pixels na tela).</summary>
-        public const int AlturaVirtual = 48;
+        public const int AlturaVirtual = 64;
 
         /// <summary>True quando a janela já foi convertida em faixa (build de Windows).</summary>
         public bool Ativa { get; private set; }
@@ -22,21 +22,33 @@ namespace IdleDataCenter
         /// <summary>Altura atual da janela em pixels de arte: só a faixa, ou faixa + painel aberto.</summary>
         public int AlturaVirtualAtual { get; private set; } = AlturaVirtual;
 
-        /// <summary>Quantos pixels de tela vale cada pixel de arte (sempre inteiro, para a pixel art ficar nítida).</summary>
+        /// <summary>Quantos pixels de tela vale cada pixel de arte da faixa (sempre inteiro, para a pixel art ficar nítida).</summary>
         public int Escala
         {
             get
             {
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
-                if (Ativa)
-                {
-                    uint dpi = GetDpiForWindow(hwnd);
-                    return Mathf.Max(2, Mathf.RoundToInt(3f * (dpi == 0 ? 96 : dpi) / 96f));
-                }
+                if (Ativa) return Mathf.Max(2, Mathf.RoundToInt(2f * Dpi / 96f));
 #endif
                 return Mathf.Max(1, Screen.height / Mathf.Max(AlturaVirtual, AlturaVirtualAtual));
             }
         }
+
+        /// <summary>Pixels de tela por pixel de arte no painel (maior que a faixa, para o texto ficar legível).</summary>
+        public int EscalaPainel
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                if (Ativa) return Mathf.Max(3, Mathf.RoundToInt(3f * Dpi / 96f));
+#endif
+                return Mathf.Max(1, Mathf.RoundToInt(Escala * 1.5f));
+            }
+        }
+
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+        uint Dpi { get { uint d = GetDpiForWindow(hwnd); return d == 0 ? 96 : d; } }
+#endif
 
         /// <summary>A maior altura (em pixels de arte) que cabe acima da barra de tarefas.</summary>
         public int AlturaVirtualMaxima
@@ -175,12 +187,7 @@ namespace IdleDataCenter
             Posicionar(); // também reafirma o "sempre por cima", que a barra de tarefas às vezes rouba
         }
 
-        int AlturaFisica()
-        {
-            uint dpi = GetDpiForWindow(hwnd);
-            int escala = Mathf.Max(2, Mathf.RoundToInt(3f * (dpi == 0 ? 96 : dpi) / 96f));
-            return AlturaVirtualAtual * escala;
-        }
+        int AlturaFisica() => AlturaVirtualAtual * Mathf.Max(2, Mathf.RoundToInt(2f * Dpi / 96f));
 
         void Posicionar()
         {

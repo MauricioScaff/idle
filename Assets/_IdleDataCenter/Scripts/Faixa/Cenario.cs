@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using IdleDataCenter.Simulacao;
 using UnityEngine;
 
@@ -6,28 +7,29 @@ namespace IdleDataCenter
 {
     /// <summary>
     /// O cômodo onde o técnico trabalha, montado conforme o cargo:
-    /// armário (Técnico de TI) ou salinha com rack, no-break e ar-condicionado (Sysadmin).
+    /// armário (Técnico de TI) ou salinha com rack, no-break e refrigeração (Sysadmin).
     /// Na promoção, o cenário inteiro é destruído e montado de novo.
-    /// Coordenadas locais: x a partir da borda esquerda, y a partir de baixo (piso em y = 5).
+    /// Coordenadas locais: x a partir da borda esquerda, y a partir de baixo (piso em y = AlturaPiso).
     /// </summary>
     public class Cenario : MonoBehaviour
     {
-        public const int Altura = 44, AlturaPiso = 5;
-        const float DistanciaServidor = 11f;
+        public const int Altura = 60, AlturaPiso = 6;
+        const float DistanciaServidor = 17f;   // do centro do técnico ao centro da torre
 
         Faixa faixa;
         Economia economia;
         readonly List<ServidorVelho> torres = new List<ServidorVelho>();
         float[] posicoesTorres;
         RackVisual rack;
-        NoBreakVisual noBreak;
-        ArCondicionadoVisual arCondicionado;
+        EquipamentoVisual noBreak, refrigeracao;
 
         public int Largura { get; private set; }
         public TelaTerminal Tela { get; private set; }
         public Tecnico Tecnico { get; private set; }
         public ServidorVelho PrimeiraTorre => torres[0];
 
+        /// <summary>Onde o técnico para para digitar (em frente à mesa).</summary>
+        public float PosicaoMesa => 74f;
         /// <summary>O técnico anda até aqui (fica ao lado da torre mais à esquerda).</summary>
         public float LimiteTecnico => torres[torres.Count - 1].X - DistanciaServidor;
         public Vector2 TopoMaisProximo => torres[torres.Count - 1].Topo;
@@ -39,36 +41,47 @@ namespace IdleDataCenter
             this.economia = economia;
             transform.position = posicao;
             bool salinha = economia.Cargo >= 1;
-            Largura = salinha ? 220 : 160;
-            posicoesTorres = salinha ? new float[] { 124, 108, 92 } : new float[] { 140, 124, 108 };
+            Largura = salinha ? 290 : 200;
+            posicoesTorres = salinha ? new float[] { 170, 146, 122 } : new float[] { 176, 152, 128 };
 
             var fundo = gameObject.AddComponent<SpriteRenderer>();
             fundo.sprite = salinha ? PixelArt.Salinha(Largura, Altura, AlturaPiso) : PixelArt.Armario(Largura, Altura, AlturaPiso);
             gameObject.AddComponent<BoxCollider2D>(); // o cômodo inteiro "segura" o clique
 
-            Decoracao("Planta", Arte.Planta, new Vector2(8, AlturaPiso), 2);
-            MontarCantoDaMesa();
-            var ventilador = Decoracao("Ventilador", Arte.VentiladorA, new Vector2(Largura - 10, AlturaPiso), 2);
-            Animacao.Aplicar(ventilador, 10f, Arte.VentiladorA, Arte.VentiladorB);
+            Decoracao("Planta", ArteGerada.Objeto("planta"), new Vector2(13, AlturaPiso), 2);
+            MontarMesa();
+            RelogioParede.Criar(Decoracao("Relogio", Arte.Relogio, new Vector2(104, 42), 1));
 
             AtualizarEquipamentos();
 
-            Decoracao("Caneca", Arte.Caneca, torres[0].Topo + new Vector2(-3, 0), 4).gameObject.AddComponent<Vapor>();
+            Decoracao("Caneca", Arte.Caneca, torres[0].Topo + new Vector2(-2, -1), 4).gameObject.AddComponent<Vapor>();
 
             Tecnico = new GameObject("Tecnico").AddComponent<Tecnico>();
             Tecnico.Iniciar(faixa, this, economia.Cargo);
         }
 
-        /// <summary>Era 1 (TI improvisada): mesa com CRT, ferramentas, relógio e cabo solto. Vai junto na promoção.</summary>
-        void MontarCantoDaMesa()
+        /// <summary>Mesa com o CRT (arte do PixelLab); a tela ganha um terminal animado por cima do texto desenhado.</summary>
+        void MontarMesa()
         {
-            Decoracao("Mesa", Arte.Mesa, new Vector2(14, AlturaPiso), 2);
-            Decoracao("Ferramentas", Arte.CaixaFerramentas, new Vector2(18, AlturaPiso), 3);
-            Decoracao("Cabo", Arte.CaboSolto, new Vector2(38, AlturaPiso), 1);
-            var monitor = Decoracao("Monitor", Arte.MonitorCrt, new Vector2(20, AlturaPiso + 10), 3);
-            Tela = TelaTerminal.Criar(monitor.transform);
-            Decoracao("PostIt", Arte.PostIt, new Vector2(31, AlturaPiso + 19), 5);
-            RelogioParede.Criar(Decoracao("Relogio", Arte.Relogio, new Vector2(68, 29), 1));
+            var mesa = Decoracao("Mesa", ArteGerada.Objeto("mesa_crt"), new Vector2(44, AlturaPiso), 2);
+            // o texto verde da tela é achado pela cor; o terminal animado cobre exatamente essa área
+            var texto = ArteGerada.Leds(mesa.sprite);
+            int x0 = texto.Min(p => p.x), x1 = texto.Max(p => p.x), y0 = texto.Min(p => p.y), y1 = texto.Max(p => p.y);
+            Tela = TelaTerminal.Criar(mesa.transform, new Vector2(x0, y0), x1 - x0 + 1, y1 - y0 + 1, CorDeFundoDaTela(mesa.sprite, x0, y0, x1, y1), 3);
+        }
+
+        /// <summary>A cor escura mais comum dentro da tela (o fundo do CRT), ignorando o texto verde.</summary>
+        static Color32 CorDeFundoDaTela(Sprite s, int x0, int y0, int x1, int y1)
+        {
+            var contagem = new Dictionary<Color32, int>();
+            for (int y = y0; y <= y1; y++)
+            for (int x = x0; x <= x1; x++)
+            {
+                Color32 c = s.texture.GetPixel((int)(s.rect.x + s.pivot.x) + x, (int)(s.rect.y + s.pivot.y) + y);
+                if (c.a == 0 || c.g > 140) continue;
+                contagem[c] = contagem.TryGetValue(c, out int n) ? n + 1 : 1;
+            }
+            return contagem.Count > 0 ? contagem.OrderByDescending(k => k.Value).First().Key : new Color32(20, 40, 28, 255);
         }
 
         public SpriteRenderer Decoracao(string nome, Sprite sprite, Vector2 posicaoLocal, int ordem)
@@ -96,22 +109,19 @@ namespace IdleDataCenter
             if (economia.TemRack && rack == null)
             {
                 rack = new GameObject("Rack").AddComponent<RackVisual>();
-                rack.Iniciar(faixa, transform, new Vector2(140, AlturaPiso));
+                rack.Iniciar(faixa, transform, new Vector2(200, AlturaPiso));
             }
             rack?.DefinirQuantidade(economia.ServidoresRack);
 
-            int nivelNoBreak = economia.Nivel(Catalogo.NoBreak);
-            if (nivelNoBreak > 0 && noBreak == null)
+            if (economia.Nivel(Catalogo.NoBreak) > 0 && noBreak == null)
             {
-                noBreak = new GameObject("NoBreak").AddComponent<NoBreakVisual>();
-                noBreak.Iniciar(transform, new Vector2(168, AlturaPiso));
+                noBreak = new GameObject("NoBreak").AddComponent<EquipamentoVisual>();
+                noBreak.Iniciar(transform, "nobreak", new Vector2(226, AlturaPiso), false);
             }
-            noBreak?.Atualizar(nivelNoBreak, economia.Sobrecarga);
-
-            if (economia.Nivel(Catalogo.ArCondicionado) > 0 && arCondicionado == null)
+            if (economia.Nivel(Catalogo.ArCondicionado) > 0 && refrigeracao == null)
             {
-                arCondicionado = new GameObject("ArCondicionado").AddComponent<ArCondicionadoVisual>();
-                arCondicionado.Iniciar(transform, new Vector2(186, 30));
+                refrigeracao = new GameObject("Refrigeracao").AddComponent<EquipamentoVisual>();
+                refrigeracao.Iniciar(transform, "refrigeracao", new Vector2(262, AlturaPiso), true);
             }
             return nova;
         }
@@ -127,12 +137,13 @@ namespace IdleDataCenter
             rack?.Pular();
         }
 
-        /// <summary>Reflete os servidores travados (LEDs vermelhos e alertas).</summary>
+        /// <summary>Reflete os servidores travados (LEDs vermelhos e alertas), a sobrecarga e o calor.</summary>
         public void AtualizarIncidentes()
         {
             for (int i = 0; i < torres.Count; i++) torres[i].DefinirTravado(economia.Travado(i));
             rack?.DefinirTravados(vaga => economia.Travado(economia.Torres + vaga));
-            noBreak?.Atualizar(economia.Nivel(Catalogo.NoBreak), economia.Sobrecarga);
+            noBreak?.DefinirAlerta(economia.Sobrecarga);
+            refrigeracao?.DefinirAlerta(economia.Quente);
         }
 
         /// <summary>Para onde o técnico deve correr: o servidor travado há mais tempo.</summary>

@@ -11,7 +11,7 @@ namespace IdleDataCenter
     /// </summary>
     public class Loja : MonoBehaviour
     {
-        public const int Largura = 112, Altura = 44;
+        public const int Largura = 112, Altura = 60;
 
         static readonly Color CorTitulo = PixelArt.Hex("a9c7ff");
 
@@ -30,7 +30,7 @@ namespace IdleDataCenter
             var fundo = gameObject.AddComponent<SpriteRenderer>();
             fundo.sprite = PixelArt.Painel(Largura, Altura);
             gameObject.AddComponent<BoxCollider2D>(); // o painel inteiro "segura" o clique
-            titulo = PixelTexto.Criar(transform, new Vector2(4, 37), CorTitulo, 5);
+            titulo = PixelTexto.Criar(transform, new Vector2(4, Altura - 7), CorTitulo, 5);
             Reconstruir();
         }
 
@@ -41,11 +41,11 @@ namespace IdleDataCenter
             botoes.Clear();
             sobCursor = null;
             var lista = economia.MelhoriasDoCargo().ToList();
-            int passo = lista.Count <= 3 ? 10 : 8;        // 4 linhas ficam mais juntas
+            int passo = lista.Count <= 3 ? 16 : 12;       // 4 linhas ficam mais juntas
             for (int i = 0; i < lista.Count; i++)
             {
                 var b = new GameObject("Botao " + lista[i].Id).AddComponent<BotaoMelhoria>();
-                b.Iniciar(this, lista[i], transform, new Vector2(2, 34 - passo * (i + 1)), Largura - 4, passo - 1);
+                b.Iniciar(this, lista[i], transform, new Vector2(2, Altura - 10 - passo * (i + 1)), Largura - 4, passo - 1);
                 botoes.Add(b);
             }
         }

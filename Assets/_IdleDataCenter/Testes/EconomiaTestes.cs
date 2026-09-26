@@ -109,7 +109,7 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.Comprar(Catalogo.Rack));
             Assert.IsTrue(e.Comprar(Catalogo.Servidor1U));
             Assert.AreEqual(2, e.TotalServidores);
-            Assert.AreEqual(1 + 6, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(1 + 9, e.ReceitaPorSegundo, 1e-9);
         }
 
         // ---------- Energia e temperatura ----------
@@ -120,11 +120,11 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             DefinirNivel(e, Catalogo.Servidor, 2);    // 3 torres = 1.2 kW
             DefinirNivel(e, Catalogo.Rack, 1);
-            DefinirNivel(e, Catalogo.Servidor1U, 2);  // +0.5 kW = 1.7 kW > 1.5 kW
+            DefinirNivel(e, Catalogo.Servidor1U, 2);  // +0.8 kW = 2.0 kW > 1.5 kW
             DefinirNivel(e, Catalogo.ArCondicionado, 3); // sem calor, para isolar a energia
             Assert.IsTrue(e.Sobrecarga);
-            Assert.AreEqual(1.5 / 1.7, e.FatorEnergia, 1e-9);
-            Assert.AreEqual((3 * 1 + 2 * 6) * 1.5 / 1.7, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(1.5 / 2.0, e.FatorEnergia, 1e-9);
+            Assert.AreEqual((3 * 1 + 2 * 9) * 1.5 / 2.0, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -145,9 +145,9 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             DefinirNivel(e, Catalogo.Servidor, 2);
             DefinirNivel(e, Catalogo.Rack, 1);
-            DefinirNivel(e, Catalogo.Servidor1U, 4);  // 2.2 kW -> 22 + 11 = 33 graus
+            DefinirNivel(e, Catalogo.Servidor1U, 4);  // 2.8 kW -> 22 + 14 = 36 graus
             DefinirNivel(e, Catalogo.NoBreak, 1);
-            Assert.AreEqual(33, e.Temperatura, 1e-9);
+            Assert.AreEqual(36, e.Temperatura, 1e-9);
             Assert.IsTrue(e.Quente);
             Assert.AreEqual(0.6, e.FatorTemperatura, 1e-9);
             DefinirNivel(e, Catalogo.ArCondicionado, 1);

@@ -81,7 +81,7 @@ namespace IdleDataCenter
                 if (x == 0 || x == w - 1 || y == h - 1) c = CorContorno;
                 px[y * w + x] = c;
             }
-            Carimbar(px, w, Arte.Quadrinho, 48, 26);
+            Carimbar(px, w, Arte.Quadrinho, 80, 34);
             return Finalizar(tex, px, Vector2.zero);
         }
 
@@ -104,26 +104,7 @@ namespace IdleDataCenter
                 if (x == 0 || x == w - 1 || y == h - 1) c = CorContorno;
                 px[y * w + x] = c;
             }
-            Carimbar(px, w, Arte.Quadrinho, 48, 26);
-            return Finalizar(tex, px, Vector2.zero);
-        }
-
-        /// <summary>Estrutura de rack 42U (24×36) com 8 vagas de 3 pixels, vista de frente.</summary>
-        public static Sprite Rack()
-        {
-            const int w = 24, h = 36;
-            var tex = NovaTextura(w, h);
-            var px = new Color32[w * h];
-            Color32 moldura = Hex("3a3d52"), fundo = Hex("1d1f33"), furo = Hex("565a74");
-            for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            {
-                Color32 c = x == 0 || x == w - 1 || y == 0 || y == h - 1 ? CorContorno
-                          : x == 1 || x == w - 2 || y == 1 || y == h - 2 ? moldura
-                          : fundo;
-                if ((x == 2 || x == w - 3) && y > 1 && y < h - 2 && y % 2 == 0) c = furo; // trilhos
-                px[y * w + x] = c;
-            }
+            Carimbar(px, w, Arte.Quadrinho, 80, 34);
             return Finalizar(tex, px, Vector2.zero);
         }
 

@@ -81,6 +81,14 @@ namespace IdleDataCenter
                 if (dx * dx + dy * dy <= raio * raio) Pixel(cx + dx, cy + dy, c);
         }
 
+        /// <summary>Copia uma imagem (pixels de cima para baixo, w × h) para a posição (x, y), respeitando a transparência.</summary>
+        public void Imagem(Color32[] pixels, int w, int h, int x, int y)
+        {
+            for (int j = 0; j < h; j++)
+            for (int i = 0; i < w; i++)
+                Pixel(x + i, y + j, pixels[j * w + i]);
+        }
+
         /// <summary>Sprite em mapa de caracteres (cores de PixelArt.Paleta; '.' é transparente).</summary>
         public void Mapa(string[] linhas, int x, int y, bool espelhar = false)
         {

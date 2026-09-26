@@ -52,8 +52,8 @@ namespace IdleDataCenter.Simulacao
         public const double ReceitaBaseServidor = 1;   // servidor torre sem melhorias (R$/s)
         public const double BonusSsd = 1.0;            // +100%
         public const double BonusVentoinha = 0.5;      // +50% por ventoinha
-        public const double ReceitaServidor1U = 6;     // servidor de rack (R$/s)
-        public const int VagasNoRack = 8;
+        public const double ReceitaServidor1U = 9;     // servidor de rack (R$/s)
+        public const int VagasNoRack = 5;              // o rack da arte tem 5 unidades
 
         /// <summary>Clique no servidor vale isto + ValorCliqueReceita × receita por segundo.</summary>
         public const double ValorCliqueBase = 2;
@@ -61,7 +61,7 @@ namespace IdleDataCenter.Simulacao
 
         // --- Energia (kW) ---
         public const double ConsumoServidorTorre = 0.4;
-        public const double ConsumoServidor1U = 0.25;
+        public const double ConsumoServidor1U = 0.4;
         public const double CapacidadeBaseKw = 1.5;
         public const double CapacidadePorNoBreak = 1.5;
 
@@ -104,8 +104,8 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Ventoinha, Nome = "Ventoinha", Efeito = "Torres +50%", Cargo = 0, NivelMaximo = 3, CustoBase = 250, FatorCusto = 2.2 },
             new MelhoriaDef { Id = Servidor, Nome = "Servidor", Efeito = "+1 torre", Cargo = 0, NivelMaximo = 2, CustoBase = 1000, FatorCusto = 3 },
 
-            new MelhoriaDef { Id = Rack, Nome = "Rack 42U", Efeito = "8 vagas 1U", Cargo = 1, NivelMaximo = 1, CustoBase = 8000, FatorCusto = 1 },
-            new MelhoriaDef { Id = Servidor1U, Nome = "Servidor 1U", Efeito = "+6/s, 0.25 kW", Cargo = 1, Requisito = Rack, NivelMaximo = VagasNoRack, CustoBase = 4000, FatorCusto = 1.4 },
+            new MelhoriaDef { Id = Rack, Nome = "Rack 42U", Efeito = "5 vagas 1U", Cargo = 1, NivelMaximo = 1, CustoBase = 8000, FatorCusto = 1 },
+            new MelhoriaDef { Id = Servidor1U, Nome = "Servidor 1U", Efeito = "+9/s, 0.4 kW", Cargo = 1, Requisito = Rack, NivelMaximo = VagasNoRack, CustoBase = 7000, FatorCusto = 1.5 },
             new MelhoriaDef { Id = NoBreak, Nome = "No-break", Efeito = "+1.5 kW", Cargo = 1, NivelMaximo = 3, CustoBase = 6000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = ArCondicionado, Nome = "Ar-cond.", Efeito = "-6 graus", Cargo = 1, NivelMaximo = 3, CustoBase = 5000, FatorCusto = 2.5 },
         };

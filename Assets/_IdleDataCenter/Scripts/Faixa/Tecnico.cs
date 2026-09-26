@@ -1,46 +1,75 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace IdleDataCenter
 {
     /// <summary>
-    /// O personagem. No dia a dia passeia, digita na mesa ou "confere" o servidor mais próximo.
-    /// Quando algo trava, corre até lá e fica consertando (solta faíscas) até o servidor voltar:
-    /// sozinho ele leva 30 s, e um clique seu no servidor resolve na hora.
-    /// Clicar nele dá um pulinho com coração. O uniforme muda com o cargo.
+    /// O personagem (arte do PixelLab). No dia a dia passeia, digita na mesa ou "confere" o servidor
+    /// mais próximo. Quando algo trava, corre até lá e fica consertando (solta faíscas) até o servidor
+    /// voltar: sozinho ele leva 30 s, e um clique seu no servidor resolve na hora.
+    /// Clicar nele dá um pulinho com coração. No cargo de Sysadmin a camiseta vira verde-água.
     /// </summary>
     public class Tecnico : MonoBehaviour, IClicavel
     {
         enum Estado { Parado, Andando, Consertando, Digitando, Emergencia }
 
-        const float Velocidade = 12f;       // pixels por segundo
-        const float VelocidadeCorrendo = 26f;
-        const float MinX = 44f;             // em frente à mesa (não passa dela)
+        class Quadros { public Sprite Parado; public Sprite[] Andar, Digitar; }
+
+        const float Velocidade = 16f;          // pixels por segundo
+        const float VelocidadeCorrendo = 34f;
+        const float MatizSysadmin = 0.46f;     // verde-água
+
+        static readonly Dictionary<int, Quadros> cache = new Dictionary<int, Quadros>();
 
         Faixa faixa;
         Cenario cenario;
-        Arte.Visual visual;
+        Quadros quadros;
         SpriteRenderer sr;
         Destaque destaque;
         Estado estado;
         float x, alvoX;
-        float tempoEstado, proximaPiscada, proximaFaisca, pulo;
+        float tempoEstado, proximaFaisca, pulo;
         bool indoParaMesa, indoConferir;
 
         public int Ordem => 5;
 
+        float MinX => cenario.PosicaoMesa;
         float MaxX => cenario.LimiteTecnico;
+
+        static Quadros Carregar(int cargo)
+        {
+            if (cache.TryGetValue(cargo, out var q)) return q;
+            Sprite S(string nome)
+            {
+                var t = ArteGerada.Textura(nome);
+                if (cargo >= 1) t = ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
+                return ArteGerada.Personagem(t, nome + "#" + cargo);
+            }
+            return cache[cargo] = new Quadros
+            {
+                Parado = S("tecnico_lado"),
+                Andar = new[] { S("tecnico_andar_0"), S("tecnico_andar_1"), S("tecnico_andar_2"), S("tecnico_andar_3") },
+                Digitar = new[] { S("tecnico_digitando_0"), S("tecnico_digitando_1") },
+            };
+        }
 
         public void Iniciar(Faixa faixa, Cenario cenario, int cargo)
         {
             this.faixa = faixa;
             this.cenario = cenario;
-            visual = Arte.Tecnico(cargo);
+            quadros = Carregar(cargo);
             transform.SetParent(cenario.transform, false);
             sr = gameObject.AddComponent<SpriteRenderer>();
-            sr.sprite = visual.Parado;
+            sr.sprite = quadros.Parado;
             sr.sortingOrder = Ordem;
-            gameObject.AddComponent<BoxCollider2D>();
+
+            // área de clique só na silhueta (o quadro tem muita borda transparente)
+            var area = ArteGerada.AreaOpaca(quadros.Parado.texture);
+            var col = gameObject.AddComponent<BoxCollider2D>();
+            col.size = new Vector2(area.width, area.height);
+            col.offset = new Vector2(area.center.x - quadros.Parado.pivot.x, area.center.y - quadros.Parado.pivot.y);
             destaque = Destaque.Para(sr);
+
             x = Mathf.Round((MinX + MaxX) / 2f);
             Parar();
         }
@@ -101,7 +130,7 @@ namespace IdleDataCenter
 
             AtualizarSprite(!Mathf.Approximately(xAntes, x));
             pulo = Mathf.Max(0f, pulo - dt);
-            float altura = pulo > 0f ? Mathf.Round(Mathf.Sin(pulo / 0.4f * Mathf.PI) * 4f) : 0f;
+            float altura = pulo > 0f ? Mathf.Round(Mathf.Sin(pulo / 0.4f * Mathf.PI) * 5f) : 0f;
             transform.localPosition = new Vector3(Mathf.Round(x), Cenario.AlturaPiso + altura, 0f);
         }
 
@@ -109,7 +138,7 @@ namespace IdleDataCenter
         {
             if (Time.time < proximaFaisca) return;
             proximaFaisca = Time.time + 0.35f;
-            faixa.Efeito(cenario.transform, Arte.Faisca, topo + new Vector2(Random.Range(-7, 5), Random.Range(-12, -2)), 0.3f, 2f);
+            faixa.Efeito(cenario.transform, Arte.Faisca, topo + new Vector2(Random.Range(-8, 6), Random.Range(-14, -2)), 0.3f, 2f);
         }
 
         void EscolherDestino()
@@ -117,7 +146,7 @@ namespace IdleDataCenter
             float sorteio = Random.value;
             indoConferir = sorteio < 0.3f;
             indoParaMesa = sorteio >= 0.3f && sorteio < 0.6f;
-            alvoX = indoConferir ? MaxX : indoParaMesa ? MinX : Mathf.Round(Random.Range(MinX + 6f, MaxX));
+            alvoX = indoConferir ? MaxX : indoParaMesa ? MinX : Mathf.Round(Random.Range(MinX + 8f, MaxX));
             estado = Estado.Andando;
             sr.flipX = alvoX < x;
         }
@@ -134,26 +163,24 @@ namespace IdleDataCenter
         {
             if (movendo)
             {
-                float passo = estado == Estado.Emergencia ? 0.1f : 0.2f; // correndo, as pernas vão mais rápido
-                sr.sprite = Mathf.FloorToInt(Time.time / passo) % 2 == 0 ? visual.Passo : visual.Parado;
+                float passo = estado == Estado.Emergencia ? 0.09f : 0.16f; // correndo, as pernas vão mais rápido
+                sr.sprite = quadros.Andar[Mathf.FloorToInt(Time.time / passo) % quadros.Andar.Length];
                 return;
             }
             if (estado == Estado.Digitando || estado == Estado.Emergencia)
             {
-                float ritmo = estado == Estado.Emergencia ? 0.1f : 0.15f;
-                sr.sprite = Mathf.FloorToInt(Time.time / ritmo) % 2 == 0 ? visual.DigitandoA : visual.DigitandoB;
+                float ritmo = estado == Estado.Emergencia ? 0.1f : 0.18f;
+                sr.sprite = quadros.Digitar[Mathf.FloorToInt(Time.time / ritmo) % quadros.Digitar.Length];
                 return;
             }
-            // Piscada de vez em quando
-            if (Time.time >= proximaPiscada) proximaPiscada = Time.time + Random.Range(2f, 5f);
-            sr.sprite = proximaPiscada - Time.time < 0.12f ? visual.Piscando : visual.Parado;
+            sr.sprite = quadros.Parado;
         }
 
         public void Comemorar()
         {
             if (pulo > 0f) return;
             pulo = 0.4f;
-            faixa.Efeito(cenario.transform, Arte.Coracao, transform.localPosition + new Vector3(-2f, 17f, 0f), 0.9f, 6f);
+            faixa.Efeito(cenario.transform, Arte.Coracao, transform.localPosition + new Vector3(-2f, 38f, 0f), 0.9f, 6f);
         }
 
         public void Clicar() => Comemorar();

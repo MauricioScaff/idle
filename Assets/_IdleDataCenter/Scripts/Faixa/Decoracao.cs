@@ -2,52 +2,38 @@ using UnityEngine;
 
 namespace IdleDataCenter
 {
-    /// <summary>Troca os quadros de um sprite num ritmo fixo (ventilador, etc.).</summary>
-    public class Animacao : MonoBehaviour
-    {
-        SpriteRenderer sr;
-        Sprite[] quadros;
-        float fps;
-
-        public static void Aplicar(SpriteRenderer sr, float fps, params Sprite[] quadros)
-        {
-            var a = sr.gameObject.AddComponent<Animacao>();
-            a.sr = sr;
-            a.fps = fps;
-            a.quadros = quadros;
-        }
-
-        void Update() => sr.sprite = quadros[Mathf.FloorToInt(Time.time * fps) % quadros.Length];
-    }
-
     /// <summary>
     /// Tela verde de terminal do monitor CRT (8×5 pixels). Quando o técnico digita, as linhas
     /// vão crescendo e rolando; parado, só pisca o cursor.
     /// </summary>
     public class TelaTerminal : MonoBehaviour
     {
-        const int W = 8, H = 5;
-        static readonly Color32 Fundo = PixelArt.Hex("2a2336"), Letra = PixelArt.Hex("5cff8a"), LetraFraca = PixelArt.Hex("2f8a4f");
+        static readonly Color32 Letra = PixelArt.Hex("5cff8a"), LetraFraca = PixelArt.Hex("2f8a4f");
 
         public bool Digitando { get; set; }
 
+        int W, H;
+        Color32 Fundo;
         Texture2D textura;
-        readonly int[] linhas = new int[H];   // comprimento de cada linha (a de baixo é a atual)
+        int[] linhas;   // comprimento de cada linha (a de baixo é a atual)
         int alvoLinha;
         float proximo;
 
-        public static TelaTerminal Criar(Transform monitor)
+        /// <summary>Tela de w×h pixels na posição (canto de baixo à esquerda) dentro do objeto pai.</summary>
+        public static TelaTerminal Criar(Transform pai, Vector2 posicao, int w, int h, Color32 fundo, int ordem)
         {
             var go = new GameObject("Tela");
-            go.transform.SetParent(monitor, false);
-            go.transform.localPosition = new Vector3(3, 4, 0);
+            go.transform.SetParent(pai, false);
+            go.transform.localPosition = posicao;
             var t = go.AddComponent<TelaTerminal>();
-            t.textura = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
+            t.W = w; t.H = h; t.Fundo = fundo;
+            t.linhas = new int[h];
+            t.textura = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
             var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = Sprite.Create(t.textura, new Rect(0, 0, W, H), Vector2.zero, 1f, 0, SpriteMeshType.FullRect);
-            sr.sortingOrder = monitor.GetComponent<SpriteRenderer>().sortingOrder + 1;
-            for (int i = 0; i < H - 1; i++) t.linhas[i] = Random.Range(2, W);
-            t.alvoLinha = Random.Range(3, W + 1);
+            sr.sprite = Sprite.Create(t.textura, new Rect(0, 0, w, h), Vector2.zero, 1f, 0, SpriteMeshType.FullRect);
+            sr.sortingOrder = ordem;
+            for (int i = 0; i < h - 1; i++) t.linhas[i] = Random.Range(2, w);
+            t.alvoLinha = Random.Range(3, w + 1);
             t.Desenhar(true);
             return t;
         }

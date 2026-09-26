@@ -1,34 +1,34 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace IdleDataCenter
 {
     /// <summary>
-    /// Servidor torre: LED de energia aceso, LED de atividade piscando e dá um pulinho ao ser clicado.
-    /// As melhorias aparecem nele (SSD deixa o LED azul, ventoinhas giram na frente) e, quando trava,
-    /// os LEDs ficam vermelhos e um alerta flutua em cima até alguém reiniciar.
+    /// Servidor torre (arte do PixelLab). Os LEDs da própria imagem piscam por cima; o SSD deixa
+    /// a atividade azul e agitada; as ventoinhas aparecem na lateral; travado, tudo fica vermelho
+    /// e um alerta flutua em cima até alguém reiniciar.
     /// </summary>
     public class ServidorVelho : MonoBehaviour, IClicavel
     {
         static readonly Color Verde = PixelArt.Hex("5cff8a"), Ambar = PixelArt.Hex("ffbf3f"),
-                              Azul = PixelArt.Hex("5cc8ff"), Apagado = PixelArt.Hex("4a3f30"), Vermelho = PixelArt.Hex("ff3b4e");
+                              Azul = PixelArt.Hex("5cc8ff"), Apagado = PixelArt.Hex("3a3428"), Vermelho = PixelArt.Hex("ff3b4e");
 
-        // Onde cada ventoinha aparece, em pixels a partir do pé do servidor (o sprite vai de x = -6 a 5)
-        static readonly Vector2[] PosicoesVentoinhas = { new Vector2(-5, 6), new Vector2(-1, 6), new Vector2(-3, 10) };
+        // Ventoinhas na lateral do gabinete (a partir do pé, relativo ao centro)
+        static readonly Vector2[] PosicoesVentoinhas = { new Vector2(-9, 7), new Vector2(-9, 12), new Vector2(-9, 17) };
 
         Faixa faixa;
-        SpriteRenderer ledEnergia, ledAtividade, alerta;
+        readonly List<SpriteRenderer> leds = new List<SpriteRenderer>();
+        SpriteRenderer alerta;
         SpriteRenderer[] ventoinhas;
         Destaque destaque;
         Vector3 posicaoBase;
-        float proximoPisca, pulo;
+        float altura, proximoPisca, pulo;
         bool ssd, travado;
 
         public int Indice { get; private set; }
         public int Ordem => 3;
         public float X => posicaoBase.x;
-
-        /// <summary>Topo do gabinete, em coordenadas do cenário.</summary>
-        public Vector2 Topo => posicaoBase + new Vector3(0f, 18f, 0f);
+        public Vector2 Topo => posicaoBase + new Vector3(0f, altura, 0f);
 
         public void Iniciar(Faixa faixa, Transform pai, Vector2 posicaoLocal, int indice)
         {
@@ -38,39 +38,35 @@ namespace IdleDataCenter
             transform.localPosition = posicaoLocal;
             posicaoBase = transform.localPosition;
             var sr = gameObject.AddComponent<SpriteRenderer>();
-            sr.sprite = Arte.Servidor;
+            sr.sprite = ArteGerada.Objeto("torre");
             sr.sortingOrder = Ordem;
+            altura = sr.sprite.rect.height;
             gameObject.AddComponent<BoxCollider2D>();
             destaque = Destaque.Para(sr);
 
-            // Os LEDs ficam nos "buracos" do sprite (x = 3 e 5 a partir da borda esquerda, y = 3)
-            ledEnergia = NovoFilho("LED", PixelArt.Pixel, new Vector2(-3f, 3f));
-            ledEnergia.color = Verde;
-            ledAtividade = NovoFilho("LED", PixelArt.Pixel, new Vector2(-1f, 3f));
+            foreach (var p in ArteGerada.Leds(sr.sprite)) leds.Add(Filho("LED", PixelArt.Pixel, p, Ordem + 1));
 
             ventoinhas = new SpriteRenderer[PosicoesVentoinhas.Length];
             for (int i = 0; i < ventoinhas.Length; i++)
             {
-                ventoinhas[i] = NovoFilho("Ventoinha", Arte.VentoinhaA, PosicoesVentoinhas[i]);
+                ventoinhas[i] = Filho("Ventoinha", Arte.VentoinhaA, PosicoesVentoinhas[i], Ordem + 1);
                 ventoinhas[i].enabled = false;
             }
 
-            alerta = NovoFilho("Alerta", Arte.Alerta, new Vector2(-2f, 29f)); // acima da caneca
-            alerta.sortingOrder = 12;
+            alerta = Filho("Alerta", Arte.Alerta, new Vector2(-2f, altura + 7), 12); // acima da caneca
             alerta.enabled = false;
         }
 
-        SpriteRenderer NovoFilho(string nome, Sprite sprite, Vector2 pos)
+        SpriteRenderer Filho(string nome, Sprite sprite, Vector2 pos, int ordem)
         {
-            var sr = new GameObject(nome).AddComponent<SpriteRenderer>();
-            sr.transform.SetParent(transform, false);
-            sr.transform.localPosition = pos;
-            sr.sprite = sprite;
-            sr.sortingOrder = Ordem + 1;
-            return sr;
+            var s = new GameObject(nome).AddComponent<SpriteRenderer>();
+            s.transform.SetParent(transform, false);
+            s.transform.localPosition = pos;
+            s.sprite = sprite;
+            s.sortingOrder = ordem;
+            return s;
         }
 
-        /// <summary>Mostra as melhorias compradas.</summary>
         public void AtualizarVisual(bool temSsd, int quantidadeVentoinhas)
         {
             ssd = temSsd;
@@ -82,27 +78,23 @@ namespace IdleDataCenter
             if (sim == travado) return;
             travado = sim;
             alerta.enabled = sim;
-            if (!sim) ledEnergia.color = Verde;
         }
 
         void Update()
         {
             if (travado)
             {
-                // pisca vermelho, ventoinhas param e o alerta sobe e desce
                 bool aceso = Mathf.FloorToInt(Time.time / 0.25f) % 2 == 0;
-                ledEnergia.color = aceso ? Vermelho : Apagado;
-                ledAtividade.color = Apagado;
-                alerta.transform.localPosition = new Vector3(-2f, 29f + (aceso ? 1f : 0f), 0f);
+                foreach (var l in leds) l.color = aceso ? Vermelho : Apagado;
+                alerta.transform.localPosition = new Vector3(-2f, altura + 7 + (aceso ? 1f : 0f), 0f);
             }
             else if (Time.time >= proximoPisca)
             {
-                // Atividade de disco: rajadas irregulares (com SSD, azul e bem mais rápido)
-                Color cor = ssd ? Azul : Ambar;
-                bool ligar = ledAtividade.color != cor && Random.value < (ssd ? 0.9f : 0.7f);
-                ledAtividade.color = ligar ? cor : Apagado;
-                float fator = ssd ? 0.4f : 1f;
-                proximoPisca = Time.time + fator * (ligar ? Random.Range(0.04f, 0.12f) : Random.Range(0.05f, 0.6f));
+                // o primeiro LED é o de energia (sempre verde); os outros piscam com a atividade de disco
+                Color atividade = ssd ? Azul : Ambar;
+                for (int i = 0; i < leds.Count; i++)
+                    leds[i].color = i == 0 ? Verde : Random.value < (ssd ? 0.7f : 0.45f) ? atividade : Apagado;
+                proximoPisca = Time.time + (ssd ? Random.Range(0.03f, 0.1f) : Random.Range(0.06f, 0.4f));
             }
 
             for (int i = 0; i < ventoinhas.Length; i++)

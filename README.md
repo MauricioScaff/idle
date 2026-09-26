@@ -3,7 +3,7 @@
 Jogo idle para Windows que vive numa faixa acima da barra de tarefas. Você começa como técnico de TI com um servidor velho num armário e sobe na carreira até comandar datacenters pelo mundo.
 
 - **Engine:** Unity 6.6 (6000.6.3f1), só Windows
-- **Arte:** pixel art fofa, gerada por código enquanto não há arte final (`Scripts/Visual/Arte.cs`)
+- **Arte:** pixel art fofa. Personagens, equipamentos e a cena do painel vêm do PixelLab (`Assets/_IdleDataCenter/Resources/Arte/`, originais em `Arte/PixelLab/`); ícones e efeitos pequenos são desenhados em código (`Scripts/Visual/Arte.cs`)
 
 ## O que já dá pra jogar
 

@@ -28,17 +28,6 @@ namespace IdleDataCenter
             [1] = new[] { "O armário vira uma salinha.", "Rack 42U com servidores 1U.", "Energia e temperatura", "passam a importar." },
         };
 
-        static readonly string[] Gato =
-        {
-            "..k.k.............",
-            ".kyky......kk.....",
-            "kyyyykkkkkkyyk....",
-            "kyekeyyyyyyyyyk...",
-            "kyyyyyyvyyvyyyk...",
-            ".kyyyyvyyvyyyyk...",
-            "..kkkkkkkkkkkk....",
-        };
-
         Faixa faixa;
         Economia economia;
         PixelCanvas tela;
@@ -90,8 +79,12 @@ namespace IdleDataCenter
 
         // ---------------- Entrada ----------------
 
-        Vector2Int ParaLocal(Vector2 mundo) =>
-            new Vector2Int(Mathf.FloorToInt(mundo.x - transform.position.x), Altura - 1 - Mathf.FloorToInt(mundo.y - transform.position.y));
+        // o painel pode estar ampliado (escala própria), então converte do mundo para pixels do painel
+        Vector2Int ParaLocal(Vector2 mundo)
+        {
+            float s = transform.localScale.x;
+            return new Vector2Int(Mathf.FloorToInt((mundo.x - transform.position.x) / s), Altura - 1 - Mathf.FloorToInt((mundo.y - transform.position.y) / s));
+        }
 
         public void DefinirCursor(Vector2 mundo) => cursor = ParaLocal(mundo);
 
@@ -406,198 +399,112 @@ namespace IdleDataCenter
                 "#1b1a2e", "#ffd65c", faixa.Promover, economia.PodePromover, 2);
         }
 
-        // ---------------- Cena da Era 1: homelab à noite ----------------
+        // ---------------- Cena da era (arte do PixelLab) com animações por cima ----------------
+
+        Color32[] cenaPx;
+        int cenaW, cenaH;
+        readonly List<Vector2Int> ledsCena = new List<Vector2Int>(), luzesCena = new List<Vector2Int>();
+        RectInt telaCrt;
+        Color32 fundoCrt;
+        Vector2Int cabecaDev, gato;
+
+        /// <summary>
+        /// Carrega a cena e acha, pela cor, onde animar: o texto verde do CRT (esquerda), os LEDs do rack
+        /// (direita) e as janelas acesas da cidade (janela do meio). Assim a imagem pode ser trocada sem mexer no código.
+        /// </summary>
+        void CarregarCena()
+        {
+            var t = ArteGerada.Textura("cena_homelab");
+            cenaW = t.width; cenaH = t.height;
+            cenaPx = ArteGerada.PixelsDeCimaParaBaixo(t);
+            int tx0 = cenaW, ty0 = cenaH, tx1 = -1, ty1 = -1, peleY = cenaH, peleX = 0, peleN = 0;
+            for (int y = 0; y < cenaH; y++)
+            for (int x = 0; x < cenaW; x++)
+            {
+                var c = cenaPx[y * cenaW + x];
+                int max = Mathf.Max(c.r, Mathf.Max(c.g, c.b)), min = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
+                if (x < cenaW * 0.35f && c.g > 140 && c.r < 120 && c.b < 140)
+                { tx0 = Mathf.Min(tx0, x); ty0 = Mathf.Min(ty0, y); tx1 = Mathf.Max(tx1, x); ty1 = Mathf.Max(ty1, y); }
+                else if (x > cenaW * 0.72f && y > cenaH * 0.25f && max - min > 110 && (c.g > 170 || c.b > 200))
+                    ledsCena.Add(new Vector2Int(x, y));
+                else if (x > cenaW * 0.39f && x < cenaW * 0.69f && y < cenaH * 0.47f && ((c.r > 150 && c.g > 130 && c.b < 110) || (c.g > 150 && c.r < 120)))
+                    luzesCena.Add(new Vector2Int(x, y));
+                if (x > cenaW * 0.33f && x < cenaW * 0.45f && c.r > 200 && c.g > 140 && c.g < 200 && c.b > 100 && c.b < 170)
+                { peleY = Mathf.Min(peleY, y); peleX += x; peleN++; }
+            }
+            telaCrt = tx1 < 0 ? new RectInt(0, 0, 0, 0) : new RectInt(tx0 - 1, ty0 - 1, tx1 - tx0 + 3, ty1 - ty0 + 3);
+            var contagem = new Dictionary<Color32, int>();
+            for (int y = telaCrt.yMin; y < telaCrt.yMax; y++)
+            for (int x = telaCrt.xMin; x < telaCrt.xMax; x++)
+            {
+                var c = cenaPx[y * cenaW + x];
+                if (c.g > 140 || c.r + c.g + c.b > 200) continue;
+                contagem[c] = contagem.TryGetValue(c, out int n) ? n + 1 : 1;
+            }
+            fundoCrt = contagem.Count > 0 ? contagem.OrderByDescending(k => k.Value).First().Key : C("#0b1a14");
+            cabecaDev = new Vector2Int(peleN > 0 ? peleX / peleN : cenaW / 2, Mathf.Max(2, peleY - 22));
+            gato = new Vector2Int(Mathf.RoundToInt(cenaW * 0.9f), 12);
+        }
+
+        static int Sorteio(int a, int b) => Mathf.Abs(a * 7919 + b * 104729) % 11;
 
         void Cena(int x0, int y0)
         {
             const int SW = 344, SH = 150;
+            if (cenaPx == null) CarregarCena();
             bool alerta = economia.Travamentos.Count > 0;
             tela.Recortar(x0, y0, SW, SH);
+            tela.Imagem(cenaPx, cenaW, cenaH, x0, y0);
 
-            // parede, piso e tapete
-            R(x0, y0, SW, SH, "#2b2238");
-            for (int x = 0; x < SW; x += 12) R(x0 + x, y0, 1, 128, "#30273f");
-            R(x0, y0 + 127, SW, 2, "#1f1a2a");
-            R(x0, y0 + 129, SW, 21, "#4a3530");
-            for (int y = 0; y < 21; y += 6) R(x0, y0 + 129 + y, SW, 1, "#3d2b27");
-            for (int i = 0; i < 12; i++) R(x0 + (i * 41) % SW, y0 + 129 + (i % 3) * 6, 1, 6, "#3d2b27");
-            R(x0 + 30, y0 + 138, 110, 9, "#7a3b44"); R(x0 + 32, y0 + 140, 106, 5, "#8f4a52");
-            for (int x = 36; x < 136; x += 8) R(x0 + x, y0 + 142, 4, 1, "#c07a5a");
+            // luzes da cidade: algumas janelas apagam e acendem devagar
+            int bloco = Mathf.FloorToInt(t / 3f);
+            for (int i = 0; i < luzesCena.Count; i++)
+                if (Sorteio(i, bloco) == 0)
+                {
+                    var p = luzesCena[i];
+                    var c = cenaPx[p.y * cenaW + p.x];
+                    tela.Pixel(x0 + p.x, y0 + p.y, new Color32((byte)(c.r * 0.3f), (byte)(c.g * 0.3f), (byte)(c.b * 0.4f), 255));
+                }
 
-            // janela com a cidade à noite
-            int jx = x0 + 8, jy = y0 + 10;
-            R(jx, jy, 70, 64, "#1b1a2e");
-            string[] ceu = { "#10163a", "#141c45", "#19224f", "#1e2859", "#232e63" };
-            for (int i = 0; i < ceu.Length; i++) R(jx + 3, jy + 3 + i * 12, 64, 12, ceu[i]);
-            for (int i = 0; i < 26; i++)
-                if ((Mathf.FloorToInt(t * 2) + i) % 5 != 0) P(jx + 3 + (i * 37) % 64, jy + 3 + (i * 23) % 26, "#c9d4ff");
-            for (int dy = -5; dy <= 5; dy++)
-            for (int dx = -5; dx <= 5; dx++)
-                if (dx * dx + dy * dy <= 25 && (dx - 3) * (dx - 3) + (dy + 1) * (dy + 1) > 18) P(jx + 54 + dx, jy + 14 + dy, "#fdf6e3");
-            int[] px0 = { 0, 9, 17, 24, 33, 41, 50, 57 }, alt = { 22, 30, 18, 34, 26, 38, 24, 30 };
-            for (int i = 0; i < px0.Length; i++) R(jx + 3 + px0[i], jy + 61 - alt[i], 8, alt[i], "#0c0f24");
-            for (int i = 0; i < 40; i++)
-                if ((i * 7 + Mathf.FloorToInt(t / 3)) % 4 != 0) P(jx + 4 + (i * 29) % 62, jy + 48 + (i * 17) % 14, i % 6 != 0 ? "#ffd65c" : "#ff9f5c");
-            R(jx + 34, jy + 3, 2, 58, "#1b1a2e"); R(jx + 3, jy + 31, 64, 2, "#1b1a2e");
-            R(jx - 2, jy + 64, 74, 3, "#5a4a60");
-            tela.Mapa(Arte.MapaPlanta, jx + 4, jy + 55);
+            // LEDs do rack piscando; com incidente, uma parte fica vermelha
+            bool piscar = Mathf.FloorToInt(t * 4) % 2 == 0;
+            for (int i = 0; i < ledsCena.Count; i++)
+            {
+                var p = ledsCena[i];
+                var c = cenaPx[p.y * cenaW + p.x];
+                Color32 cor = c;
+                if (alerta && i % 3 == 0) cor = piscar ? C("#ff3b4e") : C("#3a1018");
+                else if (Mathf.FloorToInt(t * 6 + i * 1.7f) % 5 <= 1) cor = new Color32((byte)(c.r * 0.25f), (byte)(c.g * 0.25f), (byte)(c.b * 0.25f), 255);
+                tela.Pixel(x0 + p.x, y0 + p.y, cor);
+            }
 
-            // pôster
-            int px = x0 + 90, py = y0 + 12;
-            R(px, py, 56, 44, "#1b1a2e"); R(px + 2, py + 2, 52, 40, "#23305e");
-            string[] poster = { "Funciona", "na minha", "máquina", ":)" };
-            for (int i = 0; i < poster.Length; i++)
-                T(poster[i], px + 28 - L(poster[i]) / 2, py + 7 + i * 8, i == 3 ? "#ffd65c" : "#c9d4ff", false);
+            // terminal do CRT: linhas sendo digitadas (vermelhas quando algo trava)
+            if (telaCrt.width > 0)
+            {
+                tela.Ret(x0 + telaCrt.x, y0 + telaCrt.y, telaCrt.width, telaCrt.height, fundoCrt);
+                int linhas = Mathf.Max(1, (telaCrt.height - 2) / 3);
+                int passo = Mathf.FloorToInt(t * (alerta ? 14 : 8));
+                for (int l = 0; l < linhas; l++)
+                {
+                    int tamanho = 3 + Sorteio(l, passo / 20) % Mathf.Max(1, telaCrt.width - 5);
+                    int visivel = l == linhas - 1 ? Mathf.Min(tamanho, passo % 20) : tamanho;
+                    string cor = alerta ? (l == linhas - 1 ? "#ff3b4e" : "#a83240") : (l == linhas - 1 ? "#5cff8a" : "#3fbf6a");
+                    tela.Ret(x0 + telaCrt.x + 2, y0 + telaCrt.y + 2 + l * 3, visivel, 1, C(cor));
+                }
+                if (Mathf.FloorToInt(t * 2) % 2 == 1)
+                    tela.Ret(x0 + telaCrt.x + 2, y0 + telaCrt.yMax - 3, 2, 1, C(alerta ? "#ff3b4e" : "#5cff8a"));
+            }
 
-            // lâmpada pendurada com brilho
-            int lx = x0 + 176;
-            R(lx, y0, 1, 14, "#1b1a2e"); R(lx - 1, y0 + 14, 3, 2, "#3a3b4a"); R(lx - 1, y0 + 16, 3, 3, "#ffe9a8");
-            byte brilho = (byte)((0.10f + 0.03f * Mathf.Sin(t * 3)) * 255);
-            for (int r = 26; r > 4; r -= 7) tela.Circulo(lx, y0 + 18, r, new Color32(255, 214, 120, brilho));
+            // o dev se assusta quando algo trava
+            if (alerta && piscar) T("!", x0 + cabecaDev.x, y0 + cabecaDev.y, "#ff3b4e", true, 2);
 
-            // prateleira: gato dormindo, planta e livros
-            int ex = x0 + 196, ey = y0 + 30;
-            R(ex, ey, 66, 3, "#7d5238"); R(ex, ey, 66, 1, "#b07a52");
-            tela.Mapa(Gato, ex + 4, ey - 7);
-            int rabo = Mathf.FloorToInt(t * 1.5f) % 2;
-            R(ex + 18, ey - 3 - rabo, 1, 2, "#1b1a2e"); R(ex + 19, ey - 4 - rabo, 2, 1, "#1b1a2e");
+            // o gato sonhando
             float zz = (t * 0.6f) % 1f;
-            tela.Texto("Z", ex + 12 + Mathf.RoundToInt(zz * 4), ey - 12 - Mathf.RoundToInt(zz * 8), new Color32(201, 212, 255, (byte)((1 - zz) * 255)), false);
-            tela.Mapa(Arte.MapaPlanta, ex + 42, ey - 9);
-            R(ex + 54, ey - 7, 2, 7, "#e0805a"); R(ex + 57, ey - 8, 2, 8, "#5aa9ff"); R(ex + 60, ey - 6, 2, 6, "#6fd36f");
-            PostIt("Mais", "racks", x0 + 196, y0 + 40);
-            PostIt("Dominar", "o mundo", x0 + 232, y0 + 40);
-
-            // mesa com gavetas
-            R(x0 + 58, y0 + 96, 144, 4, "#8a5a3c"); R(x0 + 58, y0 + 96, 144, 1, "#b07a52");
-            R(x0 + 62, y0 + 100, 4, 27, "#6b442e"); R(x0 + 196, y0 + 100, 4, 27, "#6b442e");
-            R(x0 + 168, y0 + 100, 28, 27, "#7d5238");
-            for (int i = 0; i < 3; i++) { R(x0 + 170, y0 + 102 + i * 8, 24, 7, "#8a5a3c"); R(x0 + 180, y0 + 105 + i * 8, 4, 1, "#d4b08c"); }
-
-            // luminária com cone de luz quente
-            R(x0 + 68, y0 + 93, 10, 3, "#3a3b4a");
-            for (int i = 0; i < 16; i++) P(x0 + 72 + i / 2, y0 + 92 - i, "#3a3b4a");
-            R(x0 + 78, y0 + 72, 10, 5, "#3a3b4a"); R(x0 + 80, y0 + 77, 6, 1, "#ffe9a8");
-            var luz = new Color32(255, 200, 110, 26);
-            for (int y = 78; y < 96; y++)
-            {
-                float k = (y - 78) / 18f;
-                int esq = Mathf.RoundToInt(Mathf.Lerp(80, 60, k)), dir = Mathf.RoundToInt(Mathf.Lerp(86, 112, k));
-                tela.Ret(x0 + esq, y0 + y, dir - esq, 1, luz);
-            }
-
-            // monitor: status real do "datacenter"
-            int mx = x0 + 112, my = y0 + 56;
-            R(mx, my, 52, 36, "#1b1a2e"); R(mx + 1, my + 1, 50, 34, "#2e3040"); R(mx + 3, my + 3, 46, 28, alerta ? "#1a0b10" : "#0b1a14");
-            string[] linhasT = alerta
-                ? new[] { ">ping...", ">timeout!", ">reinicia", ">ALERTA!" }
-                : new[] { ">serv   ok", ">monit  ok", ">backup ok", ">tudo certo" };
-            int escritos = Mathf.FloorToInt(t * 8) % 60;
-            for (int i = 0; i < linhasT.Length; i++)
-            {
-                int n = Mathf.Clamp(escritos - i * 12, 0, linhasT[i].Length);
-                string cor = alerta ? (i == 3 ? "#ff3b4e" : "#bf3f4f") : (i == 3 ? "#5cff8a" : "#3fbf6a");
-                T(linhasT[i].Substring(0, n), mx + 5, my + 5 + i * 6, cor, false);
-            }
-            if (Mathf.FloorToInt(t * 2) % 2 == 1) R(mx + 5, my + 29, 3, 1, alerta ? "#ff3b4e" : "#5cff8a");
-            R(mx + 22, my + 36, 8, 4, "#2e3040"); R(mx + 16, my + 39, 20, 1, "#2e3040");
-
-            // teclado, mouse e caneca fumegante
-            R(x0 + 116, y0 + 93, 36, 3, "#3a3b4a");
-            for (int i = 0; i < 8; i++) P(x0 + 118 + i * 4, y0 + 94, "#6c6f86");
-            R(x0 + 156, y0 + 94, 4, 2, "#3a3b4a");
-            R(x0 + 96, y0 + 86, 8, 10, "#fdf6e3"); R(x0 + 104, y0 + 88, 2, 5, "#fdf6e3"); R(x0 + 97, y0 + 89, 6, 2, "#ff9fae");
-            float vapor = (t * 0.8f) % 1f;
-            int balanco = Mathf.RoundToInt(Mathf.Sin(t * 4));
-            tela.Pixel(x0 + 98 + balanco, y0 + 83 - Mathf.RoundToInt(vapor * 8), new Color32(255, 255, 255, (byte)(180 * (1 - vapor))));
-            tela.Pixel(x0 + 101 - balanco, y0 + 80 - Mathf.RoundToInt(vapor * 8), new Color32(255, 255, 255, (byte)(130 * (1 - vapor))));
-
-            // cadeira e o dev de moletom e pijama
-            R(x0 + 64, y0 + 76, 5, 38, "#26273a"); R(x0 + 64, y0 + 108, 30, 5, "#26273a"); R(x0 + 76, y0 + 113, 3, 12, "#1b1a2e");
-            R(x0 + 68, y0 + 125, 20, 2, "#1b1a2e");
-            Dev(x0 + 70, y0 + 62, alerta);
-
-            // gabinete velho embaixo da mesa, com adesivo de pinguim
-            tela.Mapa(Arte.MapaServidor, x0 + 146, y0 + 109);
-            P(x0 + 149, y0 + 123, "#5cff8a");
-            P(x0 + 151, y0 + 123, UnityEngine.Random.value < 0.5f ? "#ffbf3f" : "#4a3f30");
-            tela.Mapa(new[] { ".k.", "kyk", "kyk", "Y.Y" }, x0 + 153, y0 + 116);
-
-            Rack(x0 + 272, y0 + 36, alerta);
-
-            // caixa de backups
-            R(x0 + 300, y0 + 108, 40, 20, "#c8955f"); R(x0 + 300, y0 + 108, 40, 2, "#a8784a"); R(x0 + 318, y0 + 108, 4, 20, "#e0b27a");
-            T("Backup", x0 + 309, y0 + 115, "#6b4a1f", false);
+            tela.Texto("Z", x0 + gato.x + Mathf.RoundToInt(zz * 4), y0 + gato.y - Mathf.RoundToInt(zz * 10), new Color32(201, 212, 255, (byte)((1 - zz) * 255)), false);
 
             tela.SemRecorte();
             R(x0 - 1, y0 - 1, SW + 2, 1, "#1b1a2e");
             R(x0 - 1, y0 + SH, SW + 2, 1, "#1b1a2e");
-        }
-
-        void PostIt(string a, string b, int x, int y)
-        {
-            R(x, y, 32, 17, "#ffe27a"); R(x, y, 32, 2, "#f5cf52");
-            T(a, x + 2, y + 3, "#6b4a1f", false);
-            T(b, x + 2, y + 10, "#6b4a1f", false);
-        }
-
-        /// <summary>O dev cansado. Com incidente, arregala os olhos e para de digitar.</summary>
-        void Dev(int dx, int dy, bool alerta)
-        {
-            R(dx + 2, dy + 20, 22, 26, "#5b5f73"); R(dx + 2, dy + 20, 5, 26, "#474a5c");   // moletom
-            R(dx, dy + 16, 8, 12, "#474a5c");                                                 // capuz
-            R(dx + 6, dy + 4, 16, 17, "#f2c29a");                                             // rosto
-            R(dx + 4, dy, 18, 7, "#3b2620"); R(dx + 4, dy + 6, 4, 8, "#3b2620");             // cabelo
-            int[,] mechas = { { 5, -2 }, { 9, -3 }, { 13, -2 }, { 17, -3 }, { 20, -1 }, { 2, 2 } };
-            for (int i = 0; i < mechas.GetLength(0); i++) R(dx + mechas[i, 0], dy + mechas[i, 1], 3, 3, "#3b2620");
-            R(dx + 10, dy + 15, 13, 6, "#4a2f25"); R(dx + 12, dy + 20, 9, 2, "#4a2f25");       // barba
-            if (alerta)
-            {
-                R(dx + 16, dy + 8, 3, 3, "#fdf6e3"); P(dx + 17, dy + 9, "#2a2238");             // olho arregalado
-                if (Mathf.FloorToInt(t * 3) % 2 == 0) T("!", dx + 12, dy - 12, "#ff3b4e", false);
-            }
-            else
-            {
-                R(dx + 16, dy + 9, 3, 1, "#2a2238"); R(dx + 16, dy + 10, 3, 1, "#d9a07e");      // olho cansado + olheira
-            }
-            P(dx + 22, dy + 11, "#e0a882"); P(dx + 18, dy + 13, "#ff9fae");                    // nariz, bochecha
-            int mao = alerta ? 0 : Mathf.FloorToInt(t * 7) % 2;
-            R(dx + 18, dy + 28, 26, 4, "#5b5f73"); R(dx + 44, dy + 29 - mao, 4, 3, "#f2c29a");
-            R(dx + 20, dy + 44, 24, 7, "#3b5aa8");                                            // pijama
-            R(dx + 40, dy + 50, 6, 14, "#3b5aa8");
-            P(dx + 24, dy + 46, "#fdf6e3"); P(dx + 32, dy + 48, "#fdf6e3"); P(dx + 42, dy + 55, "#fdf6e3"); P(dx + 38, dy + 45, "#fdf6e3");
-            R(dx + 38, dy + 63, 12, 3, "#f2d0d8"); P(dx + 47, dy + 61, "#ff9fae"); P(dx + 49, dy + 61, "#ff9fae"); // pantufa
-        }
-
-        void Rack(int rkx, int rky, bool alerta)
-        {
-            // roteador com wi-fi
-            R(rkx + 4, rky - 10, 26, 6, "#e8e8ef"); R(rkx + 8, rky - 18, 1, 8, "#c9c9d6"); R(rkx + 25, rky - 18, 1, 8, "#c9c9d6");
-            for (int i = 0; i < 4; i++) P(rkx + 8 + i * 4, rky - 8, (Mathf.FloorToInt(t * 4) + i) % 3 != 0 ? "#5cff8a" : "#2f8a4f");
-            int wifi = Mathf.FloorToInt(t * 2) % 3;
-            for (int a = 0; a <= wifi; a++) R(rkx + 15 - a * 2, rky - 22 - a * 2, 3 + a * 4, 1, "#5cc8ff");
-
-            R(rkx, rky, 58, 92, "#1b1a2e"); R(rkx + 2, rky + 2, 54, 88, "#2a2c3d");
-            bool piscar = Mathf.FloorToInt(t * 4) % 2 == 0;
-            for (int u = 0; u < 7; u++)
-            {
-                int uy = rky + 4 + u * 12;
-                R(rkx + 4, uy, 50, 10, u == 2 ? "#1f2a4a" : "#3a3d52"); R(rkx + 4, uy, 50, 1, "#50546c");
-                if (u == 2) T("NAS", rkx + 7, uy + 3, "#5cc8ff", false);
-                for (int l = 0; l < 8; l++)
-                {
-                    bool aceso = Mathf.FloorToInt(t * 6 + u * 3 + l * 1.7f) % 5 > 1;
-                    string cor = alerta && u == 4 ? (piscar ? "#ff3b4e" : "#1f2130")
-                               : aceso ? (u % 3 == 0 ? "#5cc8ff" : l % 4 == 0 ? "#ffbf3f" : "#5cff8a") : "#1f2130";
-                    P(rkx + 24 + l * 3, uy + 4, cor);
-                }
-            }
-            // cabos pendurados
-            for (int y = 0; y < 90; y++)
-            {
-                P(rkx + 58 + Mathf.RoundToInt(2 * Mathf.Sin(y / 9f)), rky + 2 + y, "#3d7bd8");
-                P(rkx + 61 + Mathf.RoundToInt(2 * Mathf.Sin(y / 11f + 1)), rky + 6 + y, "#e0805a");
-            }
         }
     }
 }
