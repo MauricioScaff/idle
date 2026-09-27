@@ -173,7 +173,12 @@ namespace IdleDataCenter.Gerente
             ui.Caixa(r, cedo ? IsoGui.Cor("121e30") : IsoGui.Painel, maximo ? IsoGui.Cor("2f6a4a") : E.PodeComprar(id) ? IsoGui.Cyan : IsoGui.Borda);
             string nome = NomeLongo(id);
             ui.Texto(nome, r.x + 16, r.y + 16, cedo ? IsoGui.Muted : IsoGui.Branco, ui.Largura(nome, 3) <= r.width - 32 ? 3 : 2);
-            if (!cedo && req && def.NivelMaximo > 1) ui.Texto(E.Nivel(id) + "/" + def.NivelMaximo, r.x + 16, r.y + 44, IsoGui.Cyan, 2);
+            if (!cedo && req && def.Gerador)
+            {
+                int marco = E.ProximoMarco(id);
+                ui.Texto(E.UnidadesDoGerador(id) + (marco > 0 ? "  ·  marco em " + marco + " (renda ×2)" : "  ·  todos os marcos"), r.x + 16, r.y + 44, IsoGui.Cyan, 2);
+            }
+            else if (!cedo && req && def.NivelMaximo > 1) ui.Texto(E.Nivel(id) + "/" + def.NivelMaximo, r.x + 16, r.y + 44, IsoGui.Cyan, 2);
             else ui.Texto(cedo ? "Libera no " + Catalogo.Cargos[def.Cargo].Nome : !req ? "Precisa: " + NomeLongo(def.Requisito) : "",
                 r.x + 16, r.y + 44, IsoGui.Laranja, 2);
             TextoQuebrado(def.Efeito, r.x + 16, r.y + 70, 33, IsoGui.Muted);

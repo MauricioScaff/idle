@@ -204,7 +204,12 @@ namespace IdleDataCenter
 
         void AoComprar(string id)
         {
-            Sons.Compra();
+            if (economia.AtingiuMarco(id))
+            {
+                Avisar("Marco! " + economia.UnidadesDoGerador(id) + "× " + Catalogo.Buscar(id).Nome + ": renda ×2", 4f, Amarelo);
+                Sons.Promocao();
+            }
+            else Sons.Compra();
             Salvamento.Salvar(economia.Estado);
         }
 

@@ -154,7 +154,58 @@ namespace IdleDataCenter.Simulacao
         public double ReceitaTorre =>
             Catalogo.ReceitaBaseServidor
             * (1 + (TemSsd ? Catalogo.BonusSsd : 0))
-            * (1 + Ventoinhas * Catalogo.BonusVentoinha);
+            * (1 + Ventoinhas * Catalogo.BonusVentoinha)
+            * BonusDoAlvo(Catalogo.AlvoTorres) * FatorMarcos(Torres);
+
+        /// <summary>Renda de um servidor 1U (cabos organizados, firmware e marcos).</summary>
+        public double Receita1U => Catalogo.ReceitaServidor1U * BonusDoAlvo(Catalogo.Alvo1U) * FatorMarcos(ServidoresRack);
+
+        // ---------------- Geradores sem teto e melhorias simples ----------------
+
+        /// <summary>Soma dos bônus das melhorias simples de um alvo (1 = nenhum bônus).</summary>
+        public double BonusDoAlvo(string alvo) => 1 + SomaDoAlvo(alvo);
+
+        /// <summary>Soma de nível × bônus das melhorias simples de um alvo (kW, graus ou fração de renda).</summary>
+        public double SomaDoAlvo(string alvo)
+        {
+            double soma = 0;
+            foreach (var m in Estado.melhorias)
+            {
+                if (m.nivel <= 0) continue;
+                var def = Catalogo.Achar(m.id);
+                if (def != null && def.Alvo == alvo) soma += m.nivel * def.BonusPorNivel;
+            }
+            return soma;
+        }
+
+        /// <summary>Marcos atingidos por um gerador com esta quantidade de unidades.</summary>
+        public static int MarcosAtingidos(int unidades)
+        {
+            int n = 0;
+            foreach (var m in Catalogo.Marcos) if (unidades >= m) n++;
+            return n;
+        }
+
+        /// <summary>A renda de um gerador dobra a cada marco (10, 25, 50, 100 unidades).</summary>
+        public static double FatorMarcos(int unidades) => Math.Pow(2, MarcosAtingidos(unidades));
+
+        /// <summary>Unidades que contam para os marcos de um gerador (a primeira torre já vem com o armário).</summary>
+        public int UnidadesDoGerador(string id) => id == Catalogo.Servidor ? Torres : Nivel(id);
+
+        /// <summary>A última compra deste gerador bateu exatamente num marco (hora da festa)?</summary>
+        public bool AtingiuMarco(string id)
+        {
+            var def = Catalogo.Achar(id);
+            return def != null && def.Gerador && Array.IndexOf(Catalogo.Marcos, UnidadesDoGerador(id)) >= 0;
+        }
+
+        /// <summary>Próximo marco de um gerador, ou 0 se já passou de todos.</summary>
+        public int ProximoMarco(string id)
+        {
+            int unidades = UnidadesDoGerador(id);
+            foreach (var m in Catalogo.Marcos) if (unidades < m) return m;
+            return 0;
+        }
 
         // Energia
         public double ConsumoKw => Torres * Catalogo.ConsumoServidorTorre + ServidoresRack * Catalogo.ConsumoServidor1U
@@ -164,7 +215,8 @@ namespace IdleDataCenter.Simulacao
         public double CapacidadeKw => Catalogo.CapacidadeBaseKw + Nivel(Catalogo.NoBreak) * Catalogo.CapacidadePorNoBreak
                                     + (NaSalaDeRacks ? Catalogo.CapacidadeSalaDeRacksKw : 0)
                                     + (NaSalaVirtualizada ? Catalogo.CapacidadeSalaVirtualizadaKw : 0)
-                                    + (NoDataCenter ? Catalogo.CapacidadeDataCenterKw : 0);
+                                    + (NoDataCenter ? Catalogo.CapacidadeDataCenterKw : 0)
+                                    + SomaDoAlvo(Catalogo.AlvoKw);
         public bool Sobrecarga => ConsumoKw > CapacidadeKw + 1e-9;
         /// <summary>Com sobrecarga, a receita cai na proporção da energia que falta.</summary>
         public double FatorEnergia => Sobrecarga ? CapacidadeKw / ConsumoKw : 1;
@@ -175,7 +227,8 @@ namespace IdleDataCenter.Simulacao
             - Nivel(Catalogo.ArCondicionado) * Catalogo.GrausPorArCondicionado
             - (NaSalaDeRacks ? Catalogo.GrausArDePrecisao : 0)
             - (NaSalaVirtualizada ? Catalogo.GrausSalaVirtualizada : 0)
-            - (NoDataCenter ? Catalogo.GrausDataCenter : 0);
+            - (NoDataCenter ? Catalogo.GrausDataCenter : 0)
+            - SomaDoAlvo(Catalogo.AlvoGraus);
         public bool Quente => Temperatura > Catalogo.TemperaturaQuente;
         public double FatorTemperatura =>
             Temperatura > Catalogo.TemperaturaCritica ? 0.3 : Quente ? 0.6 : 1;
@@ -225,12 +278,12 @@ namespace IdleDataCenter.Simulacao
 
         /// <summary>Receita das regiões novas (a que estiver em pane não rende) e dos clusters de GPU.</summary>
         public double ReceitaMundial =>
-            ((RegioesExtras - (TemPaneRegional ? 1 : 0)) * Catalogo.ReceitaRegiao * (1 + RegioesLigadas * Catalogo.BonusCabo)
-             + Nivel(Catalogo.Gpu) * Catalogo.ReceitaGpu) * FatorEmpresa;
+            ((RegioesExtras - (TemPaneRegional ? 1 : 0)) * Catalogo.ReceitaRegiao * (1 + RegioesLigadas * Catalogo.BonusCabo) * BonusDoAlvo(Catalogo.AlvoRegioes)
+             + Nivel(Catalogo.Gpu) * Catalogo.ReceitaGpu * BonusDoAlvo(Catalogo.AlvoGpu) * FatorMarcos(Nivel(Catalogo.Gpu))) * FatorEmpresa;
 
         /// <summary>Receita dos datacenters novos (o que estiver sem energia não rende).</summary>
         public double ReceitaDatacenters =>
-            (DatacentersExtras - (TemQuedaDeEnergia ? 1 : 0)) * Catalogo.ReceitaDatacenter * FatorEmpresa;
+            (DatacentersExtras - (TemQuedaDeEnergia ? 1 : 0)) * Catalogo.ReceitaDatacenter * BonusDoAlvo(Catalogo.AlvoDatacenters) * FatorEmpresa;
 
         /// <summary>Hypervisor: cada servidor físico vira várias VMs vendidas como VPS.</summary>
         public double FatorVirtualizacao => 1 + NivelHypervisor * Catalogo.BonusVirtualizacao;
@@ -242,29 +295,32 @@ namespace IdleDataCenter.Simulacao
 
         /// <summary>Receita do Kubernetes gerenciado (sente os picos de tráfego).</summary>
         public double ReceitaKubernetes =>
-            NosKubernetes * Catalogo.ReceitaNoKubernetes * (TemBalanceador ? 1 + Catalogo.BonusBalanceador : 1) * FatorGeral * MultiplicadorDoPico;
+            NosKubernetes * Catalogo.ReceitaNoKubernetes * (TemBalanceador ? 1 + Catalogo.BonusBalanceador : 1) * BonusDoAlvo(Catalogo.AlvoK8s) * FatorMarcos(NosKubernetes)
+            * FatorGeral * MultiplicadorDoPico;
 
         /// <summary>Receita dos apps nos containers (zero com deploy quebrado).</summary>
         public double ReceitaApps => DeployQuebrado ? 0
-            : HostsContainers * Catalogo.ReceitaHostContainers * (TemCi ? 1 + Catalogo.BonusCi : 1) * FatorGeral;
+            : HostsContainers * Catalogo.ReceitaHostContainers * (TemCi ? 1 + Catalogo.BonusCi : 1) * BonusDoAlvo(Catalogo.AlvoApps) * FatorMarcos(HostsContainers) * FatorGeral;
 
         public bool Travado(int servidor) => Estado.travamentos.Exists(t => t.servidor == servidor);
         public IReadOnlyList<Travamento> Travamentos => Estado.travamentos;
 
         /// <summary>Receita "de placa" de um servidor, sem os fatores de energia e temperatura.</summary>
-        public double ReceitaBruta(int servidor) => EhTorre(servidor) ? ReceitaTorre : Catalogo.ReceitaServidor1U;
+        public double ReceitaBruta(int servidor) => EhTorre(servidor) ? ReceitaTorre : Receita1U;
 
         public double ReceitaDoServidor(int servidor) =>
             Travado(servidor) ? 0 : ReceitaBruta(servidor) * FatorGeral * FatorVirtualizacao;
 
-        public double ReceitaDosRacksCheios => RacksCheios * Catalogo.ReceitaRackCheio * FatorGeral * FatorVirtualizacao;
+        public double ReceitaDosRacksCheios => RacksCheios * Catalogo.ReceitaRackCheio * BonusDoAlvo(Catalogo.AlvoRackCheio) * FatorMarcos(RacksCheios) * FatorGeral * FatorVirtualizacao;
 
         public double ReceitaPorSegundo
         {
             get
             {
-                double soma = 0;
-                for (int i = 0; i < TotalServidores; i++) soma += ReceitaDoServidor(i);
+                // torres e 1U rendem igual entre si: conta quantos estão de pé em vez de somar um por um
+                int torresTravadas = 0, u1Travados = 0;
+                foreach (var t in Estado.travamentos) if (EhTorre(t.servidor)) torresTravadas++; else u1Travados++;
+                double soma = ((Torres - torresTravadas) * ReceitaTorre + (ServidoresRack - u1Travados) * Receita1U) * FatorGeral * FatorVirtualizacao;
                 return ((soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes) * FatorCampus + ReceitaDatacenters + ReceitaMundial) * FatorGlobal * FatorCertificacoes;
             }
         }
@@ -294,6 +350,36 @@ namespace IdleDataCenter.Simulacao
         }
         public bool PodeComprar(string id) => !NoMaximo(id) && RequisitoOk(id) && Estado.dinheiro >= Custo(id)
                                            && !(id == Catalogo.Estagiario && Desafio(Catalogo.SemEstagiario));
+
+        /// <summary>
+        /// O que o jogo sugere comprar agora: sem energia, o mais barato que dá energia; quente, o que esfria;
+        /// link saturado, o que dá banda. Sem gargalo, a melhoria mais barata do cargo atual (e depois a de qualquer cargo).
+        /// </summary>
+        public MelhoriaDef MelhoriaSugerida()
+        {
+            string[] opcoes = Sobrecarga ? new[] { Catalogo.FiltroDeLinha, Catalogo.NoBreak }
+                            : Quente ? new[] { Catalogo.Ventilador, Catalogo.ArCondicionado }
+                            : LinkSaturado ? new[] { Catalogo.Link, Catalogo.Link10G } : null;
+            if (opcoes != null)
+            {
+                MelhoriaDef melhor = null;
+                foreach (var id in opcoes)
+                {
+                    var m = Catalogo.Buscar(id);
+                    if (m.Cargo > Estado.cargo || NoMaximo(id) || !RequisitoOk(id)) continue;
+                    if (melhor == null || Custo(id) < Custo(melhor.Id)) melhor = m;
+                }
+                if (melhor != null) return melhor;
+            }
+            // sem gargalo: primeiro o que é do cargo atual; quando ele acabar, o que ficou para trás
+            MelhoriaDef doCargo = null;
+            foreach (var m in MelhoriasDoCargo())
+            {
+                if (NoMaximo(m.Id) || !RequisitoOk(m.Id) || (m.Id == Catalogo.Estagiario && Desafio(Catalogo.SemEstagiario))) continue;
+                if (doCargo == null || Custo(m.Id) < Custo(doCargo.Id)) doCargo = m;
+            }
+            return doCargo ?? MelhoriaMaisBarata();
+        }
 
         /// <summary>A melhoria mais barata que já dá para comprar (inclui as que ficaram para trás nos cargos anteriores); null se não sobrou nada.</summary>
         public MelhoriaDef MelhoriaMaisBarata()
@@ -354,6 +440,7 @@ namespace IdleDataCenter.Simulacao
             for (int s = 0; s < TotalServidores; s++)
             {
                 if (Travado(s)) continue;
+                if ((EhTorre(s) ? s : s - Torres) >= Catalogo.ServidoresQueTravam) continue;
                 double mtbf = EhTorre(s) ? Catalogo.MtbfServidorTorre : Catalogo.MtbfServidor1U;
                 if (sorteio.NextDouble() < segundos * mult / mtbf) Travar(s);
             }

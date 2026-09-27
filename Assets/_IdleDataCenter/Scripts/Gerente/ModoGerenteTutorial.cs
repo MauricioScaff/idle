@@ -24,7 +24,15 @@ namespace IdleDataCenter.Gerente
 
         void IniciarPrimeiraHora()
         {
-            E.Comprou += id => salaIso?.Comprou(id, Time.unscaledTime);
+            E.Comprou += id =>
+            {
+                salaIso?.Comprou(id, Time.unscaledTime);
+                if (!E.AtingiuMarco(id)) return;
+                // marco de um gerador: festa curta
+                festaDesde = Time.unscaledTime; festaTitulo = "Marco!";
+                festaCargo = E.UnidadesDoGerador(id) + "× " + NomeLongo(id);
+                festaTexto = "A renda deles dobrou." + (E.ProximoMarco(id) > 0 ? " Próximo marco: " + E.ProximoMarco(id) + "." : " Todos os marcos!");
+            };
             E.Promoveu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Promovido!"; festaCargo = E.CargoAtual.Nome; festaTexto = "A sala cresceu. Novos setores e equipamentos na loja."; };
             E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A empresa está na bolsa"; festaTexto = "De técnico de TI num armário a CTO de uma nuvem global."; };
             E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Vendida!"; festaCargo = "+" + c + " certificações"; festaTexto = "Uma empresa nova começa no armário, com os bônus."; };

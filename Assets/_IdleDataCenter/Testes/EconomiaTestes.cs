@@ -94,10 +94,10 @@ namespace IdleDataCenter.Testes
         public void LojaMostraSoAsMelhoriasDoCargo()
         {
             var e = Nova();
-            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.Estagiario },
+            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.Estagiario },
                 System.Linq.Enumerable.Select(e.MelhoriasDoCargo(), m => m.Id));
             e.Estado.cargo = 1;
-            Assert.AreEqual(4, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()));
+            Assert.AreEqual(6, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()));
         }
 
         [Test]
@@ -244,7 +244,7 @@ namespace IdleDataCenter.Testes
             e.Estado.cargo = 1;
             DefinirNivel(e, Catalogo.Rack, 1);
             DefinirNivel(e, Catalogo.Servidor1U, 4);
-            e.Estado.totalGanho = 600000;
+            e.Estado.totalGanho = 1200000;
             e.Estado.incidentesResolvidos = 60;
             Assert.IsFalse(e.PodePromover, "falta um 1U para encher o rack");
             e.Estado.melhorias.Find(m => m.id == Catalogo.Servidor1U).nivel = 5;
@@ -361,7 +361,7 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova();
             e.Estado.cargo = 2;
-            e.Estado.totalGanho = 5000000;
+            e.Estado.totalGanho = 30000000;
             e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.CronFaturamento });
             Assert.IsFalse(e.PodePromover, "falta restaurar um backup");
             e.Estado.backupsRestaurados = 1;
@@ -457,7 +457,7 @@ namespace IdleDataCenter.Testes
         {
             var e = NoDevOps();
             DefinirNivel(e, Catalogo.Containers, 4);
-            e.Estado.totalGanho = 40000000;
+            e.Estado.totalGanho = 1000000000;
             e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.Monitoramento, Catalogo.CronFaturamento, Catalogo.Plantao, Catalogo.Pipeline });
             Assert.IsFalse(e.PodePromover, "faltam automações");
             e.Estado.automacoes.Add(Catalogo.RollbackAutomatico);
@@ -569,7 +569,7 @@ namespace IdleDataCenter.Testes
         {
             var e = NoSre();
             e.Estado.picosSobrevividos = 5;
-            e.Estado.totalGanho = 250000000;
+            e.Estado.totalGanho = 4000000000;
             e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.Monitoramento, Catalogo.CronFaturamento, Catalogo.Plantao,
                                                  Catalogo.Pipeline, Catalogo.RollbackAutomatico, Catalogo.InfraComoCodigo, Catalogo.Autoscaling });
             Assert.IsFalse(e.PodePromover, "faltam automações");
@@ -639,7 +639,7 @@ namespace IdleDataCenter.Testes
         {
             var e = NoCampus();
             DefinirNivel(e, Catalogo.Datacenter, 3);
-            e.Estado.totalGanho = 2000000000;
+            e.Estado.totalGanho = 40000000000;
             for (int i = 0; i < 12; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
             Assert.IsTrue(e.Promover());
             Assert.AreEqual("CTO", e.CargoAtual.Nome);
@@ -680,7 +680,7 @@ namespace IdleDataCenter.Testes
             var e = NoMundo();
             Assert.IsFalse(e.PodeFazerIpo);
             DefinirNivel(e, Catalogo.Regiao, 3);
-            e.Estado.totalGanho = 50000000000;
+            e.Estado.totalGanho = 600000000000;
             for (int i = 0; i < 15; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
             Assert.IsTrue(e.PodeFazerIpo);
             bool festa = false;
@@ -941,6 +941,90 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual(1, e.ConsertadosFora);
             Assert.AreEqual(3600, e.SegundosFora, 1e-9);
             Assert.IsFalse(e.PassouDoLimite);
+        }
+
+        // ---------- Geradores sem teto, marcos e melhorias simples ----------
+
+        [Test]
+        public void MarcosDobramARendaDoGerador()
+        {
+            Assert.AreEqual(1, Economia.FatorMarcos(9));
+            Assert.AreEqual(2, Economia.FatorMarcos(10));
+            Assert.AreEqual(4, Economia.FatorMarcos(25));
+            Assert.AreEqual(16, Economia.FatorMarcos(100));
+
+            var e = Nova();
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.RackCheio, 9);
+            // sem os fatores de energia, calor e banda (10 racks estouram a sala)
+            double Placa() => e.ReceitaDosRacksCheios / (e.FatorGeral * e.FatorVirtualizacao);
+            Assert.AreEqual(9 * Catalogo.ReceitaRackCheio, Placa(), 1e-6);
+            e.Estado.melhorias.Find(m => m.id == Catalogo.RackCheio).nivel = 10;
+            Assert.AreEqual(10 * Catalogo.ReceitaRackCheio * 2, Placa(), 1e-6);   // o marco dobrou tudo
+            Assert.AreEqual(25, e.ProximoMarco(Catalogo.RackCheio));
+        }
+
+        [Test]
+        public void AsTorresContamAPrimeiraParaOsMarcos()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 9);   // 1 + 9 = 10 torres
+            Assert.AreEqual(10, e.Torres);
+            Assert.AreEqual(25, e.ProximoMarco(Catalogo.Servidor));
+            Assert.AreEqual(Catalogo.ReceitaBaseServidor * 2, e.ReceitaTorre, 1e-9);
+        }
+
+        [Test]
+        public void MelhoriasSimplesAumentamOAlvo()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.PastaTermica, 2);
+            Assert.AreEqual(Catalogo.ReceitaBaseServidor * 1.6, e.ReceitaTorre, 1e-9);
+
+            e.Estado.cargo = 1;
+            DefinirNivel(e, Catalogo.CabosOrganizados, 1);
+            DefinirNivel(e, Catalogo.Firmware, 1);
+            Assert.AreEqual(Catalogo.ReceitaServidor1U * (1 + 0.25 + 0.4), e.Receita1U, 1e-9);
+        }
+
+        [Test]
+        public void FiltroDeLinhaDaEnergiaEVentiladorEsfria()
+        {
+            var e = Nova();
+            double kw = e.CapacidadeKw, graus = e.Temperatura;
+            DefinirNivel(e, Catalogo.FiltroDeLinha, 2);
+            DefinirNivel(e, Catalogo.Ventilador, 1);
+            Assert.AreEqual(kw + 1.6, e.CapacidadeKw, 1e-9);
+            Assert.AreEqual(graus - 3, e.Temperatura, 1e-9);
+        }
+
+        [Test]
+        public void SugestaoResolveOGargaloAntes()
+        {
+            var e = Nova(1_000_000);
+            DefinirNivel(e, Catalogo.Servidor, 5);   // 6 torres: 2.4 kW para 1.5 kW
+            Assert.IsTrue(e.Sobrecarga);
+            Assert.AreEqual(Catalogo.FiltroDeLinha, e.MelhoriaSugerida().Id);
+            DefinirNivel(e, Catalogo.FiltroDeLinha, 2);
+            Assert.IsFalse(e.Sobrecarga);
+            Assert.AreNotEqual(Catalogo.FiltroDeLinha, e.MelhoriaSugerida().Id);
+        }
+
+        [Test]
+        public void SoOsPrimeirosServidoresTravam()
+        {
+            var e = Nova(0, 0);   // o sorteio sempre "acerta": todo servidor que puder travar, trava
+            DefinirNivel(e, Catalogo.Servidor, 19);   // 20 torres
+            e.Avancar(1);
+            Assert.AreEqual(Catalogo.ServidoresQueTravam, e.Travamentos.Count);
+        }
+
+        [Test]
+        public void SaveComMelhoriaQueNaoExisteMaisNaoQuebra()
+        {
+            var e = Nova();
+            DefinirNivel(e, "melhoria-antiga", 3);
+            Assert.DoesNotThrow(() => { var _ = e.ReceitaPorSegundo; });
         }
     }
 }

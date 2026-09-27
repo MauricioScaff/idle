@@ -7,7 +7,8 @@ namespace IdleDataCenter.Testes
 {
     /// <summary>
     /// Simula um jogador 100% ocioso (nunca clica; o técnico conserta tudo sozinho) que compra sempre
-    /// a melhoria mais barata disponível e, quando não há melhoria para comprar, escreve a automação mais barata.
+    /// o que o jogo sugere (a melhoria mais barata, ou a que resolve falta de energia, calor ou banda) e,
+    /// quando não há melhoria para comprar, escreve a automação mais barata.
     /// Serve para acompanhar o ritmo do jogo quando o balanceamento muda.
     /// </summary>
     public class RitmoTestes
@@ -25,7 +26,8 @@ namespace IdleDataCenter.Testes
             for (double t = 0; t < limite; t += 1)
             {
                 e.Avancar(1);
-                var barata = e.MelhoriasDoCargo().Where(m => e.PodeComprar(m.Id)).OrderBy(m => e.Custo(m.Id)).FirstOrDefault();
+                var sugerida = e.MelhoriaSugerida();
+                var barata = sugerida != null && e.PodeComprar(sugerida.Id) ? sugerida : null;
                 if (barata != null) e.Comprar(barata.Id);
                 var script = Catalogo.Automacoes.Where(a => e.PodeEscrever(a.Id)).OrderBy(a => a.Custo).FirstOrDefault();
                 if (script != null && barata == null) e.EscreverAutomacao(script.Id);
@@ -33,7 +35,7 @@ namespace IdleDataCenter.Testes
                 if (e.PodeFazerIpo) { e.FazerIpo(); ipo = t; }
                 if (e.Estado.backupsRestaurados > 0 && primeiroBackup < 0) primeiroBackup = t;
 
-                bool tudo = e.MelhoriasDoCargo().All(m => e.NoMaximo(m.Id))
+                bool tudo = e.MelhoriasDoCargo().Where(m => !m.Gerador && m.NivelMaximo < 30).All(m => e.NoMaximo(m.Id))   // geradores e infraestrutura não acabam
                             && Catalogo.Automacoes.Where(a => a.Cargo <= e.Cargo && e.Cargo >= Catalogo.CargoDasAutomacoes).All(a => e.TemAutomacao(a.Id));
                 if (tudo && completo[e.Cargo] == 0) completo[e.Cargo] = t;
                 if (e.Cargo == Catalogo.Cargos.Count - 1 && tudo && ipo > 0) break;
@@ -51,9 +53,10 @@ namespace IdleDataCenter.Testes
             Assert.That(promocoes[2], Is.InRange(2 * 3600, 6 * 3600), "promoção a Analista fora do ritmo");
             Assert.That(promocoes[3], Is.InRange(promocoes[2] + 2 * 3600, promocoes[2] + 8 * 3600), "promoção a DevOps fora do ritmo");
             Assert.That(promocoes[4], Is.InRange(promocoes[3] + 3 * 3600, promocoes[3] + 12 * 3600), "promoção a SRE fora do ritmo");
-            Assert.That(completo[4], Is.GreaterThan(promocoes[4] + 3 * 3600), "SRE acaba rápido demais");
+            // com geradores sem teto sempre há o que comprar; "completo" aqui é só o que tem limite (melhorias e automações)
+            Assert.That(completo[4], Is.GreaterThan(promocoes[4] + 1800), "SRE acaba rápido demais");
             Assert.That(promocoes[5], Is.InRange(promocoes[4] + 3 * 3600, promocoes[4] + 14 * 3600), "promoção a Arquiteto fora do ritmo");
-            Assert.That(completo[5], Is.GreaterThan(promocoes[5] + 4 * 3600), "Arquiteto acaba rápido demais");
+            Assert.That(completo[5], Is.GreaterThan(promocoes[5] + 1800), "Arquiteto acaba rápido demais");
             Assert.That(promocoes[6], Is.InRange(promocoes[5] + 3 * 3600, promocoes[5] + 16 * 3600), "promoção a CTO fora do ritmo");
             Assert.That(ipo, Is.GreaterThan(promocoes[6] + 4 * 3600), "IPO rápido demais");
         }

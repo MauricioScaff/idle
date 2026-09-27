@@ -410,22 +410,23 @@ namespace IdleDataCenter
             for (int i = 0; i < lista.Count; i++)
             {
                 var m = lista[i];
-                int y = 34 + i * 48;
-                R(80, y, 472, 44, "#252947");
+                // até 7 melhorias por cargo: linhas compactas (nome em cima; nível e efeito embaixo)
+                int passo = lista.Count <= 4 ? 48 : 27, y = 34 + i * passo;
+                R(80, y, 472, passo - 3, "#252947");
                 int nivel = economia.Nivel(m.Id);
-                T(m.Nome, 86, y + 6, "#fdf6e3", true, 2);
-                T($"Nível {nivel}/{m.NivelMaximo}", 86, y + 20, "#7d82ad", false);
-                T(m.Efeito, 86, y + 30, "#6fd36f", false);
+                T(m.Nome, 86, y + (passo > 30 ? 6 : 3), "#fdf6e3", true, 2);
+                string detalhe = (m.Gerador ? $"{economia.UnidadesDoGerador(m.Id)} unidades" : $"Nível {nivel}/{m.NivelMaximo}") + "  " + m.Efeito;
+                T(detalhe, 86, y + (passo > 30 ? 22 : 16), "#7d82ad", false);
 
                 bool max = economia.NoMaximo(m.Id), req = economia.RequisitoOk(m.Id);
                 if (!max)
                 {
                     string custo = "R$ " + F(economia.Custo(m.Id));
-                    T(custo, 450 - L(custo, 2), y + 14, economia.PodeComprar(m.Id) ? "#ffd65c" : "#7d82ad", true, 2);
+                    T(custo, 450 - L(custo, 2), y + (passo > 30 ? 14 : 7), economia.PodeComprar(m.Id) ? "#ffd65c" : "#7d82ad", true, 2);
                 }
                 string rotulo = max ? "Máximo" : !req ? "Precisa: " + Catalogo.Buscar(m.Requisito).Nome : "Comprar";
                 var def = m;
-                Botao(new RectInt(462, y + 10, 84, 24), rotulo, "#1b1a2e", "#6fd36f",
+                Botao(new RectInt(462, y + (passo > 30 ? 10 : 1), 84, passo > 30 ? 24 : 22), rotulo, "#1b1a2e", "#6fd36f",
                     () => faixa.TentarComprar(def), !max && economia.PodeComprar(m.Id));
             }
         }
