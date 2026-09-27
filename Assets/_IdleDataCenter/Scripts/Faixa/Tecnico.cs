@@ -7,7 +7,7 @@ namespace IdleDataCenter
     /// O personagem (arte do PixelLab). No dia a dia passeia, digita na mesa ou "confere" o servidor
     /// mais próximo. Quando algo trava, corre até lá e fica consertando (solta faíscas) até o servidor
     /// voltar: sozinho ele leva 30 s, e um clique seu no servidor resolve na hora.
-    /// Clicar nele dá um pulinho com coração. No cargo de Sysadmin a camiseta vira verde-água; no de Analista, polo azul-marinho; no DevOps, moletom roxo.
+    /// Clicar nele dá um pulinho com coração. No cargo de Sysadmin a camiseta vira verde-água; no de Analista, polo azul-marinho; no DevOps, moletom roxo; no SRE, moletom laranja de plantão.
     /// </summary>
     public class Tecnico : MonoBehaviour, IClicavel
     {
@@ -20,6 +20,7 @@ namespace IdleDataCenter
         const float MatizSysadmin = 0.46f;     // verde-água
         const float MatizAnalista = 0.63f, BrilhoAnalista = 0.55f;  // polo azul-marinho
         const float MatizDevOps = 0.77f, BrilhoDevOps = 0.85f;      // moletom roxo
+        const float MatizSre = 0.03f, BrilhoSre = 0.9f;             // moletom laranja de plantão
 
         static readonly Dictionary<string, Quadros> cache = new Dictionary<string, Quadros>();
 
@@ -50,7 +51,8 @@ namespace IdleDataCenter
                 var t = ArteGerada.Textura(prefixo + sufixo);
                 if (prefixo == "tecnico" && cargo == 1) t = ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
                 if (prefixo == "tecnico" && cargo == 2) t = ArteGerada.TrocarCorDaRoupa(t, MatizAnalista, brilho: BrilhoAnalista);
-                if (prefixo == "tecnico" && cargo >= 3) t = ArteGerada.TrocarCorDaRoupa(t, MatizDevOps, brilho: BrilhoDevOps);
+                if (prefixo == "tecnico" && cargo == 3) t = ArteGerada.TrocarCorDaRoupa(t, MatizDevOps, brilho: BrilhoDevOps);
+                if (prefixo == "tecnico" && cargo >= 4) t = ArteGerada.TrocarCorDaRoupa(t, MatizSre, brilho: BrilhoSre);
                 return ArteGerada.Personagem(t, prefixo + sufixo + "#" + cargo);
             }
             return cache[chave] = new Quadros

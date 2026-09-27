@@ -32,6 +32,13 @@ namespace IdleDataCenter.Simulacao
         // DevOps: deploy quebrado derruba os apps até o rollback
         public bool deployQuebrado;
         public double deploySegundos;
+
+        // SRE: picos de tráfego
+        public double proximoPico = -1;       // segundos até o próximo (-1 = ainda não agendado)
+        public string picoNome = "";          // vazio = sem pico agora
+        public double picoDecorrido;
+        public bool picoEscalado, picoViolado;
+        public int picosSobrevividos, picosTotal;
     }
 
     [Serializable]

@@ -25,7 +25,9 @@ namespace IdleDataCenter
             public float Rack, NoBreak, Refrigeracao, Storage, Fita;
             public float[] RacksCheios = new float[0];
             public Vector2 Link;
-            public float Hypervisor, Ci;
+            public float Hypervisor, Ci, Balanceador;
+            public float[] NosKubernetes = new float[0];
+            public Vector2 Telao;
             public float[] HostsContainers = new float[0];
         }
 
@@ -45,6 +47,15 @@ namespace IdleDataCenter
             Fita = SalaDeRacks.Fita, Link = SalaDeRacks.Link,
             Hypervisor = 474, HostsContainers = new float[] { 498, 518, 538, 558 }, Ci = 596,
         };
+        // SRE: o data center pequeno ganha o cluster Kubernetes, o balanceador e o telão do NOC à direita
+        static readonly Planta DataCenterPequeno = new Planta
+        {
+            Largura = 780, Torres = SalaDeRacks.Torres, Rack = SalaDeRacks.Rack, RacksCheios = SalaDeRacks.RacksCheios,
+            NoBreak = SalaDeRacks.NoBreak, Refrigeracao = SalaDeRacks.Refrigeracao, Storage = SalaDeRacks.Storage,
+            Fita = SalaDeRacks.Fita, Link = SalaDeRacks.Link,
+            Hypervisor = SalaVirtualizada.Hypervisor, HostsContainers = SalaVirtualizada.HostsContainers, Ci = SalaVirtualizada.Ci,
+            NosKubernetes = new float[] { 628, 642, 656, 670, 684, 698 }, Balanceador = 724, Telao = new Vector2(624, 30),
+        };
 
         Faixa faixa;
         Economia economia;
@@ -55,6 +66,7 @@ namespace IdleDataCenter
         EquipamentoVisual noBreak, refrigeracao, storage, fita, link;
         RackVisual hypervisor;
         DevOpsVisual devOps;
+        SreVisual sre;
         Tecnico estagiario;
 
         public int Largura { get; private set; }
@@ -76,7 +88,7 @@ namespace IdleDataCenter
             this.faixa = faixa;
             this.economia = economia;
             transform.position = posicao;
-            planta = economia.Cargo >= 3 ? SalaVirtualizada : economia.Cargo == 2 ? SalaDeRacks : economia.Cargo == 1 ? Salinha : Armario;
+            planta = economia.Cargo >= 4 ? DataCenterPequeno : economia.Cargo == 3 ? SalaVirtualizada : economia.Cargo == 2 ? SalaDeRacks : economia.Cargo == 1 ? Salinha : Armario;
             Largura = planta.Largura;
 
             var fundo = gameObject.AddComponent<SpriteRenderer>();
@@ -201,6 +213,15 @@ namespace IdleDataCenter
                     devOps.Iniciar(faixa, economia, transform, planta.HostsContainers, planta.Ci);
                 }
                 else devOps.Atualizar();
+            }
+            if (planta.NosKubernetes.Length > 0 && economia.NosKubernetes > 0)
+            {
+                if (sre == null)
+                {
+                    sre = new GameObject("SRE").AddComponent<SreVisual>();
+                    sre.Iniciar(faixa, economia, transform, planta.NosKubernetes, planta.Balanceador, planta.Telao);
+                }
+                else sre.Atualizar();
             }
             if (economia.TemEstagiario && estagiario == null && Tecnico != null)
             {

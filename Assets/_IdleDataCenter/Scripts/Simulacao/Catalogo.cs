@@ -31,7 +31,7 @@ namespace IdleDataCenter.Simulacao
         public double Segundos;     // tempo para escrever
     }
 
-    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas }
+    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos }
 
     public class MetaDef
     {
@@ -69,6 +69,9 @@ namespace IdleDataCenter.Simulacao
         public const string Containers = "containers";
         public const string ServidorCi = "ci";
         public const string Link10G = "link10g";
+        public const string NoKubernetes = "k8s";        // cargo 5 (SRE)
+        public const string Balanceador = "balanceador";
+        public const string Observabilidade = "observabilidade";
 
         // --- Receita ---
         public const double ReceitaBaseServidor = 1;   // servidor torre sem melhorias (R$/s)
@@ -82,6 +85,9 @@ namespace IdleDataCenter.Simulacao
         public const double BonusVirtualizacao = 0.4;  // VMs: servidores +40% por nível de hypervisor
         public const double ReceitaHostContainers = 250; // apps por host
         public const double BonusCi = 0.5;             // deploys contínuos: apps +50%
+        public const double ReceitaNoKubernetes = 400;  // Kubernetes gerenciado, por nó
+        public const double BonusBalanceador = 0.25;    // K8s +25%
+        public const double BonusObservabilidade = 0.15; // SLA premium: receita +15% por nível
 
         /// <summary>Clique no servidor vale isto + ValorCliqueReceita × receita por segundo.</summary>
         public const double ValorCliqueBase = 2;
@@ -101,6 +107,10 @@ namespace IdleDataCenter.Simulacao
         public const double GrausSalaVirtualizada = 8;
         public const double ConsumoHostContainers = 1.0;
         public const double ConsumoServidorCi = 0.5;
+        /// <summary>No SRE o data center pequeno ganha mais um quadro de energia e refrigeração.</summary>
+        public const double CapacidadeDataCenterKw = 6;
+        public const double GrausDataCenter = 6;
+        public const double ConsumoNoKubernetes = 0.8;
 
         // --- Temperatura (°C) ---
         public const double TemperaturaAmbiente = 22;
@@ -121,6 +131,7 @@ namespace IdleDataCenter.Simulacao
         public const double BandaPorLink = 300;
         public const double TrafegoHostContainers = 120;
         public const double BandaLink10G = 1500;
+        public const double TrafegoNoKubernetes = 150;
 
         // --- Incidentes ---
         public const double MtbfServidorTorre = 300;   // segundos, em média, entre travadas
@@ -141,6 +152,20 @@ namespace IdleDataCenter.Simulacao
         public const double TempoRollbackAutomatico = 5;
         public const double FatorPipeline = 4;           // testes no pipeline: 4x menos deploys quebrados
         public const double DescontoIac = 0.15;          // infra como código: melhorias 15% mais baratas
+
+        // --- Picos de tráfego (SRE) ---
+        public const double PrimeiroPico = 600;          // segundos depois de virar SRE
+        public const double IntervaloPicoMin = 900, IntervaloPicoMax = 1500;
+        public const double DuracaoPico = 60;
+        public const double TempoParaEscalar = 15;       // sem escalar até aqui, o SLA é violado
+        public const double TempoExtraBalanceador = 10;
+        public const double MultiplicadorPicoEscalado = 2;  // pico atendido: K8s rende o dobro
+        public const double MultiplicadorPicoViolado = 0.3;
+        public const double SegundosDeMultaSla = 20;      // multa: 20 s da receita total
+        public const double TempoAutoscaling = 2;
+        public const double FatorChaos = 2;               // chaos engineering: metade das falhas
+        public const double TempoRunbook = 3;             // runbooks: todo conserto automático em 3 s
+        public static readonly string[] NomesDePico = { "Black Friday", "Final da copa", "Lançamento", "Live famosa", "Promoção" };  // curtos: cabem ao lado do botão no painel
 
         // --- Progresso offline ---
         public const double TaxaOffline = 0.5;
@@ -181,7 +206,17 @@ namespace IdleDataCenter.Simulacao
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 5000000, Texto = "Faturar R$ 5M" },
                 },
             },
-            new CargoDef { Nome = "Engenheiro DevOps", Lugar = "Sala virtualizada", MetasParaPromocao = new MetaDef[0] },
+            new CargoDef
+            {
+                Nome = "Engenheiro DevOps", Lugar = "Sala virtualizada",
+                MetasParaPromocao = new[]
+                {
+                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 7, Texto = "7 automações ativas" },
+                    new MetaDef { Tipo = TipoMeta.HostsContainers, Alvo = 4, Texto = "4 hosts de containers" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 40000000, Texto = "Faturar R$ 40M" },
+                },
+            },
+            new CargoDef { Nome = "SRE", Lugar = "Data center pequeno", MetasParaPromocao = new MetaDef[0] },
         };
 
         public static readonly IReadOnlyList<MelhoriaDef> Melhorias = new[]
@@ -205,6 +240,10 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Containers, Nome = "Containers", Efeito = "+250/s em apps, 1 kW, 120 Mb", Cargo = 3, NivelMaximo = 4, CustoBase = 800000, FatorCusto = 1.8 },
             new MelhoriaDef { Id = ServidorCi, Nome = "Servidor CI", Efeito = "Deploy contínuo: apps +50%", Cargo = 3, Requisito = Containers, NivelMaximo = 1, CustoBase = 1500000, FatorCusto = 1 },
             new MelhoriaDef { Id = Link10G, Nome = "Link 10G", Efeito = "+1500 Mbps", Cargo = 3, NivelMaximo = 1, CustoBase = 700000, FatorCusto = 1 },
+
+            new MelhoriaDef { Id = NoKubernetes, Nome = "Nó K8s", Efeito = "+400/s, 0.8 kW, 150 Mb", Cargo = 4, NivelMaximo = 6, CustoBase = 4000000, FatorCusto = 1.6 },
+            new MelhoriaDef { Id = Balanceador, Nome = "Balanceador", Efeito = "K8s +25%, +10 s p/ escalar", Cargo = 4, Requisito = NoKubernetes, NivelMaximo = 1, CustoBase = 6000000, FatorCusto = 1 },
+            new MelhoriaDef { Id = Observabilidade, Nome = "Observab.", Efeito = "Observabilidade: +15% (SLA)", Cargo = 4, NivelMaximo = 3, CustoBase = 5000000, FatorCusto = 2.5 },
         };
 
         // --- Ids das automações ---
@@ -216,6 +255,9 @@ namespace IdleDataCenter.Simulacao
         public const string Pipeline = "pipeline";
         public const string RollbackAutomatico = "rollback";
         public const string InfraComoCodigo = "iac";
+        public const string Autoscaling = "autoscaling";
+        public const string Chaos = "chaos";
+        public const string Runbooks = "runbooks";
 
         public static readonly IReadOnlyList<AutomacaoDef> Automacoes = new[]
         {
@@ -227,6 +269,9 @@ namespace IdleDataCenter.Simulacao
             new AutomacaoDef { Id = Pipeline, Nome = "Pipeline com testes", Descricao = "4x menos deploys quebrados", Cargo = 3, Requisito = ServidorCi, Custo = 1000000, Segundos = 600 },
             new AutomacaoDef { Id = RollbackAutomatico, Nome = "Rollback automático", Descricao = "Deploy quebrado volta em 5 s", Cargo = 3, Requisito = Containers, Custo = 800000, Segundos = 480 },
             new AutomacaoDef { Id = InfraComoCodigo, Nome = "Infra como código", Descricao = "Melhorias 15% mais baratas", Cargo = 3, Custo = 1500000, Segundos = 720 },
+            new AutomacaoDef { Id = Autoscaling, Nome = "Autoscaling", Descricao = "Escala o cluster sozinho nos picos", Cargo = 4, Requisito = NoKubernetes, Custo = 8000000, Segundos = 900 },
+            new AutomacaoDef { Id = Chaos, Nome = "Chaos engineering", Descricao = "Falhas testadas antes: metade dos incidentes", Cargo = 4, Custo = 6000000, Segundos = 720 },
+            new AutomacaoDef { Id = Runbooks, Nome = "Runbooks automáticos", Descricao = "Todo conserto automático em 3 s", Cargo = 4, Custo = 10000000, Segundos = 1080 },
         };
 
         public static AutomacaoDef BuscarAutomacao(string id)

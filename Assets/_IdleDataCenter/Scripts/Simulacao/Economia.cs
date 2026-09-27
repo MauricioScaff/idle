@@ -33,6 +33,14 @@ namespace IdleDataCenter.Simulacao
         public event Action DeployQuebrou;
         /// <summary>Rollback feito (true se foi o técnico ou a automação, false se foi clique).</summary>
         public event Action<bool> DeployVoltou;
+        /// <summary>Começou um pico de tráfego (nome do evento).</summary>
+        public event Action<string> PicoComecou;
+        /// <summary>O cluster foi escalado para o pico (true = pelo autoscaling).</summary>
+        public event Action<bool> PicoEscalado;
+        /// <summary>O SLA foi violado (valor da multa).</summary>
+        public event Action<double> SlaViolado;
+        /// <summary>O pico acabou (true = sobreviveu sem violar o SLA).</summary>
+        public event Action<bool> PicoTerminou;
 
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
@@ -67,23 +75,37 @@ namespace IdleDataCenter.Simulacao
         public bool NaSalaVirtualizada => Estado.cargo >= 3;
         public bool DeployQuebrado => Estado.deployQuebrado;
         public double SegundosDeployQuebrado => Estado.deploySegundos;
+        public int NosKubernetes => Nivel(Catalogo.NoKubernetes);
+        public bool TemBalanceador => Nivel(Catalogo.Balanceador) > 0;
+        public bool NoDataCenter => Estado.cargo >= 4;
+        public bool EmPico => !string.IsNullOrEmpty(Estado.picoNome);
+        public string NomeDoPico => Estado.picoNome;
+        public bool PicoFoiEscalado => Estado.picoEscalado;
+        public bool PicoViolado => Estado.picoViolado;
+        public double SegundosDePico => Estado.picoDecorrido;
+        public double SegundosAteProximoPico => Estado.proximoPico;
+        /// <summary>Até quando dá para escalar sem violar o SLA (segundos desde o começo do pico).</summary>
+        public double LimiteParaEscalar => Catalogo.TempoParaEscalar + (TemBalanceador ? Catalogo.TempoExtraBalanceador : 0);
 
         /// <summary>Quantos servidores existem de verdade (os racks cheios contam cada servidor).</summary>
-        public int ContagemServidores => TotalServidores + RacksCheios * Catalogo.ServidoresPorRackCheio;
+        public int ContagemServidores => TotalServidores + RacksCheios * Catalogo.ServidoresPorRackCheio + NosKubernetes;
 
         /// <summary>Quanto tempo o técnico leva para consertar sozinho (com estagiário, metade).</summary>
         public double TempoConserto =>
-            TemAutomacao(Catalogo.Watchdog) ? Catalogo.TempoWatchdog
+            TemAutomacao(Catalogo.Runbooks) ? Catalogo.TempoRunbook
+            : TemAutomacao(Catalogo.Watchdog) ? Catalogo.TempoWatchdog
             : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
 
         /// <summary>Quanto tempo um deploy quebrado fica fora até o rollback sem clique.</summary>
         public double TempoRollback =>
-            TemAutomacao(Catalogo.RollbackAutomatico) ? Catalogo.TempoRollbackAutomatico
+            TemAutomacao(Catalogo.Runbooks) ? Catalogo.TempoRunbook
+            : TemAutomacao(Catalogo.RollbackAutomatico) ? Catalogo.TempoRollbackAutomatico
             : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
 
         /// <summary>Quanto tempo um disco queimado fica até ser trocado sem clique (com hot-spare, quase nada).</summary>
         public double TempoTrocaDisco =>
-            TemAutomacao(Catalogo.HotSpare) ? Catalogo.TempoHotSpare
+            TemAutomacao(Catalogo.Runbooks) ? Catalogo.TempoRunbook
+            : TemAutomacao(Catalogo.HotSpare) ? Catalogo.TempoHotSpare
             : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
 
         public double ReceitaTorre =>
@@ -94,10 +116,12 @@ namespace IdleDataCenter.Simulacao
         // Energia
         public double ConsumoKw => Torres * Catalogo.ConsumoServidorTorre + ServidoresRack * Catalogo.ConsumoServidor1U
                                  + RacksCheios * Catalogo.ConsumoRackCheio + NivelStorage * Catalogo.ConsumoStorage
-                                 + HostsContainers * Catalogo.ConsumoHostContainers + (TemCi ? Catalogo.ConsumoServidorCi : 0);
+                                 + HostsContainers * Catalogo.ConsumoHostContainers + (TemCi ? Catalogo.ConsumoServidorCi : 0)
+                                 + NosKubernetes * Catalogo.ConsumoNoKubernetes;
         public double CapacidadeKw => Catalogo.CapacidadeBaseKw + Nivel(Catalogo.NoBreak) * Catalogo.CapacidadePorNoBreak
                                     + (NaSalaDeRacks ? Catalogo.CapacidadeSalaDeRacksKw : 0)
-                                    + (NaSalaVirtualizada ? Catalogo.CapacidadeSalaVirtualizadaKw : 0);
+                                    + (NaSalaVirtualizada ? Catalogo.CapacidadeSalaVirtualizadaKw : 0)
+                                    + (NoDataCenter ? Catalogo.CapacidadeDataCenterKw : 0);
         public bool Sobrecarga => ConsumoKw > CapacidadeKw + 1e-9;
         /// <summary>Com sobrecarga, a receita cai na proporção da energia que falta.</summary>
         public double FatorEnergia => Sobrecarga ? CapacidadeKw / ConsumoKw : 1;
@@ -107,14 +131,15 @@ namespace IdleDataCenter.Simulacao
             Catalogo.TemperaturaAmbiente + ConsumoKw * Catalogo.GrausPorKw * (NaSalaDeRacks ? Catalogo.FatorCalorSalaDeRacks : 1)
             - Nivel(Catalogo.ArCondicionado) * Catalogo.GrausPorArCondicionado
             - (NaSalaDeRacks ? Catalogo.GrausArDePrecisao : 0)
-            - (NaSalaVirtualizada ? Catalogo.GrausSalaVirtualizada : 0);
+            - (NaSalaVirtualizada ? Catalogo.GrausSalaVirtualizada : 0)
+            - (NoDataCenter ? Catalogo.GrausDataCenter : 0);
         public bool Quente => Temperatura > Catalogo.TemperaturaQuente;
         public double FatorTemperatura =>
             Temperatura > Catalogo.TemperaturaCritica ? 0.3 : Quente ? 0.6 : 1;
 
         // Banda: com o link saturado, todo mundo fica lento e a receita cai na proporção
         public double TrafegoMbps => Torres * Catalogo.TrafegoTorre + ServidoresRack * Catalogo.TrafegoServidor1U
-                                   + RacksCheios * Catalogo.TrafegoRackCheio + HostsContainers * Catalogo.TrafegoHostContainers;
+                                   + RacksCheios * Catalogo.TrafegoRackCheio + HostsContainers * Catalogo.TrafegoHostContainers + NosKubernetes * Catalogo.TrafegoNoKubernetes;
         public double BandaMbps => Catalogo.BandaBase + Nivel(Catalogo.Link) * Catalogo.BandaPorLink + Nivel(Catalogo.Link10G) * Catalogo.BandaLink10G;
         public bool LinkSaturado => TrafegoMbps > BandaMbps + 1e-9;
         public double FatorBanda => LinkSaturado ? BandaMbps / TrafegoMbps : 1;
@@ -123,10 +148,20 @@ namespace IdleDataCenter.Simulacao
         public double FatorStorage => DiscoQueimado ? 1 : 1 + NivelStorage * Catalogo.BonusStorage;
 
         /// <summary>Tudo que multiplica a receita de todos os servidores.</summary>
-        public double FatorGeral => FatorEnergia * FatorTemperatura * FatorBanda * FatorStorage;
+        public double FatorGeral => FatorEnergia * FatorTemperatura * FatorBanda * FatorStorage
+                                   * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade);
 
         /// <summary>Hypervisor: cada servidor físico vira várias VMs vendidas como VPS.</summary>
         public double FatorVirtualizacao => 1 + NivelHypervisor * Catalogo.BonusVirtualizacao;
+
+        /// <summary>Durante um pico: escalado rende o dobro, violado quase nada.</summary>
+        public double MultiplicadorDoPico => !EmPico ? 1
+            : Estado.picoEscalado ? Catalogo.MultiplicadorPicoEscalado
+            : Estado.picoViolado ? Catalogo.MultiplicadorPicoViolado : 1;
+
+        /// <summary>Receita do Kubernetes gerenciado (sente os picos de tráfego).</summary>
+        public double ReceitaKubernetes =>
+            NosKubernetes * Catalogo.ReceitaNoKubernetes * (TemBalanceador ? 1 + Catalogo.BonusBalanceador : 1) * FatorGeral * MultiplicadorDoPico;
 
         /// <summary>Receita dos apps nos containers (zero com deploy quebrado).</summary>
         public double ReceitaApps => DeployQuebrado ? 0
@@ -149,7 +184,7 @@ namespace IdleDataCenter.Simulacao
             {
                 double soma = 0;
                 for (int i = 0; i < TotalServidores; i++) soma += ReceitaDoServidor(i);
-                return soma + ReceitaDosRacksCheios + ReceitaApps;
+                return soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes;
             }
         }
 
@@ -212,9 +247,11 @@ namespace IdleDataCenter.Simulacao
 
             // A automação em escrita avança
             AvancarEscrita(segundos);
+            AvancarPico(segundos);
 
             // Novas travadas: cada servidor tem uma chance por segundo (maior com calor, menor com monitoramento)
-            double mult = (Quente ? Catalogo.MultiplicadorQuente : 1) / (TemAutomacao(Catalogo.Monitoramento) ? Catalogo.FatorMtbfMonitoramento : 1);
+            double mult = (Quente ? Catalogo.MultiplicadorQuente : 1) / (TemAutomacao(Catalogo.Monitoramento) ? Catalogo.FatorMtbfMonitoramento : 1)
+                          / (TemAutomacao(Catalogo.Chaos) ? Catalogo.FatorChaos : 1);
             for (int s = 0; s < TotalServidores; s++)
             {
                 if (Travado(s)) continue;
@@ -326,6 +363,64 @@ namespace IdleDataCenter.Simulacao
             Voltou?.Invoke(servidor, porTecnico);
         }
 
+        // ---------------- Picos de tráfego (SRE) ----------------
+
+        void AvancarPico(double segundos)
+        {
+            if (!NoDataCenter || NosKubernetes == 0) return;
+            if (Estado.proximoPico < 0) Estado.proximoPico = Catalogo.PrimeiroPico;
+            if (!EmPico)
+            {
+                Estado.proximoPico -= segundos;
+                if (Estado.proximoPico <= 0) ComecarPico();
+                return;
+            }
+            Estado.picoDecorrido += segundos;
+            if (!Estado.picoEscalado && TemAutomacao(Catalogo.Autoscaling) && Estado.picoDecorrido >= Catalogo.TempoAutoscaling)
+                Escalar(automatico: true);
+            if (!Estado.picoEscalado && !Estado.picoViolado && Estado.picoDecorrido >= LimiteParaEscalar)
+                ViolarSla();
+            if (Estado.picoDecorrido >= Catalogo.DuracaoPico) TerminarPico();
+        }
+
+        public void ComecarPico()
+        {
+            if (EmPico || NosKubernetes == 0) return;
+            Estado.picoNome = Catalogo.NomesDePico[sorteio.Next(Catalogo.NomesDePico.Length)];
+            Estado.picoDecorrido = 0;
+            Estado.picoEscalado = Estado.picoViolado = false;
+            Estado.picosTotal++;
+            PicoComecou?.Invoke(Estado.picoNome);
+        }
+
+        /// <summary>Sobe réplicas para aguentar o pico (clique do jogador ou autoscaling). Pico escalado rende o dobro.</summary>
+        public bool Escalar(bool automatico = false)
+        {
+            if (!EmPico || Estado.picoEscalado) return false;
+            Estado.picoEscalado = true;
+            PicoEscalado?.Invoke(automatico);
+            return true;
+        }
+
+        void ViolarSla()
+        {
+            double multa = Math.Min(Estado.dinheiro, ReceitaPorSegundo * Catalogo.SegundosDeMultaSla);
+            Estado.dinheiro -= multa;
+            Estado.picoViolado = true;
+            SlaViolado?.Invoke(multa);
+        }
+
+        void TerminarPico()
+        {
+            bool sobreviveu = !Estado.picoViolado;
+            if (sobreviveu) Estado.picosSobrevividos++;
+            Estado.picoNome = "";
+            Estado.picoDecorrido = 0;
+            Estado.picoEscalado = Estado.picoViolado = false;
+            Estado.proximoPico = Catalogo.IntervaloPicoMin + sorteio.NextDouble() * (Catalogo.IntervaloPicoMax - Catalogo.IntervaloPicoMin);
+            PicoTerminou?.Invoke(sobreviveu);
+        }
+
         // ---------------- Automações ----------------
 
         public bool AutomacoesLiberadas => Estado.cargo >= Catalogo.CargoDasAutomacoes;
@@ -377,6 +472,8 @@ namespace IdleDataCenter.Simulacao
                 case TipoMeta.ServidoresRack: return ServidoresRack;
                 case TipoMeta.BackupsRestaurados: return Estado.backupsRestaurados;
                 case TipoMeta.AutomacoesAtivas: return AutomacoesAtivas;
+                case TipoMeta.HostsContainers: return HostsContainers;
+                case TipoMeta.PicosSobrevividos: return Estado.picosSobrevividos;
                 default: return Estado.incidentesResolvidos;
             }
         }
@@ -443,6 +540,8 @@ namespace IdleDataCenter.Simulacao
                 Estado.travamentos.Clear();
                 if (DiscoQueimado) { TrocarDisco(porTecnico: true); ConsertadosFora++; }
                 if (DeployQuebrado) { FazerRollback(porTecnico: true); ConsertadosFora++; }
+                // pico em andamento quando o jogo fechou: acaba sem contar nem multar
+                if (EmPico) { Estado.picoNome = ""; Estado.picoDecorrido = 0; Estado.picoEscalado = Estado.picoViolado = false; }
             }
             if (fora >= Catalogo.SegundosMinimosOffline) AvancarEscrita(fora); // o script continua sendo escrito
             double ganho = CalcularGanhoOffline(fora);

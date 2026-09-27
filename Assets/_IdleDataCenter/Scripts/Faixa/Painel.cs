@@ -28,6 +28,7 @@ namespace IdleDataCenter
             [1] = new[] { "O armário vira uma salinha.", "Rack 42U com servidores 1U.", "Energia e temperatura", "passam a importar." },
             [2] = new[] { "A salinha vira sala de racks,", "com energia e ar de precisão.", "Racks cheios, storage e backup.", "A banda do link passa a importar." },
             [3] = new[] { "A sala escurece: vira", "sala virtualizada.", "Hypervisor, containers e CI.", "Deploys às vezes quebram." },
+            [4] = new[] { "Data center pequeno com", "cluster Kubernetes e NOC.", "Picos de tráfego: escale", "a tempo ou pague multa de SLA." },
         };
 
         Faixa faixa;
@@ -275,7 +276,7 @@ namespace IdleDataCenter
             // Incidentes
             Caixa(x, 108, 132, 62, "Incidentes");
             var lista = economia.Travamentos;
-            if (lista.Count == 0 && !economia.DiscoQueimado && !economia.DeployQuebrado)
+            if (lista.Count == 0 && !economia.DiscoQueimado && !economia.DeployQuebrado && !economia.EmPico)
             {
                 T("Tudo funcionando", x + 5, 124, "#6fd36f", false);
                 T($"{economia.Estado.incidentesResolvidos} resolvidos", x + 5, 134, "#7d82ad", false);
@@ -291,6 +292,18 @@ namespace IdleDataCenter
                 Botao(new RectInt(x + 70, y, 57, 14), "Reiniciar", "#fdf6e3", "#7a2a3a", () => faixa.Reiniciar(idx));
             }
             int linha = Math.Min(3, lista.Count);
+            if (economia.EmPico)
+            {
+                // o pico vem primeiro: é o único incidente que dá prêmio se for atendido a tempo
+                int y = 121 + linha * 16;
+                linha++;
+                bool piscar = Mathf.FloorToInt(t * 3) % 2 == 0, escalado = economia.PicoFoiEscalado;
+                R(x + 5, y + 2, 3, 3, escalado ? "#5cc8ff" : piscar ? "#ffa53c" : "#5a3a1a");
+                T(economia.NomeDoPico, x + 11, y + 1, "#fdf6e3", false);
+                string sub = escalado ? "Escalado: rende 2x" : economia.PicoViolado ? "SLA violado" : $"{economia.LimiteParaEscalar - economia.SegundosDePico:0}s p/ escalar";
+                T(sub, x + 11, y + 8, escalado ? "#5cc8ff" : "#ffa53c", false);
+                if (!escalado) Botao(new RectInt(x + 70, y, 57, 14), "Escalar", "#1b1a2e", "#ffa53c", faixa.Escalar);
+            }
             if (economia.DeployQuebrado && linha < 3)
             {
                 int y = 121 + linha * 16;
@@ -413,9 +426,13 @@ namespace IdleDataCenter
                 T("Continua sendo escrito com o jogo fechado.", 86, 43, "#4d5170", false);
             }
 
-            for (int i = 0; i < Catalogo.Automacoes.Count; i++)
+            // cabem 8 linhas: primeiro as que ainda dá para escrever, depois as do próximo cargo, por último as ativas
+            var visiveis = Catalogo.Automacoes
+                .OrderBy(a => economia.TemAutomacao(a.Id) ? 2 : economia.Cargo < a.Cargo ? 1 : 0)
+                .Take(8).ToList();
+            for (int i = 0; i < visiveis.Count; i++)
             {
-                var a = Catalogo.Automacoes[i];
+                var a = visiveis[i];
                 int y = 55 + i * 22;   // linhas compactas: cabem as 8 automações
                 bool ativa = economia.TemAutomacao(a.Id), escrevendo = emEscrita == a, req = economia.RequisitoAutomacaoOk(a);
                 bool cedo = economia.Cargo < a.Cargo;   // ainda não chegou no cargo que libera
@@ -538,6 +555,7 @@ namespace IdleDataCenter
             public string Arte;
             public Rect Terminal, Leds, Luzes, Pele;   // Terminal vazio = a cena não tem CRT
             public bool TemGato;
+            public float MatizDoRoxo = -1;          // >= 0: repinta o moletom roxo com este matiz (reaproveita a cena)
         }
 
         static readonly ConfigCena[] Cenas =
@@ -546,6 +564,7 @@ namespace IdleDataCenter
             new ConfigCena { Arte = "cena_sysadmin", Terminal = Rect.zero, Leds = new Rect(0.42f, 0.2f, 0.58f, 0.8f), Luzes = new Rect(0, 0, 0.15f, 0.6f), Pele = new Rect(0.36f, 0, 0.12f, 0.35f) },
             new ConfigCena { Arte = "cena_infra", Terminal = Rect.zero, Leds = new Rect(0.33f, 0.1f, 0.67f, 0.8f), Luzes = new Rect(0, 0.4f, 0.17f, 0.3f), Pele = new Rect(0.18f, 0.1f, 0.14f, 0.35f) },
             new ConfigCena { Arte = "cena_devops", Terminal = Rect.zero, Leds = new Rect(0, 0.1f, 0.55f, 0.4f), Luzes = new Rect(0.6f, 0.05f, 0.4f, 0.6f), Pele = new Rect(0.37f, 0.35f, 0.1f, 0.35f) },
+            new ConfigCena { Arte = "cena_devops", Terminal = Rect.zero, Leds = new Rect(0, 0.1f, 0.55f, 0.4f), Luzes = new Rect(0.6f, 0.05f, 0.4f, 0.6f), Pele = new Rect(0.37f, 0.35f, 0.1f, 0.35f), MatizDoRoxo = 0.05f },   // SRE: mesma sala, moletom laranja de plantão
         };
 
         Color32[] cenaPx;
@@ -570,6 +589,7 @@ namespace IdleDataCenter
             cenaW = t.width; cenaH = t.height;
             cenaPx = ArteGerada.PixelsDeCimaParaBaixo(t);
             PreencherBordaEscura();
+            if (cfg.MatizDoRoxo >= 0) RepintarRoxo(cfg.MatizDoRoxo);
             int tx0 = cenaW, ty0 = cenaH, tx1 = -1, ty1 = -1, peleY = cenaH, peleX = 0, peleN = 0;
             for (int y = 0; y < cenaH; y++)
             for (int x = 0; x < cenaW; x++)
@@ -624,13 +644,27 @@ namespace IdleDataCenter
             }
         }
 
+        /// <summary>Troca o roxo (o moletom do DevOps) por outro matiz, mantendo luz e sombra.</summary>
+        void RepintarRoxo(float matiz)
+        {
+            for (int i = 0; i < cenaPx.Length; i++)
+            {
+                var c = cenaPx[i];
+                Color.RGBToHSV(c, out float h, out float s, out float v);
+                if (h < 0.70f || h > 0.86f || s < 0.3f || v < 0.25f) continue;
+                var n = (Color32)Color.HSVToRGB(matiz, s, v);
+                cenaPx[i] = new Color32(n.r, n.g, n.b, c.a);
+            }
+        }
+
         static int Sorteio(int a, int b) => Mathf.Abs(a * 7919 + b * 104729) % 11;
 
         void Cena(int x0, int y0)
         {
             const int SW = 344, SH = 150;
             if (cenaPx == null || cenaCargo != economia.Cargo) CarregarCena(economia.Cargo);
-            bool alerta = economia.Travamentos.Count > 0 || economia.DiscoQueimado || economia.DeployQuebrado;
+            bool alerta = economia.Travamentos.Count > 0 || economia.DiscoQueimado || economia.DeployQuebrado
+                          || (economia.EmPico && !economia.PicoFoiEscalado);
             tela.Recortar(x0, y0, SW, SH);
             tela.Imagem(cenaPx, cenaW, cenaH, x0, y0);
 

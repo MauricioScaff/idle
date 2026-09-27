@@ -367,7 +367,7 @@ namespace IdleDataCenter.Testes
             e.Estado.backupsRestaurados = 1;
             Assert.IsTrue(e.Promover());
             Assert.AreEqual("Engenheiro DevOps", e.CargoAtual.Nome);
-            Assert.IsFalse(e.TemProximoCargo, "DevOps é o último cargo por enquanto");
+            Assert.IsFalse(e.PodePromover, "o DevOps tem metas próprias");
         }
 
         [Test]
@@ -439,6 +439,120 @@ namespace IdleDataCenter.Testes
             Assert.IsFalse(e.PodeEscrever(Catalogo.InfraComoCodigo));
             e.Estado.cargo = 3;
             Assert.IsTrue(e.PodeEscrever(Catalogo.InfraComoCodigo));
+        }
+
+        // ---------- SRE ----------
+
+        static Economia NoSre(double dinheiro = 0, int nos = 1)
+        {
+            var e = Nova(dinheiro);
+            e.Estado.cargo = 4;
+            DefinirNivel(e, Catalogo.NoKubernetes, nos);
+            DefinirNivel(e, Catalogo.Link10G, 1);   // banda de sobra: o teste é sobre o cluster
+            return e;
+        }
+
+        [Test]
+        public void DevOpsViraSre()
+        {
+            var e = NoDevOps();
+            DefinirNivel(e, Catalogo.Containers, 4);
+            e.Estado.totalGanho = 40000000;
+            e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.Monitoramento, Catalogo.CronFaturamento, Catalogo.Plantao, Catalogo.Pipeline });
+            Assert.IsFalse(e.PodePromover, "faltam automações");
+            e.Estado.automacoes.Add(Catalogo.RollbackAutomatico);
+            Assert.IsTrue(e.Promover());
+            Assert.AreEqual("SRE", e.CargoAtual.Nome);
+            Assert.IsFalse(e.TemProximoCargo, "SRE é o último cargo por enquanto");
+        }
+
+        [Test]
+        public void NosKubernetesRendemComBalanceadorEObservabilidade()
+        {
+            var e = NoSre(nos: 2);
+            Assert.AreEqual(1 + 800, e.ReceitaPorSegundo, 1e-9);
+            DefinirNivel(e, Catalogo.Balanceador, 1);
+            Assert.AreEqual(1 + 1000, e.ReceitaPorSegundo, 1e-9);
+            DefinirNivel(e, Catalogo.Observabilidade, 2);
+            Assert.AreEqual((1 + 1000) * 1.3, e.ReceitaPorSegundo, 1e-9);
+        }
+
+        [Test]
+        public void PicosSoComeçamNoSre()
+        {
+            var e = NoSre();
+            e.Estado.cargo = 3;
+            e.Avancar(Catalogo.PrimeiroPico + 10);
+            Assert.IsFalse(e.EmPico);
+            e.Estado.cargo = 4;
+            string nome = null;
+            e.PicoComecou += n => nome = n;
+            for (int i = 0; i <= Catalogo.PrimeiroPico; i++) e.Avancar(1);
+            Assert.IsTrue(e.EmPico);
+            Assert.IsNotNull(nome);
+        }
+
+        [Test]
+        public void PicoSemEscalarViolaOSlaECobraMulta()
+        {
+            var e = NoSre(1000000);
+            e.ComecarPico();
+            double receita = e.ReceitaPorSegundo;
+            double multa = -1;
+            bool? sobreviveu = null;
+            e.SlaViolado += m => multa = m;
+            e.PicoTerminou += s => sobreviveu = s;
+            for (int i = 0; i < Catalogo.TempoParaEscalar; i++) e.Avancar(1);
+            Assert.IsTrue(e.PicoViolado);
+            Assert.AreEqual(receita * Catalogo.SegundosDeMultaSla, multa, 1e-6);
+            Assert.AreEqual(Catalogo.MultiplicadorPicoViolado, e.MultiplicadorDoPico, 1e-9);
+            for (int i = 0; i < Catalogo.DuracaoPico; i++) e.Avancar(1);
+            Assert.IsFalse(e.EmPico);
+            Assert.AreEqual(false, sobreviveu);
+            Assert.AreEqual(0, e.Estado.picosSobrevividos);
+        }
+
+        [Test]
+        public void PicoEscaladoRendeODobroEContaComoSobrevivido()
+        {
+            var e = NoSre();
+            e.ComecarPico();
+            Assert.IsTrue(e.Escalar());
+            Assert.AreEqual(1 + 400 * Catalogo.MultiplicadorPicoEscalado, e.ReceitaPorSegundo, 1e-9);
+            for (int i = 0; i <= Catalogo.DuracaoPico; i++) e.Avancar(1);
+            Assert.AreEqual(1, e.Estado.picosSobrevividos);
+            Assert.AreEqual(1, e.Progresso(new MetaDef { Tipo = TipoMeta.PicosSobrevividos }), 1e-9);
+        }
+
+        [Test]
+        public void BalanceadorDaMaisTempoParaEscalar()
+        {
+            var e = NoSre();
+            DefinirNivel(e, Catalogo.Balanceador, 1);
+            e.ComecarPico();
+            for (int i = 0; i < Catalogo.TempoParaEscalar + 2; i++) e.Avancar(1);
+            Assert.IsFalse(e.PicoViolado);
+            Assert.IsTrue(e.Escalar());
+        }
+
+        [Test]
+        public void AutoscalingEscalaSozinho()
+        {
+            var e = NoSre();
+            e.Estado.automacoes.Add(Catalogo.Autoscaling);
+            e.ComecarPico();
+            for (int i = 0; i < Catalogo.TempoAutoscaling; i++) e.Avancar(1);
+            Assert.IsTrue(e.PicoFoiEscalado);
+        }
+
+        [Test]
+        public void RunbooksConsertamTudoEmTresSegundos()
+        {
+            var e = NoSre();
+            e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.Runbooks });
+            Assert.AreEqual(Catalogo.TempoRunbook, e.TempoConserto, 1e-9);
+            Assert.AreEqual(Catalogo.TempoRunbook, e.TempoTrocaDisco, 1e-9);
+            Assert.AreEqual(Catalogo.TempoRunbook, e.TempoRollback, 1e-9);
         }
 
         // ---------- Automações ----------

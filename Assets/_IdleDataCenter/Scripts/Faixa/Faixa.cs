@@ -46,6 +46,10 @@ namespace IdleDataCenter
             economia.AutomacaoPronta += AoFicarProntaAutomacao;
             economia.DeployQuebrou += AoQuebrarDeploy;
             economia.DeployVoltou += AoVoltarDeploy;
+            economia.PicoComecou += AoComecarPico;
+            economia.PicoEscalado += AoEscalar;
+            economia.SlaViolado += AoViolarSla;
+            economia.PicoTerminou += AoTerminarPico;
         }
 
         void Start()
@@ -200,6 +204,16 @@ namespace IdleDataCenter
             economia.FazerRollback(porTecnico: false);
         }
 
+        /// <summary>Clique num nó do cluster: num pico sem escala, escala; senão rende um clique.</summary>
+        public void ClicarCluster(Vector2 topo)
+        {
+            if (economia.EmPico && !economia.PicoFoiEscalado) { Faiscas(topo, 4); economia.Escalar(); return; }
+            ClicarEquipamento(topo);
+        }
+
+        /// <summary>Escalar pelo painel.</summary>
+        public void Escalar() => economia.Escalar();
+
         /// <summary>Rollback pelo painel.</summary>
         public void FazerRollback() => economia.FazerRollback(porTecnico: false);
 
@@ -216,7 +230,8 @@ namespace IdleDataCenter
 
         void AoClicarMeta()
         {
-            if (economia.PodePromover) Promover();
+            if (economia.EmPico && !economia.PicoFoiEscalado) economia.Escalar();
+            else if (economia.PodePromover) Promover();
             else AbrirCarreira();
         }
 
@@ -274,6 +289,31 @@ namespace IdleDataCenter
             if (peloTecnico) cenario.Tecnico.Comemorar();
             cenario.LimparEsteira();
             Sons.Conserto();
+        }
+
+        void AoComecarPico(string nome)
+        {
+            Loja.MostrarAviso("Pico: " + nome + "! Escale", 4f, Laranja);
+            Sons.Alerta();
+        }
+
+        void AoEscalar(bool automatico)
+        {
+            Loja.MostrarAviso(automatico ? "Autoscaling escalou" : "Cluster escalado: rende 2x", 2.5f, VerdeClaro);
+            Sons.Compra();
+        }
+
+        void AoViolarSla(double multa)
+        {
+            Loja.MostrarAviso("SLA violado: -R$ " + Formatar(multa), 3f, Vermelho);
+            Sons.Alerta();
+        }
+
+        void AoTerminarPico(bool sobreviveu)
+        {
+            Loja.MostrarAviso(sobreviveu ? "Pico superado!" : "O pico passou", 2.5f, sobreviveu ? VerdeClaro : Laranja);
+            if (sobreviveu) { cenario.Tecnico.Comemorar(); Sons.Conserto(); }
+            Salvamento.Salvar(economia.Estado);
         }
 
         void AoFicarProntaAutomacao(string id)
@@ -426,7 +466,13 @@ namespace IdleDataCenter
             var metas = economia.CargoAtual.MetasParaPromocao;
             string meta;
             Color cor = Azul;
-            if (economia.PodePromover)
+            if (economia.EmPico && !economia.PicoFoiEscalado)
+            {
+                // pico de tráfego: o botão da meta vira o atalho para escalar o cluster
+                meta = economia.PicoViolado ? "SLA violado! Escalar" : $"Escalar! {economia.LimiteParaEscalar - economia.SegundosDePico:0}s";
+                cor = Mathf.FloorToInt(Time.time / 0.25f) % 2 == 0 ? Laranja : Vermelho;
+            }
+            else if (economia.PodePromover)
             {
                 meta = "Promoção!";
                 cor = Mathf.FloorToInt(Time.time / 0.4f) % 2 == 0 ? Amarelo : Color.white;
