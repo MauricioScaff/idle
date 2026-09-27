@@ -43,6 +43,7 @@ namespace IdleDataCenter
             economia.Promoveu += AoPromover;
             economia.DiscoQueimou += AoQueimarDisco;
             economia.DiscoTrocado += AoTrocarDisco;
+            economia.AutomacaoPronta += AoFicarProntaAutomacao;
         }
 
         void Start()
@@ -227,7 +228,7 @@ namespace IdleDataCenter
         void AoVoltar(int servidor, bool peloTecnico)
         {
             if (!peloTecnico) return;
-            Loja.MostrarAviso("Técnico consertou", 1.5f, VerdeClaro);
+            Loja.MostrarAviso(economia.TemAutomacao(Catalogo.Watchdog) ? "Watchdog reiniciou" : "Técnico consertou", 1.5f, VerdeClaro);
             cenario.Tecnico.Comemorar();
             Sons.Conserto();
         }
@@ -244,6 +245,24 @@ namespace IdleDataCenter
             else Loja.MostrarAviso("Sem backup: -R$ " + Formatar(perda), 3f, Vermelho);
             if (peloTecnico) cenario.Tecnico.Comemorar();
             Sons.Conserto();
+            Salvamento.Salvar(economia.Estado);
+        }
+
+        void AoFicarProntaAutomacao(string id)
+        {
+            Loja.MostrarAviso("Automação pronta: " + Catalogo.BuscarAutomacao(id).Nome, 4f, VerdeClaro);
+            cenario.Tecnico.Comemorar();
+            Faiscas(cenario.Tela.transform.position - cenario.transform.position + new Vector3(6, 6), 4);
+            Sons.Promocao();
+            Salvamento.Salvar(economia.Estado);
+        }
+
+        /// <summary>Começar a escrever uma automação (pelo painel).</summary>
+        public void EscreverAutomacao(string id)
+        {
+            if (!economia.EscreverAutomacao(id)) return;
+            Loja.MostrarAviso("Escrevendo: " + Catalogo.BuscarAutomacao(id).Nome, 2.5f, Azul);
+            Sons.Compra();
             Salvamento.Salvar(economia.Estado);
         }
 

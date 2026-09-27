@@ -110,7 +110,7 @@ namespace IdleDataCenter
                     if (Mathf.Approximately(x, alvoX))
                     {
                         if (indoConferir) { estado = Estado.Consertando; tempoEstado = 2.5f; sr.flipX = false; }
-                        else if (indoParaMesa) { estado = Estado.Digitando; tempoEstado = Random.Range(3f, 6f); sr.flipX = true; cenario.Tela.Digitando = true; }
+                        else if (indoParaMesa) { estado = Estado.Digitando; tempoEstado = cenario.EscrevendoAutomacao ? Random.Range(8f, 14f) : Random.Range(3f, 6f); sr.flipX = true; cenario.Tela.Digitando = true; }
                         else Parar();
                     }
                     break;
@@ -153,8 +153,17 @@ namespace IdleDataCenter
         void EscolherDestino()
         {
             float sorteio = Random.value;
-            indoConferir = sorteio < 0.3f;
-            indoParaMesa = usaMesa && sorteio >= 0.3f && sorteio < 0.6f;
+            if (usaMesa && cenario.EscrevendoAutomacao)
+            {
+                // escrevendo um script: quase sempre volta para o teclado
+                indoConferir = sorteio < 0.1f;
+                indoParaMesa = sorteio >= 0.1f && sorteio < 0.85f;
+            }
+            else
+            {
+                indoConferir = sorteio < 0.3f;
+                indoParaMesa = usaMesa && sorteio >= 0.3f && sorteio < 0.6f;
+            }
             alvoX = indoConferir ? MaxX : indoParaMesa ? MinX : Mathf.Round(Random.Range(MinX + 8f, MaxX));
             estado = Estado.Andando;
             sr.flipX = alvoX < x;

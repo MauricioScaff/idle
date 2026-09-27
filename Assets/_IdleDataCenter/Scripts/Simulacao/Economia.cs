@@ -27,6 +27,8 @@ namespace IdleDataCenter.Simulacao
         public event Action DiscoQueimou;
         /// <summary>O disco foi trocado: (restaurou do backup?, quanto se perdeu em reembolsos, foi o técnico sozinho?).</summary>
         public event Action<bool, double, bool> DiscoTrocado;
+        /// <summary>Uma automação terminou de ser escrita e já está trabalhando (id).</summary>
+        public event Action<string> AutomacaoPronta;
 
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
@@ -60,7 +62,14 @@ namespace IdleDataCenter.Simulacao
         public int ContagemServidores => TotalServidores + RacksCheios * Catalogo.ServidoresPorRackCheio;
 
         /// <summary>Quanto tempo o técnico leva para consertar sozinho (com estagiário, metade).</summary>
-        public double TempoConserto => TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
+        public double TempoConserto =>
+            TemAutomacao(Catalogo.Watchdog) ? Catalogo.TempoWatchdog
+            : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
+
+        /// <summary>Quanto tempo um disco queimado fica até ser trocado sem clique (com hot-spare, quase nada).</summary>
+        public double TempoTrocaDisco =>
+            TemAutomacao(Catalogo.HotSpare) ? Catalogo.TempoHotSpare
+            : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
 
         public double ReceitaTorre =>
             Catalogo.ReceitaBaseServidor
@@ -162,7 +171,7 @@ namespace IdleDataCenter.Simulacao
             Estado.totalGanho += valor;
         }
 
-        /// <summary>Avança o tempo com o jogo aberto: rende, conserta com o técnico e sorteia travadas.</summary>
+        /// <summary>Avança o tempo com o jogo aberto: rende, conserta, escreve automações e sorteia falhas.</summary>
         public void Avancar(double segundos)
         {
             Ganhar(ReceitaPorSegundo * segundos);
@@ -175,8 +184,11 @@ namespace IdleDataCenter.Simulacao
                 if (t.segundos >= TempoConserto) Resolver(t.servidor, porTecnico: true);
             }
 
-            // Novas travadas: cada servidor tem uma chance por segundo (maior se estiver quente)
-            double mult = Quente ? Catalogo.MultiplicadorQuente : 1;
+            // A automação em escrita avança
+            AvancarEscrita(segundos);
+
+            // Novas travadas: cada servidor tem uma chance por segundo (maior com calor, menor com monitoramento)
+            double mult = (Quente ? Catalogo.MultiplicadorQuente : 1) / (TemAutomacao(Catalogo.Monitoramento) ? Catalogo.FatorMtbfMonitoramento : 1);
             for (int s = 0; s < TotalServidores; s++)
             {
                 if (Travado(s)) continue;
@@ -184,11 +196,11 @@ namespace IdleDataCenter.Simulacao
                 if (sorteio.NextDouble() < segundos * mult / mtbf) Travar(s);
             }
 
-            // Storage: um disco queimado de cada vez; o técnico troca sozinho no mesmo tempo de um conserto
+            // Storage: um disco queimado de cada vez; o técnico troca sozinho (ou o hot-spare entra)
             if (DiscoQueimado)
             {
                 Estado.discoSegundos += segundos;
-                if (Estado.discoSegundos >= TempoConserto) TrocarDisco(porTecnico: true);
+                if (Estado.discoSegundos >= TempoTrocaDisco) TrocarDisco(porTecnico: true);
             }
             else if (NivelStorage > 0 && sorteio.NextDouble() < segundos * mult * NivelStorage / Catalogo.MtbfDisco)
                 QueimarDisco();
@@ -260,6 +272,46 @@ namespace IdleDataCenter.Simulacao
             Voltou?.Invoke(servidor, porTecnico);
         }
 
+        // ---------------- Automações ----------------
+
+        public bool AutomacoesLiberadas => Estado.cargo >= Catalogo.CargoDasAutomacoes;
+        public bool TemAutomacao(string id) => Estado.automacoes.Contains(id);
+        public int AutomacoesAtivas => Estado.automacoes.Count;
+        public bool Escrevendo => !string.IsNullOrEmpty(Estado.escrevendo);
+        public AutomacaoDef AutomacaoEmEscrita => Escrevendo ? Catalogo.BuscarAutomacao(Estado.escrevendo) : null;
+        /// <summary>De 0 a 1.</summary>
+        public double ProgressoEscrita => Escrevendo ? Math.Min(1, Estado.segundosEscritos / AutomacaoEmEscrita.Segundos) : 0;
+
+        public bool RequisitoAutomacaoOk(AutomacaoDef a) => a.Requisito == null || Nivel(a.Requisito) > 0;
+
+        public bool PodeEscrever(string id)
+        {
+            var a = Catalogo.BuscarAutomacao(id);
+            return AutomacoesLiberadas && !Escrevendo && !TemAutomacao(id) && RequisitoAutomacaoOk(a) && Estado.dinheiro >= a.Custo;
+        }
+
+        /// <summary>Paga e começa a escrever (uma por vez; o técnico fica na mesa digitando).</summary>
+        public bool EscreverAutomacao(string id)
+        {
+            if (!PodeEscrever(id)) return false;
+            Estado.dinheiro -= Catalogo.BuscarAutomacao(id).Custo;
+            Estado.escrevendo = id;
+            Estado.segundosEscritos = 0;
+            return true;
+        }
+
+        void AvancarEscrita(double segundos)
+        {
+            if (!Escrevendo) return;
+            Estado.segundosEscritos += segundos;
+            if (Estado.segundosEscritos < AutomacaoEmEscrita.Segundos) return;
+            string id = Estado.escrevendo;
+            Estado.escrevendo = "";
+            Estado.segundosEscritos = 0;
+            Estado.automacoes.Add(id);
+            AutomacaoPronta?.Invoke(id);
+        }
+
         // ---------------- Carreira ----------------
 
         public double Progresso(MetaDef meta)
@@ -298,12 +350,19 @@ namespace IdleDataCenter.Simulacao
 
         // ---------------- Offline ----------------
 
+        /// <summary>Fração da receita normal que rende com o jogo fechado (automações sobem até 100%).</summary>
+        public double TaxaOffline => Catalogo.TaxaOffline
+            + (TemAutomacao(Catalogo.CronFaturamento) ? Catalogo.BonusOfflinePorAutomacao : 0)
+            + (TemAutomacao(Catalogo.Plantao) ? Catalogo.BonusOfflinePorAutomacao : 0);
+
+        public double HorasMaximasOffline => TemAutomacao(Catalogo.Plantao) ? Catalogo.HorasOfflineComPlantao : Catalogo.HorasMaximasOffline;
+
         /// <summary>Quanto o jogador ganharia por ficar fora esse tempo (com taxa reduzida e limite de horas).</summary>
         public double CalcularGanhoOffline(double segundosFora)
         {
             if (segundosFora < Catalogo.SegundosMinimosOffline) return 0;
-            double segundos = Math.Min(segundosFora, Catalogo.HorasMaximasOffline * 3600);
-            return ReceitaPorSegundo * segundos * Catalogo.TaxaOffline;
+            double segundos = Math.Min(segundosFora, HorasMaximasOffline * 3600);
+            return ReceitaPorSegundo * segundos * TaxaOffline;
         }
 
         /// <summary>Resumo da última volta: quanto tempo ficou fora (s), quanto rendeu e quantos servidores o técnico consertou.</summary>
@@ -311,7 +370,7 @@ namespace IdleDataCenter.Simulacao
         public double GanhoFora { get; private set; }
         public int ConsertadosFora { get; private set; }
         /// <summary>Ficou fora mais que o limite de horas (o que passou disso não rendeu).</summary>
-        public bool PassouDoLimite => SegundosFora > Catalogo.HorasMaximasOffline * 3600;
+        public bool PassouDoLimite => SegundosFora > HorasMaximasOffline * 3600;
 
         /// <summary>
         /// Aplica o progresso offline desde o último save. Enquanto você estava fora, o técnico
@@ -329,6 +388,7 @@ namespace IdleDataCenter.Simulacao
                 Estado.travamentos.Clear();
                 if (DiscoQueimado) { TrocarDisco(porTecnico: true); ConsertadosFora++; }
             }
+            if (fora >= Catalogo.SegundosMinimosOffline) AvancarEscrita(fora); // o script continua sendo escrito
             double ganho = CalcularGanhoOffline(fora);
             GanhoFora = ganho;
             Ganhar(ganho);

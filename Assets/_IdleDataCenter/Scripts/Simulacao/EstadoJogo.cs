@@ -23,6 +23,11 @@ namespace IdleDataCenter.Simulacao
         public bool discoQueimado;
         public double discoSegundos;         // há quanto tempo está queimado
         public int backupsRestaurados;
+
+        // Automações
+        public List<string> automacoes = new List<string>();   // prontas e ativas
+        public string escrevendo = "";       // id da que o técnico está escrevendo (vazio = nenhuma)
+        public double segundosEscritos;
     }
 
     [Serializable]

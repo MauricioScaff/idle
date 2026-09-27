@@ -97,12 +97,12 @@ namespace IdleDataCenter
             tela.Texto(tempo, Largura - 6 - PixelCanvas.LarguraTexto(tempo), 4, C("#a9c7ff"), false);
 
             tela.Texto("+R$ " + Faixa.Formatar(economia.GanhoFora), 6, 18, C("#ffd65c"), true, 2);
-            tela.Texto("(50% da receita normal)", 6, 31, C("#7d82ad"), false);
+            tela.Texto($"({economia.TaxaOffline * 100:0}% da receita normal)", 6, 31, C("#7d82ad"), false);
             string conserto = economia.ConsertadosFora == 0 ? "Nenhum servidor travou."
                             : economia.ConsertadosFora == 1 ? "O técnico consertou 1 servidor."
                             : $"O técnico consertou {economia.ConsertadosFora} servidores.";
             tela.Texto(conserto, 6, 40, C("#6fd36f"), false);
-            if (economia.PassouDoLimite) tela.Texto("Rendeu só as primeiras 12 h.", 6, 49, C("#ff9fae"), false);
+            if (economia.PassouDoLimite) tela.Texto($"Rendeu só as primeiras {economia.HorasMaximasOffline:0} h.", 6, 49, C("#ff9fae"), false);
 
             bool sobre = botaoOk.Contains(cursor);
             tela.Ret(botaoOk.x, botaoOk.y, botaoOk.width, botaoOk.height, C("#1b1a2e"));

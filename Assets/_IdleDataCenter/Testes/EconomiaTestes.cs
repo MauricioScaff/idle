@@ -347,6 +347,75 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.DiscoQueimado);
         }
 
+        // ---------- Automações ----------
+
+        [Test]
+        public void AutomacoesLiberamNoAnalista()
+        {
+            var e = Nova(1e7);
+            e.Estado.cargo = 1;
+            Assert.IsFalse(e.PodeEscrever(Catalogo.Watchdog));
+            e.Estado.cargo = 2;
+            Assert.IsTrue(e.PodeEscrever(Catalogo.Watchdog));
+            Assert.IsFalse(e.PodeEscrever(Catalogo.HotSpare), "troca de disco precisa de storage");
+        }
+
+        [Test]
+        public void AutomacaoLevaTempoParaEscreverEUmaPorVez()
+        {
+            var e = Nova(1e7);
+            e.Estado.cargo = 2;
+            string pronta = null;
+            e.AutomacaoPronta += id => pronta = id;
+            Assert.IsTrue(e.EscreverAutomacao(Catalogo.Watchdog));
+            Assert.AreEqual(1e7 - Catalogo.BuscarAutomacao(Catalogo.Watchdog).Custo, e.Dinheiro, 1e-6);
+            Assert.IsFalse(e.PodeEscrever(Catalogo.CronFaturamento), "uma por vez");
+            e.Avancar(Catalogo.BuscarAutomacao(Catalogo.Watchdog).Segundos - 1);
+            Assert.IsFalse(e.TemAutomacao(Catalogo.Watchdog));
+            Assert.AreEqual(Catalogo.TempoConsertoTecnico, e.TempoConserto, 1e-9);
+            e.Avancar(1);
+            Assert.IsTrue(e.TemAutomacao(Catalogo.Watchdog));
+            Assert.AreEqual(Catalogo.Watchdog, pronta);
+            Assert.AreEqual(Catalogo.TempoWatchdog, e.TempoConserto, 1e-9);
+            Assert.IsTrue(e.PodeEscrever(Catalogo.CronFaturamento));
+        }
+
+        [Test]
+        public void HotSpareTrocaODiscoSozinho()
+        {
+            var e = Nova();
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.Storage, 1);
+            e.Estado.automacoes.Add(Catalogo.HotSpare);
+            e.QueimarDisco();
+            e.Avancar(Catalogo.TempoHotSpare);
+            Assert.IsFalse(e.DiscoQueimado);
+        }
+
+        [Test]
+        public void CronEPlantaoLevamOOfflineA100PorCento()
+        {
+            var e = Nova();
+            Assert.AreEqual(0.5, e.TaxaOffline, 1e-9);
+            e.Estado.automacoes.Add(Catalogo.CronFaturamento);
+            Assert.AreEqual(0.75, e.TaxaOffline, 1e-9);
+            e.Estado.automacoes.Add(Catalogo.Plantao);
+            Assert.AreEqual(1.0, e.TaxaOffline, 1e-9);
+            Assert.AreEqual(24 * 3600, e.CalcularGanhoOffline(48 * 3600), 1e-9);
+        }
+
+        [Test]
+        public void AutomacaoContinuaSendoEscritaOffline()
+        {
+            var e = Nova(1e7);
+            e.Estado.cargo = 2;
+            e.EscreverAutomacao(Catalogo.Plantao);
+            e.Estado.ultimoSalvamentoUnix = 1000;
+            e.AplicarOffline(1000 + 3600);
+            Assert.IsTrue(e.TemAutomacao(Catalogo.Plantao));
+            Assert.IsFalse(e.Escrevendo);
+        }
+
         // ---------- Offline ----------
 
         [Test]

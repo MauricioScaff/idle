@@ -18,6 +18,17 @@ namespace IdleDataCenter.Simulacao
         public double Custo(int nivelAtual) => Math.Round(CustoBase * Math.Pow(FatorCusto, nivelAtual));
     }
 
+    /// <summary>Automação: um script que o técnico escreve (leva tempo real) e depois trabalha sozinho para sempre.</summary>
+    public class AutomacaoDef
+    {
+        public string Id;
+        public string Nome;
+        public string Descricao;    // o que ela faz, em uma linha
+        public string Requisito;    // id de melhoria que precisa estar comprada (ou null)
+        public double Custo;
+        public double Segundos;     // tempo para escrever
+    }
+
     public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados }
 
     public class MetaDef
@@ -105,9 +116,17 @@ namespace IdleDataCenter.Simulacao
         /// <summary>Sem backup, um disco queimado custa esta quantidade de segundos de receita em reembolsos.</summary>
         public const double SegundosPerdidosSemBackup = 120;
 
+        // --- Automações ---
+        public const int CargoDasAutomacoes = 2;         // liberam no Analista de Infra
+        public const double TempoWatchdog = 5;           // reinicia servidor travado sozinho
+        public const double TempoHotSpare = 5;           // troca de disco automática
+        public const double FatorMtbfMonitoramento = 2;  // incidentes pela metade
+
         // --- Progresso offline ---
         public const double TaxaOffline = 0.5;
         public const double HorasMaximasOffline = 12;
+        public const double BonusOfflinePorAutomacao = 0.25;   // cron e plantão: 50% → 75% → 100%
+        public const double HorasOfflineComPlantao = 24;
         public const double SegundosMinimosOffline = 60;
 
         public static readonly IReadOnlyList<CargoDef> Cargos = new[]
@@ -152,6 +171,28 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Backup, Nome = "Backup fita", Efeito = "Salva os dados", Cargo = 2, Requisito = Storage, NivelMaximo = 1, CustoBase = 100000, FatorCusto = 1 },
             new MelhoriaDef { Id = Link, Nome = "Link fibra", Efeito = "+300 Mbps", Cargo = 2, NivelMaximo = 2, CustoBase = 50000, FatorCusto = 3 },
         };
+
+        // --- Ids das automações ---
+        public const string Watchdog = "watchdog";
+        public const string HotSpare = "hotspare";
+        public const string Monitoramento = "monitoramento";
+        public const string CronFaturamento = "cron";
+        public const string Plantao = "plantao";
+
+        public static readonly IReadOnlyList<AutomacaoDef> Automacoes = new[]
+        {
+            new AutomacaoDef { Id = Watchdog, Nome = "Watchdog", Descricao = "Reinicia servidor travado em 5 s", Custo = 150000, Segundos = 180 },
+            new AutomacaoDef { Id = HotSpare, Nome = "Troca de disco", Descricao = "Disco reserva entra sozinho em 5 s", Requisito = Storage, Custo = 250000, Segundos = 300 },
+            new AutomacaoDef { Id = Monitoramento, Nome = "Monitoramento", Descricao = "Alerta antes da falha: metade dos incidentes", Custo = 400000, Segundos = 480 },
+            new AutomacaoDef { Id = CronFaturamento, Nome = "Cron de faturamento", Descricao = "Receita offline sobe para 75%", Custo = 300000, Segundos = 360 },
+            new AutomacaoDef { Id = Plantao, Nome = "Plantão 24h", Descricao = "Offline a 100%, até 24 h", Requisito = null, Custo = 600000, Segundos = 600 },
+        };
+
+        public static AutomacaoDef BuscarAutomacao(string id)
+        {
+            foreach (var a in Automacoes) if (a.Id == id) return a;
+            throw new ArgumentException("Automação desconhecida: " + id);
+        }
 
         public static MelhoriaDef Buscar(string id)
         {

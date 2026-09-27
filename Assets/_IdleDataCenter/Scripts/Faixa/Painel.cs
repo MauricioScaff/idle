@@ -16,7 +16,7 @@ namespace IdleDataCenter
         public const int Largura = 560, Altura = 236, Espaco = 4;
         const float Fps = 12f;
 
-        enum Aba { VisaoGeral, Melhorias, Carreira, Ajustes }
+        enum Aba { VisaoGeral, Melhorias, Carreira, Ajustes, Automacao }
 
         static readonly string[] Escada =
         {
@@ -70,10 +70,11 @@ namespace IdleDataCenter
         public void Abrir() => Mostrar(true);
         public void AbrirCarreira() { aba = Aba.Carreira; Mostrar(true); }
 
-        /// <summary>Abre numa aba pelo nome ("visao", "melhorias", "carreira" ou "ajustes"); usado nos testes.</summary>
+        /// <summary>Abre numa aba pelo nome ("visao", "melhorias", "carreira", "ajustes" ou "automacao"); usado nos testes.</summary>
         public void AbrirAba(string nome)
         {
-            aba = nome == "melhorias" ? Aba.Melhorias : nome == "carreira" ? Aba.Carreira : nome == "ajustes" ? Aba.Ajustes : Aba.VisaoGeral;
+            aba = nome == "melhorias" ? Aba.Melhorias : nome == "carreira" ? Aba.Carreira : nome == "ajustes" ? Aba.Ajustes
+                : nome == "automacao" && economia.AutomacoesLiberadas ? Aba.Automacao : Aba.VisaoGeral;
             Mostrar(true);
         }
         public void Fechar() => Mostrar(false);
@@ -133,6 +134,7 @@ namespace IdleDataCenter
                 case Aba.Melhorias: AbaMelhorias(); break;
                 case Aba.Carreira: AbaCarreira(); break;
                 case Aba.Ajustes: AbaAjustes(); break;
+                case Aba.Automacao: AbaAutomacao(); break;
             }
             tela.Aplicar();
         }
@@ -220,7 +222,7 @@ namespace IdleDataCenter
             var itens = new (string nome, Aba? aba)[]
             {
                 ("Visão geral", Aba.VisaoGeral), ("Melhorias", Aba.Melhorias), ("Carreira", Aba.Carreira),
-                ("Ajustes", Aba.Ajustes), ("Automação", null), ("Pesquisa", null),
+                ("Ajustes", Aba.Ajustes), ("Automação", economia.AutomacoesLiberadas ? Aba.Automacao : (Aba?)null), ("Pesquisa", null),
             };
             string[][] icones =
             {
@@ -374,6 +376,67 @@ namespace IdleDataCenter
                 Botao(new RectInt(462, y + 10, 84, 24), rotulo, "#1b1a2e", "#6fd36f",
                     () => faixa.Loja.TentarComprar(def), !max && economia.PodeComprar(m.Id));
             }
+        }
+
+        // ---------------- Aba: Automação ----------------
+
+        void AbaAutomacao()
+        {
+            Caixa(76, 20, 480, 212, $"Automação  ({economia.AutomacoesAtivas}/{Catalogo.Automacoes.Count} ativas)");
+
+            // o que está sendo escrito agora
+            R(80, 32, 472, 20, "#1d2140");
+            var emEscrita = economia.AutomacaoEmEscrita;
+            if (emEscrita != null)
+            {
+                double resta = emEscrita.Segundos * (1 - economia.ProgressoEscrita);
+                T("Escrevendo: " + emEscrita.Nome, 86, 35, "#a9c7ff", false);
+                string tempo = Duracao(resta) + " restantes";
+                T(tempo, 546 - L(tempo), 35, "#7d82ad", false);
+                Barra(86, 44, 460, 4, (float)economia.ProgressoEscrita, "#5cc8ff");
+            }
+            else
+            {
+                T("O técnico escreve um script por vez, e cada um trabalha sozinho para sempre.", 86, 35, "#7d82ad", false);
+                T("Continua sendo escrito com o jogo fechado.", 86, 43, "#4d5170", false);
+            }
+
+            for (int i = 0; i < Catalogo.Automacoes.Count; i++)
+            {
+                var a = Catalogo.Automacoes[i];
+                int y = 56 + i * 35;
+                bool ativa = economia.TemAutomacao(a.Id), escrevendo = emEscrita == a, req = economia.RequisitoAutomacaoOk(a);
+                R(80, y, 472, 32, ativa ? "#223a36" : "#252947");
+                // ícone de terminal ">_"
+                R(86, y + 8, 16, 14, "#171a2e");
+                T(">_", 88, y + 12, ativa ? "#5cff8a" : escrevendo && Mathf.FloorToInt(t * 2) % 2 == 0 ? "#5cc8ff" : "#4d5170", false);
+                T(a.Nome, 110, y + 6, ativa ? "#6fd36f" : "#fdf6e3", true, 1);
+                T(a.Descricao, 110, y + 18, "#a3a0bd", false);
+
+                if (ativa)
+                {
+                    T("Ativa", 546 - L("Ativa"), y + 12, "#5cff8a", false);
+                    continue;
+                }
+                if (escrevendo)
+                {
+                    string pct = $"{economia.ProgressoEscrita * 100:0}%";
+                    Barra(444, y + 14, 70, 4, (float)economia.ProgressoEscrita, "#5cc8ff");
+                    T(pct, 546 - L(pct), y + 12, "#5cc8ff", false);
+                    continue;
+                }
+                string custo = "R$ " + F(a.Custo);
+                T(custo, 432 - L(custo), y + 12, economia.Dinheiro >= a.Custo ? "#ffd65c" : "#7d82ad", false);
+                string rotulo = !req ? "Precisa: " + Catalogo.Buscar(a.Requisito).Nome : economia.Escrevendo ? "Aguarde" : "Escrever";
+                string id = a.Id;
+                Botao(new RectInt(440, y + 6, 106, 20), rotulo, "#1b1a2e", "#5cc8ff", () => faixa.EscreverAutomacao(id), economia.PodeEscrever(id));
+            }
+        }
+
+        static string Duracao(double s)
+        {
+            int total = Mathf.CeilToInt((float)s);
+            return total >= 60 ? $"{total / 60} min {total % 60:00} s" : $"{total} s";
         }
 
         // ---------------- Aba: Ajustes ----------------

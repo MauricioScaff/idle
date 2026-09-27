@@ -55,6 +55,8 @@ namespace IdleDataCenter
         public float LimiteTecnico => torres[torres.Count - 1].X - DistanciaServidor;
         public Vector2 TopoMaisProximo => torres[torres.Count - 1].Topo;
         public Vector2 TopoDoIncidente { get; private set; }
+        /// <summary>Tem automação sendo escrita: o técnico passa a maior parte do tempo digitando na mesa.</summary>
+        public bool EscrevendoAutomacao => economia.Escrevendo;
 
         public void Montar(Faixa faixa, Economia economia, Vector2 posicao)
         {

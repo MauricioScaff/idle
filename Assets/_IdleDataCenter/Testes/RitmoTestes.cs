@@ -24,8 +24,11 @@ namespace IdleDataCenter.Testes
                 e.Avancar(1);
                 var barata = e.MelhoriasDoCargo().Where(m => e.PodeComprar(m.Id)).OrderBy(m => e.Custo(m.Id)).FirstOrDefault();
                 if (barata != null) e.Comprar(barata.Id);
+                var script = Catalogo.Automacoes.Where(a => e.PodeEscrever(a.Id)).OrderBy(a => a.Custo).FirstOrDefault();
+                if (script != null && barata == null) e.EscreverAutomacao(script.Id);
                 if (e.PodePromover) { e.Promover(); promocoes[e.Cargo] = t; }
-                bool completo = e.MelhoriasDoCargo().All(m => e.NoMaximo(m.Id));
+                bool completo = e.MelhoriasDoCargo().All(m => e.NoMaximo(m.Id))
+                                && (e.Cargo < Catalogo.CargoDasAutomacoes || e.AutomacoesAtivas == Catalogo.Automacoes.Count);
                 if (e.Cargo == 1 && completo && sysadminCompleto < 0) sysadminCompleto = t;
                 if (e.Estado.backupsRestaurados > 0 && primeiroBackup < 0) primeiroBackup = t;
                 if (e.Cargo == 2 && completo) { analistaCompleto = t; break; }
@@ -33,7 +36,7 @@ namespace IdleDataCenter.Testes
 
             UnityEngine.Debug.Log($"RITMO: Sysadmin em {promocoes[1] / 60:0} min (completo em {sysadminCompleto / 60:0} min); " +
                                   $"Analista em {promocoes[2] / 60:0} min; 1º backup restaurado em {primeiroBackup / 60:0} min; " +
-                                  $"Analista completo em {analistaCompleto / 60:0} min; {e.Estado.incidentesResolvidos} incidentes; " +
+                                  $"Analista completo (com automações) em {analistaCompleto / 60:0} min; {e.Estado.incidentesResolvidos} incidentes; " +
                                   $"receita final {e.ReceitaPorSegundo:0.0}/s; temperatura {e.Temperatura:0} C; " +
                                   $"energia {e.ConsumoKw:0.0}/{e.CapacidadeKw:0.0} kW; banda {e.TrafegoMbps:0}/{e.BandaMbps:0} Mbps");
 
