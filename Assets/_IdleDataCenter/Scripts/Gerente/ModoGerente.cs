@@ -71,6 +71,9 @@ namespace IdleDataCenter.Gerente
 
         void Notificar(string texto, float segundos = 5) { aviso = texto; avisoAte = Time.unscaledTime + segundos; }
 
+        /// <summary>Abre direto numa seção (teste: -gerente=prestigio).</summary>
+        public void AbrirSecao(string secao) => Abrir(char.ToUpperInvariant(secao[0]) + secao.Substring(1));
+
         /// <summary>Aviso vindo de fora (por exemplo, o resumo de quando o jogo estava fechado).</summary>
         public void Avisar(string texto, float segundos) => Notificar(texto, segundos);
 

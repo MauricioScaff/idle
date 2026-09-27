@@ -59,6 +59,7 @@ namespace IdleDataCenter
             economia.PaneRegional += r => { Loja.MostrarAviso("Pane: " + Catalogo.NomesRegioes[r] + "!", 3f, Vermelho); Sons.Alerta(); };
             economia.RegiaoVoltou += (r, sozinho) => { Loja.MostrarAviso(Catalogo.NomesRegioes[r] + " de volta", 2f, VerdeClaro); Sons.Conserto(); };
             economia.Ipo += () => { Loja.MostrarAviso("IPO! Empresa na bolsa!", 6f, Amarelo); Sons.Promocao(); Salvamento.Salvar(economia.Estado); };
+            economia.Vendeu += AoVender;
             // quem já passou do começo não precisa do tutorial
             if (!economia.TutorialConcluido && (economia.Cargo > 0 || economia.Estado.totalGanho > 2000))
                 economia.AvancarTutorial(Catalogo.PassosTutorial);
@@ -110,8 +111,10 @@ namespace IdleDataCenter
             // Testes: -gerente e -faixa forçam um modo sem mexer na preferência do jogador; -painel abre na faixa.
             var args = Environment.GetCommandLineArgs();
             bool forcaFaixa = Array.Exists(args, a => a == "-faixa" || a.StartsWith("-painel"));
-            bool forcaGerente = Array.Exists(args, a => a == "-gerente");
+            bool forcaGerente = Array.Exists(args, a => a == "-gerente" || a.StartsWith("-gerente="));
             if (forcaGerente || (!forcaFaixa && Ajustes.AbrirNoGerente)) AbrirGerente(lembrar: false);
+            string secao = Array.Find(args, a => a.StartsWith("-gerente="));
+            if (secao != null) gerente.AbrirSecao(secao.Substring(9));
             if (gerente.Aberto && ganhoOffline > 0)
                 gerente.Avisar("Enquanto você estava fora: +R$ " + Formatar(ganhoOffline) + " (" + (economia.TaxaOffline * 100).ToString("0") + "% da receita)", 12);
         }
@@ -268,6 +271,18 @@ namespace IdleDataCenter
 
         /// <summary>Redireciona o tráfego da região em pane (painel, modo gerente).</summary>
         public void Redirecionar() => economia.Redirecionar();
+
+        /// <summary>Vende a empresa (prestígio) e começa outra no armário, com o desafio escolhido.</summary>
+        public void VenderEmpresa(string desafio) => economia.VenderEmpresa(desafio);
+
+        void AoVender(int certificacoes)
+        {
+            if (painel.Aberto) painel.Fechar();
+            MontarTudo();   // o cenário volta a ser o armário
+            Loja.MostrarAviso("Empresa vendida! +" + certificacoes + " certificações", 6f, Amarelo);
+            Sons.Promocao();
+            Salvamento.Salvar(economia.Estado);
+        }
 
         /// <summary>Abre o capital (fim da carreira).</summary>
         public void FazerIpo() => economia.FazerIpo();

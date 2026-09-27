@@ -235,7 +235,7 @@ namespace IdleDataCenter.Gerente
         {
             ("Visao", "VISAO GERAL"), ("Compute", "COMPUTE"), ("Energia", "ENERGIA"), ("Refrigeracao", "REFRIGERACAO"),
             ("Storage", "STORAGE"), ("Rede", "REDE"), ("NOC", "NOC"), ("Equipe", "EQUIPE"), ("Automacao", "AUTOMACAO"),
-("Campus", "CAMPUS"), ("Mundo", "MUNDO"), ("Melhorias", "MELHORIAS"), ("Carreira", "CARREIRA"),
+            ("Campus", "CAMPUS"), ("Mundo", "MUNDO"), ("Melhorias", "MELHORIAS"), ("Carreira", "CARREIRA"), ("Prestigio", "PRESTIGIO"),
         };
 
         void Navegacao()
@@ -246,7 +246,7 @@ namespace IdleDataCenter.Gerente
             {
                 var (id, rotulo) = Menus[i];
                 bool travado = SalaIso.CargoDoSetor(id) > E.Cargo;
-                var r = new Rect(10, 126 + i * 40, 156, 35);
+                var r = new Rect(10, 124 + i * 38, 156, 33);
                 bool ativo = selecionado == id;
                 ui.Caixa(r, ativo ? IsoGui.Cor("165d81") : IsoGui.Painel, ativo ? IsoGui.Cyan : IsoGui.Borda);
                 ui.Icone(i, r.x + 10, r.y + 11, travado ? IsoGui.Borda : ativo ? IsoGui.Cyan : IsoGui.Muted);
@@ -271,7 +271,7 @@ namespace IdleDataCenter.Gerente
             {
                 ui.Texto("EMPRESA NA BOLSA!", x + 17, 160, IsoGui.Cor("ffd65c"), 2);
                 ui.Texto("VOCE CHEGOU AO TOPO.", x + 17, 186, IsoGui.Muted, 2);
-                ui.Texto("PRESTIGIO EM BREVE.", x + 17, 204, IsoGui.Muted, 2);
+                ui.Texto("VENDA EM PRESTIGIO.", x + 17, 204, IsoGui.Muted, 2);
             }
             else if (!E.TemProximoCargo)
             {

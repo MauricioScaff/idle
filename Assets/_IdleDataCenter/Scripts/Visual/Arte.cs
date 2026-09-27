@@ -64,6 +64,8 @@ namespace IdleDataCenter
         public static readonly Sprite AbrirPainel = PixelArt.Criar(new[] { "..S..", ".SSS.", "SSSSS", ".....", "SSSSS" }, Canto);
         /// <summary>Abre o modo gerente (a sala em vista isométrica): uma plantinha de piso em losango.</summary>
         public static readonly Sprite Gerente = PixelArt.Criar(new[] { "..S..", ".S.S.", "S.S.S", ".S.S.", "..S.." }, Canto);
+        /// <summary>Troféu de empresa vendida (prestígio), na mesa do técnico.</summary>
+        public static readonly Sprite Trofeu = PixelArt.Criar(new[] { "YYYY", "YYYY", ".YY.", ".YY.", "YYYY" }, Base);
         public static readonly Sprite Ocultar = PixelArt.Criar(new[] { ".....", "S...S", ".S.S.", "..S..", "....." }, Canto);
         public static readonly Sprite Seta =PixelArt.Criar(new[] { "YYYYY", ".YYY.", "..Y.." }, Canto);
 

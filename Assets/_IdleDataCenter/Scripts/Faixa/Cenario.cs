@@ -121,6 +121,9 @@ namespace IdleDataCenter
             var texto = ArteGerada.Leds(mesa.sprite);
             int x0 = texto.Min(p => p.x), x1 = texto.Max(p => p.x), y0 = texto.Min(p => p.y), y1 = texto.Max(p => p.y);
             Tela = TelaTerminal.Criar(mesa.transform, new Vector2(x0, y0), x1 - x0 + 1, y1 - y0 + 1, CorDeFundoDaTela(mesa.sprite, x0, y0, x1, y1), 3);
+            // troféus das empresas vendidas (prestígio), enfileirados na ponta da mesa
+            for (int i = 0; i < Mathf.Min(5, economia.Prestigio.trofeus.Count); i++)
+                Decoracao("Trofeu", Arte.Trofeu, new Vector2(26 + i * 5, AlturaPiso + 21), 4);
         }
 
         /// <summary>A cor escura mais comum dentro da tela (o fundo do CRT), ignorando o texto verde.</summary>

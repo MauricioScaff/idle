@@ -259,7 +259,7 @@ namespace IdleDataCenter
             if (ultimo && economia.IpoFeito)
             {
                 T("Você chegou ao topo.", x + 5, 36, "#ffd65c", false);
-                T("Prestígio em breve.", x + 5, 44, "#a3a0bd", false);
+                T("Venda em Prestígio.", x + 5, 44, "#a3a0bd", false);
                 metas = new MetaDef[0];
             }
             for (int i = 0; i < metas.Length; i++)
@@ -550,8 +550,8 @@ namespace IdleDataCenter
                 Caixa(x, 20, 290, 212, "Fim da carreira");
                 T("Empresa na bolsa!", x + 10, 40, "#ffd65c", true, 2);
                 T("De técnico de TI num armário a CTO", x + 10, 64, "#a3a0bd", false);
-                T("de uma nuvem global. O prestígio", x + 10, 72, "#a3a0bd", false);
-                T("(recomeçar com bônus) vem em breve.", x + 10, 80, "#a3a0bd", false);
+                T("de uma nuvem global. Venda a empresa", x + 10, 72, "#a3a0bd", false);
+                T("em Prestígio (modo gerente).", x + 10, 80, "#a3a0bd", false);
                 return;
             }
             Caixa(x, 20, 290, 212, ipo ? "O grande final" : "Próximo cargo");

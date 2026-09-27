@@ -13,7 +13,7 @@ namespace IdleDataCenter.Simulacao
     {
         readonly Random sorteio;
 
-        public EstadoJogo Estado { get; }
+        public EstadoJogo Estado { get; private set; }
 
         /// <summary>Depois de cada compra, com o id da melhoria.</summary>
         public event Action<string> Comprou;
@@ -54,6 +54,8 @@ namespace IdleDataCenter.Simulacao
         public event Action<int, bool> RegiaoVoltou;
         /// <summary>A empresa abriu o capital (fim da carreira).</summary>
         public event Action Ipo;
+        /// <summary>A empresa foi vendida e uma nova começou (certificações ganhas).</summary>
+        public event Action<int> Vendeu;
 
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
@@ -195,6 +197,18 @@ namespace IdleDataCenter.Simulacao
                                    * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
                                    * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1);
 
+        // ---------------- Prestígio: certificações e desafio ----------------
+
+        public Prestigio Prestigio => Estado.prestigio ?? (Estado.prestigio = new Prestigio());
+        public int NivelCertificacao(string id)
+        {
+            foreach (var b in Prestigio.bonus) if (b.id == id) return b.nivel;
+            return 0;
+        }
+        public bool Desafio(string id) => Estado.desafio == id;
+        /// <summary>Uptime Wizard: vale para tudo.</summary>
+        public double FatorCertificacoes => 1 + NivelCertificacao(Catalogo.UptimeWizard) * 0.1;
+
         /// <summary>Tudo o que vale para a empresa inteira (todos os datacenters): café, observabilidade, fibra, CDN, balanceamento global.</summary>
         public double FatorEmpresa => (CafeAtivo ? Catalogo.MultiplicadorCafe : 1)
             * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
@@ -251,11 +265,11 @@ namespace IdleDataCenter.Simulacao
             {
                 double soma = 0;
                 for (int i = 0; i < TotalServidores; i++) soma += ReceitaDoServidor(i);
-                return ((soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes) * FatorCampus + ReceitaDatacenters + ReceitaMundial) * FatorGlobal;
+                return ((soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes) * FatorCampus + ReceitaDatacenters + ReceitaMundial) * FatorGlobal * FatorCertificacoes;
             }
         }
 
-        public double ValorClique => Catalogo.ValorCliqueBase + Catalogo.ValorCliqueReceita * ReceitaPorSegundo;
+        public double ValorClique => Desafio(Catalogo.SoAutomacao) ? 0 : Catalogo.ValorCliqueBase + Catalogo.ValorCliqueReceita * ReceitaPorSegundo;
 
         // ---------------- Melhorias ----------------
 
@@ -278,7 +292,8 @@ namespace IdleDataCenter.Simulacao
             var req = Catalogo.Buscar(id).Requisito;
             return req == null || Nivel(req) > 0;
         }
-        public bool PodeComprar(string id) => !NoMaximo(id) && RequisitoOk(id) && Estado.dinheiro >= Custo(id);
+        public bool PodeComprar(string id) => !NoMaximo(id) && RequisitoOk(id) && Estado.dinheiro >= Custo(id)
+                                           && !(id == Catalogo.Estagiario && Desafio(Catalogo.SemEstagiario));
 
         public bool Comprar(string id)
         {
@@ -322,6 +337,7 @@ namespace IdleDataCenter.Simulacao
             // Novas travadas: cada servidor tem uma chance por segundo (maior com calor, menor com monitoramento)
             double mult = (Quente ? Catalogo.MultiplicadorQuente : 1) / (TemAutomacao(Catalogo.Monitoramento) ? Catalogo.FatorMtbfMonitoramento : 1)
                           / (TemAutomacao(Catalogo.Chaos) ? Catalogo.FatorChaos : 1);
+            mult *= Math.Max(0.3, 1 - NivelCertificacao(Catalogo.ItilGambiarra) * 0.1);   // ITIL da Gambiarra
             for (int s = 0; s < TotalServidores; s++)
             {
                 if (Travado(s)) continue;
@@ -466,6 +482,67 @@ namespace IdleDataCenter.Simulacao
             RegiaoVoltou?.Invoke(regiao, sozinho);
         }
 
+        // ---------------- Vender a empresa (prestígio) ----------------
+
+        public bool PodeVender => Estado.cargo >= Catalogo.CargoParaVender;
+
+        /// <summary>Quantas certificações a venda daria agora: raiz do faturamento em milhões, em dobro depois do IPO, vezes o desafio.</summary>
+        public int CertificacoesDaVenda =>
+            !PodeVender ? 0 : (int)Math.Floor(Math.Sqrt(Estado.totalGanho / 1e6) * (Estado.ipoFeito ? Catalogo.MultiplicadorIpo : 1)
+                                              * Catalogo.BuscarDesafio(Estado.desafio).Multiplicador);
+
+        /// <summary>
+        /// Vende a empresa: ganha as certificações e um troféu, e recomeça no armário com um desafio (opcional).
+        /// O prestígio e as preferências de tutorial passam para a empresa nova.
+        /// </summary>
+        public bool VenderEmpresa(string novoDesafio = "")
+        {
+            if (!PodeVender) return false;
+            int ganhas = CertificacoesDaVenda;
+            var p = Prestigio;
+            p.certificacoes += ganhas;
+            p.certificacoesGanhas += ganhas;
+            p.empresasVendidas++;
+            p.trofeus.Add(Estado.ipoFeito ? "IPO" : CargoAtual.Nome);
+
+            var nova = new EstadoJogo
+            {
+                prestigio = p,
+                desafio = novoDesafio ?? "",
+                tutorial = Catalogo.PassosTutorial,
+                jaClicouNoServidor = true,
+                ultimoSalvamentoUnix = Estado.ultimoSalvamentoUnix,
+            };
+            nova.dinheiro = 1000 * NivelCertificacaoDe(p, Catalogo.AwsEstagiario);   // AWS Certified Estagiário
+            Estado = nova;
+            Vendeu?.Invoke(ganhas);
+            return true;
+        }
+
+        static int NivelCertificacaoDe(Prestigio p, string id)
+        {
+            foreach (var b in p.bonus) if (b.id == id) return b.nivel;
+            return 0;
+        }
+
+        public bool PodeComprarCertificacao(string id)
+        {
+            var c = Catalogo.BuscarCertificacao(id);
+            int nivel = NivelCertificacao(id);
+            return nivel < c.NivelMaximo && Prestigio.certificacoes >= c.Custo(nivel);
+        }
+
+        public bool ComprarCertificacao(string id)
+        {
+            if (!PodeComprarCertificacao(id)) return false;
+            var c = Catalogo.BuscarCertificacao(id);
+            Prestigio.certificacoes -= c.Custo(NivelCertificacao(id));
+            var registro = Prestigio.bonus.Find(b => b.id == id);
+            if (registro == null) Prestigio.bonus.Add(registro = new NivelMelhoria { id = id });
+            registro.nivel++;
+            return true;
+        }
+
         /// <summary>Abre o capital: o fim da carreira (o jogo continua).</summary>
         public bool FazerIpo()
         {
@@ -513,13 +590,13 @@ namespace IdleDataCenter.Simulacao
         public bool CafeAtivo => Estado.cafeRestante > 0;
         public double SegundosDeCafe => Estado.cafeRestante;
         public double RecargaDoCafe => Math.Max(0, Estado.cafeRecarga);
-        public bool PodeTomarCafe => Estado.cafeRecarga <= 0;
+        public bool PodeTomarCafe => Estado.cafeRecarga <= 0 && !Desafio(Catalogo.SemCafe);
 
         /// <summary>O técnico toma um café: a receita dobra por 30 s; o próximo só depois de 3 min.</summary>
         public bool TomarCafe()
         {
             if (!PodeTomarCafe) return false;
-            Estado.cafeRestante = Catalogo.DuracaoCafe;
+            Estado.cafeRestante = Catalogo.DuracaoCafe + NivelCertificacao(Catalogo.ScrumCafe) * 10;
             Estado.cafeRecarga = Catalogo.RecargaCafe;
             return true;
         }
@@ -667,7 +744,8 @@ namespace IdleDataCenter.Simulacao
         void AvancarEscrita(double segundos)
         {
             if (!Escrevendo) return;
-            Estado.segundosEscritos += segundos;
+            // Kubernetes Whisperer: cada nível escreve 15% mais rápido
+            Estado.segundosEscritos += segundos / Math.Max(0.4, 1 - NivelCertificacao(Catalogo.K8sWhisperer) * 0.15);
             if (Estado.segundosEscritos < AutomacaoEmEscrita.Segundos) return;
             string id = Estado.escrevendo;
             Estado.escrevendo = "";
@@ -724,7 +802,8 @@ namespace IdleDataCenter.Simulacao
             + (TemAutomacao(Catalogo.CronFaturamento) ? Catalogo.BonusOfflinePorAutomacao : 0)
             + (TemAutomacao(Catalogo.Plantao) ? Catalogo.BonusOfflinePorAutomacao : 0);
 
-        public double HorasMaximasOffline => TemAutomacao(Catalogo.Plantao) ? Catalogo.HorasOfflineComPlantao : Catalogo.HorasMaximasOffline;
+        public double HorasMaximasOffline => (TemAutomacao(Catalogo.Plantao) ? Catalogo.HorasOfflineComPlantao : Catalogo.HorasMaximasOffline)
+                                             + NivelCertificacao(Catalogo.LinuxPlantao) * 4;
 
         /// <summary>Quanto o jogador ganharia por ficar fora esse tempo (com taxa reduzida e limite de horas).</summary>
         public double CalcularGanhoOffline(double segundosFora)

@@ -31,6 +31,22 @@ namespace IdleDataCenter.Simulacao
         public double Segundos;     // tempo para escrever
     }
 
+    /// <summary>Certificação comprada com a moeda de prestígio: bônus permanente, com níveis.</summary>
+    public class CertificacaoDef
+    {
+        public string Id, Nome, Efeito;
+        public int NivelMaximo;
+        public int CustoBase;                  // nível n custa CustoBase × (n + 1)
+        public int Custo(int nivelAtual) => CustoBase * (nivelAtual + 1);
+    }
+
+    /// <summary>Desafio opcional de uma empresa nova: mais difícil, mais certificações.</summary>
+    public class DesafioDef
+    {
+        public string Id, Nome, Descricao;
+        public double Multiplicador;
+    }
+
     public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos, Datacenters, Regioes }
 
     public class MetaDef
@@ -362,6 +378,43 @@ namespace IdleDataCenter.Simulacao
         {
             foreach (var a in Automacoes) if (a.Id == id) return a;
             throw new ArgumentException("Automação desconhecida: " + id);
+        }
+
+        // --- Prestígio ---
+        public const int CargoParaVender = 4;          // a partir do SRE dá para vender a empresa
+        public const double MultiplicadorIpo = 2;       // depois do IPO a venda vale o dobro
+        public const string UptimeWizard = "uptime", ItilGambiarra = "itil", AwsEstagiario = "aws",
+                            ScrumCafe = "scrum", K8sWhisperer = "whisperer", LinuxPlantao = "linux";
+
+        public static readonly IReadOnlyList<CertificacaoDef> Certificacoes = new[]
+        {
+            new CertificacaoDef { Id = UptimeWizard, Nome = "Certified Uptime Wizard", Efeito = "+10% de receita por nível", NivelMaximo = 10, CustoBase = 3 },
+            new CertificacaoDef { Id = ItilGambiarra, Nome = "ITIL da Gambiarra", Efeito = "10% menos incidentes por nível", NivelMaximo = 5, CustoBase = 4 },
+            new CertificacaoDef { Id = AwsEstagiario, Nome = "AWS Certified Estagiário", Efeito = "Começa com R$ 1K por nível", NivelMaximo = 5, CustoBase = 2 },
+            new CertificacaoDef { Id = ScrumCafe, Nome = "Scrum Master do Café", Efeito = "Café dura +10 s por nível", NivelMaximo = 5, CustoBase = 2 },
+            new CertificacaoDef { Id = K8sWhisperer, Nome = "Kubernetes Whisperer", Efeito = "Scripts 15% mais rápidos por nível", NivelMaximo = 4, CustoBase = 5 },
+            new CertificacaoDef { Id = LinuxPlantao, Nome = "Linux+ do Plantão", Efeito = "+4 h de limite offline por nível", NivelMaximo = 3, CustoBase = 4 },
+        };
+
+        public const string SemEstagiario = "semestagiario", SemCafe = "semcafe", SoAutomacao = "soautomacao";
+        public static readonly IReadOnlyList<DesafioDef> Desafios = new[]
+        {
+            new DesafioDef { Id = "", Nome = "Sem desafio", Descricao = "Uma empresa normal", Multiplicador = 1 },
+            new DesafioDef { Id = SemEstagiario, Nome = "Sem estagiário", Descricao = "Não dá para contratar o estagiário", Multiplicador = 1.25 },
+            new DesafioDef { Id = SemCafe, Nome = "Sem café", Descricao = "A cafeteira quebrou de vez", Multiplicador = 1.25 },
+            new DesafioDef { Id = SoAutomacao, Nome = "Só automação", Descricao = "Cliques não rendem (consertar ainda vale)", Multiplicador = 1.5 },
+        };
+
+        public static CertificacaoDef BuscarCertificacao(string id)
+        {
+            foreach (var c in Certificacoes) if (c.Id == id) return c;
+            throw new ArgumentException("Certificação desconhecida: " + id);
+        }
+
+        public static DesafioDef BuscarDesafio(string id)
+        {
+            foreach (var d in Desafios) if (d.Id == (id ?? "")) return d;
+            return Desafios[0];
         }
 
         public static MelhoriaDef Buscar(string id)

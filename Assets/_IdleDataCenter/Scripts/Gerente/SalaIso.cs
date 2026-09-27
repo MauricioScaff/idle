@@ -503,6 +503,14 @@ namespace IdleDataCenter.Gerente
         void MesaComCrt(float gx, float gy, bool digitando)
         {
             MesaSimples(gx, gy, 1.6f);
+            // troféus das empresas vendidas (prestígio)
+            for (int i = 0; i < Mathf.Min(5, E.Prestigio.trofeus.Count); i++)
+            {
+                var tr = d.P(gx + 0.45f, gy + 0.15f + i * 0.2f, 14);
+                tela.Ret(tr.x - 2, tr.y - 6, 4, 3, IsoDesenho.C("ffd65c"));
+                tela.Ret(tr.x - 1, tr.y - 3, 2, 2, IsoDesenho.C("d9b23a"));
+                tela.Ret(tr.x - 2, tr.y - 1, 4, 1, IsoDesenho.C("b8932a"));
+            }
             // caneca: com vapor quando dá para tomar café; brilhando enquanto o café faz efeito
             var corCaneca = E.CafeAtivo && Piscar(0.3f) ? IsoDesenho.C("ffd65c") : IsoDesenho.C("ff8c7a");
             d.Caixa(gx + 0.6f, gy + 1.25f, 0.18f, 0.18f, 6, corCaneca, IsoDesenho.C("d9604f"), IsoDesenho.C("b84a3c"), 14);

@@ -56,8 +56,25 @@ namespace IdleDataCenter.Simulacao
         public double paneSegundos;
         public bool ipoFeito;
 
+        // Desafio escolhido para esta empresa (vazio = nenhum); multiplica as certificações na venda
+        public string desafio = "";
+
+        // Prestígio: o que sobrevive à venda da empresa
+        public Prestigio prestigio = new Prestigio();
+
         // Tutorial do modo gerente: passo atual (Catalogo.PassosTutorial = concluído)
         public int tutorial;
+    }
+
+    /// <summary>O que o jogador leva de uma empresa para a outra.</summary>
+    [Serializable]
+    public class Prestigio
+    {
+        public int certificacoes;                 // para gastar
+        public int certificacoesGanhas;           // total da carreira
+        public int empresasVendidas;
+        public List<NivelMelhoria> bonus = new List<NivelMelhoria>();
+        public List<string> trofeus = new List<string>();   // um por empresa vendida (cargo em que vendeu, ou "IPO")
     }
 
     [Serializable]

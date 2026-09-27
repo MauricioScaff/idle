@@ -690,6 +690,84 @@ namespace IdleDataCenter.Testes
             Assert.IsFalse(e.PodeFazerIpo, "só uma vez");
         }
 
+        // ---------- Prestígio ----------
+
+        [Test]
+        public void SoDaParaVenderAPartirDoSre()
+        {
+            var e = Nova();
+            e.Estado.cargo = 3;
+            e.Estado.totalGanho = 1e9;
+            Assert.IsFalse(e.PodeVender);
+            Assert.AreEqual(0, e.CertificacoesDaVenda);
+            e.Estado.cargo = 4;
+            Assert.AreEqual(31, e.CertificacoesDaVenda, "raiz de 1000 milhões");
+        }
+
+        [Test]
+        public void VenderReiniciaMasGuardaCertificacoesETrofeu()
+        {
+            var e = NoSre(5000);
+            e.Estado.totalGanho = 400e6;
+            e.Estado.prestigio.bonus.Add(new NivelMelhoria { id = Catalogo.AwsEstagiario, nivel = 2 });
+            int ganhas = -1;
+            e.Vendeu += c => ganhas = c;
+            Assert.IsTrue(e.VenderEmpresa(Catalogo.SemCafe));
+            Assert.AreEqual(20, ganhas);
+            Assert.AreEqual(0, e.Cargo);
+            Assert.AreEqual(1, e.TotalServidores, "começa de novo no armário");
+            Assert.AreEqual(2000, e.Dinheiro, 1e-9, "AWS Certified Estagiário nível 2");
+            Assert.AreEqual(20, e.Prestigio.certificacoes);
+            Assert.AreEqual(1, e.Prestigio.empresasVendidas);
+            CollectionAssert.AreEqual(new[] { "SRE" }, e.Prestigio.trofeus);
+            Assert.IsFalse(e.TomarCafe(), "desafio sem café");
+            Assert.IsTrue(e.TutorialConcluido);
+        }
+
+        [Test]
+        public void IpoEDesafioMultiplicamAsCertificacoes()
+        {
+            var e = NoMundo();
+            e.Estado.totalGanho = 100e6;          // raiz = 10
+            e.Estado.ipoFeito = true;             // x2
+            e.Estado.desafio = Catalogo.SoAutomacao;   // x1,5
+            Assert.AreEqual(30, e.CertificacoesDaVenda);
+        }
+
+        [Test]
+        public void CertificacoesCompramBonusPermanentes()
+        {
+            var e = Nova();
+            e.Prestigio.certificacoes = 9;
+            Assert.IsTrue(e.ComprarCertificacao(Catalogo.UptimeWizard));   // custa 3
+            Assert.IsTrue(e.ComprarCertificacao(Catalogo.UptimeWizard));   // custa 6
+            Assert.AreEqual(0, e.Prestigio.certificacoes);
+            Assert.IsFalse(e.ComprarCertificacao(Catalogo.UptimeWizard));
+            Assert.AreEqual(1.2, e.ReceitaPorSegundo, 1e-9);
+        }
+
+        [Test]
+        public void DesafiosTravamOQuePrometem()
+        {
+            var e = Nova(1e6);
+            e.Estado.desafio = Catalogo.SemEstagiario;
+            Assert.IsFalse(e.PodeComprar(Catalogo.Estagiario));
+            e.Estado.desafio = Catalogo.SoAutomacao;
+            Assert.AreEqual(0, e.ValorClique, 1e-9);
+        }
+
+        [Test]
+        public void PrestigioSobreviveAoSave()
+        {
+            var e = Nova();
+            e.Prestigio.certificacoes = 7;
+            e.Prestigio.trofeus.Add("IPO");
+            var json = UnityEngine.JsonUtility.ToJson(e.Estado);
+            var volta = UnityEngine.JsonUtility.FromJson<EstadoJogo>(json);
+            Assert.AreEqual(7, volta.prestigio.certificacoes);
+            CollectionAssert.AreEqual(new[] { "IPO" }, volta.prestigio.trofeus);
+        }
+
         // ---------- Automações ----------
 
         [Test]

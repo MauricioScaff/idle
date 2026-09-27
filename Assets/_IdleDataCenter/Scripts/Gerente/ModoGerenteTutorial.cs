@@ -27,6 +27,7 @@ namespace IdleDataCenter.Gerente
             E.Comprou += id => salaIso?.Comprou(id, Time.unscaledTime);
             E.Promoveu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "PROMOVIDO!"; festaCargo = E.CargoAtual.Nome.ToUpperInvariant(); festaTexto = "A SALA CRESCEU. NOVOS SETORES E EQUIPAMENTOS NA LOJA."; };
             E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A EMPRESA ESTA NA BOLSA"; festaTexto = "DE TECNICO DE TI NUM ARMARIO A CTO DE UMA NUVEM GLOBAL."; };
+            E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "VENDIDA!"; festaCargo = "+" + c + " CERTIFICACOES"; festaTexto = "UMA EMPRESA NOVA COMECA NO ARMARIO, COM OS BONUS."; };
             E.ChamadoApareceu += texto => Notificar("Chamado urgente: " + texto + "! Clique no papel sobre a mesa.", 8);
             E.ChamadoEncerrado += bonus => { if (bonus <= 0) Notificar("O chamado foi embora sem resposta."); };
         }

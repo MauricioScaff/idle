@@ -70,6 +70,8 @@ namespace IdleDataCenter.Gerente
             "Automacao", "O TECNICO ESCREVE UM SCRIPT POR VEZ",
             "Melhorias", "TUDO O QUE DA PARA COMPRAR, DE TODOS OS SETORES",
             "Carreira", "METAS PARA A PROXIMA PROMOCAO",
+            "Prestigio", "CERTIFICACOES: BONUS QUE PASSAM DE UMA EMPRESA PARA A OUTRA",
+            "Vender", "A EMPRESA E VENDIDA E UMA NOVA COMECA",
             "Campus", "PREDIOS NOVOS, FIBRA ENTRE ELES, CDN E GERADORES",
             "Mundo", "REGIOES, CABOS SUBMARINOS, ENERGIA VERDE E NUVEM DE IA",
         };
@@ -86,7 +88,7 @@ namespace IdleDataCenter.Gerente
             var modal = new Rect(210, 155, 928, 548);
             bool automacao = janela == "Automacao";
             ui.Caixa(modal, IsoGui.Fundo, automacao ? IsoGui.Roxo : IsoGui.Cyan);
-            string titulo = Menus.First(m => m.id == janela).rotulo;
+            string titulo = janela == "Vender" ? "VENDER A EMPRESA" : Menus.First(m => m.id == janela).rotulo;
             ui.Texto(titulo, modal.x + 24, modal.y + 23, IsoGui.Branco, 4);
             ui.Texto("DC-01 / " + Subtitulo(janela), modal.x + 24, modal.y + 57, IsoGui.Muted, 2);
             if (ui.Botao(new Rect(modal.xMax - 57, modal.y + 15, 40, 32), "X", IsoGui.Borda)) { Abrir("Visao"); return; }
@@ -100,6 +102,8 @@ namespace IdleDataCenter.Gerente
                 return;
             }
             if (janela == "Carreira") { Carreira(modal); return; }
+            if (janela == "Prestigio") { TelaPrestigio(modal); return; }
+            if (janela == "Vender") { TelaVender(modal); return; }
             if (janela == "NOC") NocAcoes(modal);
 
             int quantidade = automacao ? Catalogo.Automacoes.Count : ItensDoSetor(janela).Length;
@@ -191,7 +195,7 @@ namespace IdleDataCenter.Gerente
             if (E.IpoFeito)
             {
                 ui.Texto("A EMPRESA ESTA NA BOLSA. VOCE CHEGOU AO TOPO DA CARREIRA.", modal.x + 29, modal.y + 150, IsoGui.Cor("ffd65c"), 2);
-                ui.Texto("O PRESTIGIO (RECOMECAR COM BONUS) CHEGA NA PROXIMA VERSAO.", modal.x + 29, modal.y + 176, IsoGui.Muted, 2);
+                ui.Texto("EM PRESTIGIO, VENDA A EMPRESA E RECOMECE COM BONUS PERMANENTES.", modal.x + 29, modal.y + 176, IsoGui.Muted, 2);
                 return;
             }
             bool ipo = !E.TemProximoCargo;
