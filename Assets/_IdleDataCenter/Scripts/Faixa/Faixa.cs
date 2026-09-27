@@ -32,6 +32,8 @@ namespace IdleDataCenter
         IClicavel sobCursor;
         float proximoSalvamento;
         double ganhoOffline;
+        float corteHud;            // quanto do cenário ficou fora da tela à esquerda (o HUD se desloca junto)
+        float larguraSimulada;     // teste: -simular-largura=<pixels de arte>
 
         public Loja Loja { get; private set; }
 
@@ -105,6 +107,7 @@ namespace IdleDataCenter
                 if (arg == "-promover") economia.Promover(); // só se as metas estiverem cumpridas
                 if (arg == "-alternar-painel") InvokeRepeating(nameof(AlternarPainel), 5f, 4f); // abre e fecha sozinho (teste da janela)
                 if (arg == "-alternar-gerente") InvokeRepeating(nameof(AlternarGerente), 5f, 5f);   // entra e sai do modo gerente (teste da janela)
+                if (arg.StartsWith("-simular-largura=")) float.TryParse(arg.Substring(17), out larguraSimulada);   // teste de tela estreita
             }
 
             // O jogo abre no modo em que foi fechado (na primeira vez, no modo gerente).
@@ -437,7 +440,16 @@ namespace IdleDataCenter
         // ---------------- Painel ----------------
 
         /// <summary>O painel usa uma escala maior que a faixa (texto legível); na tela, cada pixel dele vale EscalaPainel pixels.</summary>
-        float EscalaRelativaDoPainel => janela.EscalaPainel / (float)janela.Escala;
+        float EscalaRelativaDoPainel
+        {
+            get
+            {
+                // telas estreitas: o painel volta para a escala da faixa, para caber inteiro
+                float rel = janela.EscalaPainel / (float)janela.Escala;
+                float tela = larguraSimulada > 0 ? larguraSimulada : janela.LarguraVirtualDaTela;
+                return Painel.Largura * rel + CenarioX * 2 <= tela ? rel : 1f;
+            }
+        }
 
         /// <summary>A janela cresce para cima o bastante para o painel ou o aviso de volta (o que estiver aberto).</summary>
         void AtualizarAlturaJanela()
@@ -548,9 +560,16 @@ namespace IdleDataCenter
         void Posicionar()
         {
             float s = EscalaRelativaDoPainel;
-            float larguraTela = Screen.width / (float)janela.Escala;
+            float larguraTela = larguraSimulada > 0 ? larguraSimulada : Screen.width / (float)janela.Escala;
+            // Telas estreitas (ex.: 1366 px): primeiro some a loja (dá para comprar no modo gerente);
+            // se ainda não couber, o cenário é cortado à esquerda e o HUD anda junto para continuar visível.
             float faixaTotal = cenario.Largura + 4 + Loja.Largura;
-            float x = Ajustes.Direita ? Mathf.Floor(larguraTela - faixaTotal - CenarioX) : CenarioX;
+            bool cabeLoja = faixaTotal + CenarioX * 2 <= larguraTela;
+            if (Loja.gameObject.activeSelf != cabeLoja) Loja.gameObject.SetActive(cabeLoja);
+            float largura = cabeLoja ? faixaTotal : cenario.Largura;
+            float x = Ajustes.Direita ? Mathf.Floor(larguraTela - largura - CenarioX) : CenarioX;
+            if (!Ajustes.Direita && largura + CenarioX * 2 > larguraTela) x = Mathf.Floor(larguraTela - largura - CenarioX);
+            corteHud = Mathf.Max(0f, -x);
             cenario.transform.position = new Vector3(x, 0, 0);
             Loja.transform.position = new Vector3(x + cenario.Largura + 4, 0, 0);
             float y = JanelaDesktop.AlturaVirtual + Painel.Espaco;
@@ -563,7 +582,8 @@ namespace IdleDataCenter
         {
             string dinheiro = "R$ " + Formatar(economia.Dinheiro);
             textoDinheiro.Definir(dinheiro);
-            float x = 4 + PixelTexto.LarguraAmpliada(dinheiro) + 5;
+            textoDinheiro.transform.localPosition = new Vector3(4 + corteHud, LinhaHud, 0);
+            float x = 4 + corteHud + PixelTexto.LarguraAmpliada(dinheiro) + 5;
 
             string receita = "+" + Formatar(economia.ReceitaPorSegundo) + "/s";
             textoReceita.Definir(receita);

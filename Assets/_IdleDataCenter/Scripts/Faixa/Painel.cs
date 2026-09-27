@@ -226,7 +226,7 @@ namespace IdleDataCenter
             var itens = new (string nome, Aba? aba)[]
             {
                 ("Visão geral", Aba.VisaoGeral), ("Melhorias", Aba.Melhorias), ("Carreira", Aba.Carreira),
-                ("Ajustes", Aba.Ajustes), ("Automação", economia.AutomacoesLiberadas ? Aba.Automacao : (Aba?)null), ("Pesquisa", null),
+                ("Ajustes", Aba.Ajustes), ("Automação", economia.AutomacoesLiberadas ? Aba.Automacao : (Aba?)null),
             };
             string[][] icones =
             {

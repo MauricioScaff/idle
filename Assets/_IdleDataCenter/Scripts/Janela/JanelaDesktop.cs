@@ -52,6 +52,18 @@ namespace IdleDataCenter
         uint Dpi { get { uint d = hwnd != IntPtr.Zero ? GetDpiForWindow(hwnd) : GetDpiForSystem(); return d == 0 ? 96 : d; } }
 #endif
 
+        /// <summary>Largura do monitor da faixa em pixels de arte.</summary>
+        public float LarguraVirtualDaTela
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                if (Ativa && ultimaArea.Largura > 0) return ultimaArea.Largura / (float)Escala;
+#endif
+                return Screen.currentResolution.width / (float)Escala;
+            }
+        }
+
         /// <summary>A maior altura (em pixels de arte) que cabe acima da barra de tarefas.</summary>
         public int AlturaVirtualMaxima
         {
@@ -68,7 +80,6 @@ namespace IdleDataCenter
         public void DefinirAlturaVirtual(int altura)
         {
             AlturaVirtualAtual = Mathf.Clamp(altura, AlturaVirtual, AlturaVirtualMaxima);
-            Debug.Log($"Janela: altura {AlturaVirtualAtual} (pedida {altura}), ativa={Ativa}");
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
             if (!Ativa) return;
             Redimensionar();
@@ -359,7 +370,7 @@ namespace IdleDataCenter
         const long WS_POPUP = 0x80000000L, WS_VISIBLE = 0x10000000L, WS_CAPTION = 0x00C00000L, WS_OVERLAPPEDWINDOW = 0x00CF0000L;
         const long WS_EX_APPWINDOW = 0x40000L;
         const long WS_EX_LAYERED = 0x80000L, WS_EX_TRANSPARENT = 0x20L, WS_EX_TOOLWINDOW = 0x80L;
-        const uint LWA_COLORKEY = 0x1, LWA_ALPHA = 0x2;
+        const uint LWA_COLORKEY = 0x1;
         const uint SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20, SWP_SHOWWINDOW = 0x40;
         const uint SPI_GETWORKAREA = 0x30;
         const int SW_HIDE = 0, SW_SHOW = 5, SW_SHOWNA = 8, SW_RESTORE = 9;

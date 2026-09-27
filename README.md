@@ -31,7 +31,7 @@ Jogo idle para Windows: um data center em vista isométrica numa janela normal, 
 
 - **No editor:** abra a cena `Assets/_IdleDataCenter/Scenes/Faixa` e aperte Play. No editor a janela não fica transparente.
 - **Na faixa de verdade:** menu **Idle Data Center → Gerar build de Windows** e abra `Builds/IdleDataCenter.exe`.
-- **Opções de teste** (linha de comando do build): `-painel=visao|melhorias|carreira|ajustes|automacao` abre o painel numa aba; `-incidente` trava o primeiro servidor; `-promover` promove (se as metas estiverem cumpridas); `-gerente` e `-faixa` forçam o modo inicial; `-gerente=<seção>` abre o modo gerente numa seção (ex.: `prestigio`) (sem mudar a preferência do jogador); `-alternar-gerente` entra e sai do modo gerente a cada 5 s; `-alternar-painel` abre e fecha o painel a cada 4 s (teste da janela).
+- **Opções de teste** (linha de comando do build): `-painel=visao|melhorias|carreira|ajustes|automacao` abre o painel numa aba; `-incidente` trava o primeiro servidor; `-promover` promove (se as metas estiverem cumpridas); `-gerente` e `-faixa` forçam o modo inicial; `-gerente=<seção>` abre o modo gerente numa seção (ex.: `prestigio`); `-simular-largura=<pixels de arte>` testa a faixa numa tela estreita (683 = 1366 px) (sem mudar a preferência do jogador); `-alternar-gerente` entra e sai do modo gerente a cada 5 s; `-alternar-painel` abre e fecha o painel a cada 4 s (teste da janela).
 - **Zerar o progresso:** apague `%USERPROFILE%\AppData\LocalLow\DefaultCompany\Idle Data Center\save.json`.
 
 ## Estrutura

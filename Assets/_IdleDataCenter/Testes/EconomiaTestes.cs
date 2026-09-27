@@ -768,6 +768,25 @@ namespace IdleDataCenter.Testes
             CollectionAssert.AreEqual(new[] { "IPO" }, volta.prestigio.trofeus);
         }
 
+        // ---------- Compatibilidade de save ----------
+
+        [Test]
+        public void SaveAntigoCarregaSemSustos()
+        {
+            // formato do começo do projeto: nada de café, chamados, picos, quedas, prestígio...
+            const string antigo = "{\"versao\":2,\"dinheiro\":3400,\"totalGanho\":9000,\"cargo\":0,\"incidentesResolvidos\":4,"
+                                + "\"melhorias\":[{\"id\":\"ssd\",\"nivel\":1}],\"travamentos\":[],\"ultimoSalvamentoUnix\":1000,\"jaClicouNoServidor\":true}";
+            var estado = UnityEngine.JsonUtility.FromJson<EstadoJogo>(antigo);
+            var e = new Economia(estado, new SorteioFixo(0.9999));
+            Assert.AreEqual(2, e.ReceitaPorSegundo, 1e-9);
+            Assert.IsFalse(e.TemQuedaDeEnergia);
+            Assert.IsFalse(e.TemPaneRegional);
+            Assert.IsNotNull(e.Prestigio);
+            e.Avancar(1);
+            Assert.IsFalse(e.TemChamado, "o primeiro chamado espera o tempo normal");
+            Assert.IsFalse(e.EmPico);
+        }
+
         // ---------- Automações ----------
 
         [Test]

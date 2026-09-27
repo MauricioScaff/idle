@@ -162,19 +162,19 @@ namespace IdleDataCenter
             }
             foreach (var t in torres) t.AtualizarVisual(economia.TemSsd, economia.Ventoinhas);
 
-            if (economia.TemRack && rack == null)
+            if (economia.TemRack && rack == null && planta.Rack > 0)
             {
                 rack = new GameObject("Rack").AddComponent<RackVisual>();
                 rack.Iniciar(faixa, transform, new Vector2(planta.Rack, AlturaPiso));
             }
             rack?.DefinirQuantidade(economia.ServidoresRack);
 
-            if (economia.Nivel(Catalogo.NoBreak) > 0 && noBreak == null)
+            if (economia.Nivel(Catalogo.NoBreak) > 0 && noBreak == null && planta.NoBreak > 0)
             {
                 noBreak = new GameObject("NoBreak").AddComponent<EquipamentoVisual>();
                 noBreak.Iniciar(transform, "nobreak", new Vector2(planta.NoBreak, AlturaPiso), false);
             }
-            if (economia.Nivel(Catalogo.ArCondicionado) > 0 && refrigeracao == null)
+            if (economia.Nivel(Catalogo.ArCondicionado) > 0 && refrigeracao == null && planta.Refrigeracao > 0)
             {
                 refrigeracao = new GameObject("Refrigeracao").AddComponent<EquipamentoVisual>();
                 refrigeracao.Iniciar(transform, "refrigeracao", new Vector2(planta.Refrigeracao, AlturaPiso), true);
@@ -187,23 +187,23 @@ namespace IdleDataCenter
                 racksCheios.Add(r);
                 if (Tecnico != null) faixa.Faiscas(r.Topo, 4);
             }
-            if (economia.NivelStorage > 0 && storage == null)
+            if (economia.NivelStorage > 0 && storage == null && planta.Storage > 0)
             {
                 storage = new GameObject("Storage").AddComponent<EquipamentoVisual>();
                 storage.Iniciar(transform, "storage", new Vector2(planta.Storage, AlturaPiso), false);
                 storage.TornarClicavel(() => faixa.ClicarStorage(storage.Topo));
             }
-            if (economia.TemBackup && fita == null)
+            if (economia.TemBackup && fita == null && planta.Fita > 0)
             {
                 fita = new GameObject("Fita").AddComponent<EquipamentoVisual>();
                 fita.Iniciar(transform, "fita", new Vector2(planta.Fita, AlturaPiso), false);
             }
-            if (economia.Nivel(Catalogo.Link) > 0 && link == null)
+            if (economia.Nivel(Catalogo.Link) > 0 && link == null && planta.Link.x > 0)
             {
                 link = new GameObject("Link").AddComponent<EquipamentoVisual>();
                 link.Iniciar(transform, "link", planta.Link, false);
             }
-            if (economia.NivelHypervisor > 0 && hypervisor == null)
+            if (economia.NivelHypervisor > 0 && hypervisor == null && planta.Hypervisor > 0)
             {
                 hypervisor = new GameObject("Hypervisor").AddComponent<RackVisual>();
                 hypervisor.Iniciar(faixa, transform, new Vector2(planta.Hypervisor, AlturaPiso), faixa.ClicarEquipamento);
