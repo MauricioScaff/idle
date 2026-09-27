@@ -10,32 +10,32 @@ namespace IdleDataCenter.Gerente
     public partial class ModoGerente
     {
         float festaDesde = -10;
-        string festaCargo = "", festaTitulo = "PROMOVIDO!", festaTexto = "";
+        string festaCargo = "", festaTitulo = "Promovido!", festaTexto = "";
 
         static readonly string[] Dicas =
         {
-            "BEM-VINDO! CLIQUE NUM SERVIDOR PARA GANHAR DINHEIRO.",
-            "COMPRE O SSD: ELE DOBRA A RECEITA DAS TORRES. ESTA NA LOJA.",
-            "HORA DO CAFE: CLIQUE NA CANECA DA MESA. A RECEITA DOBRA POR 30 S.",
-            "CONSTRUA MAIS UM SERVIDOR NO MARCADOR LARANJA DA SALA.",
-            "A META DA PROMOCAO FICA NO TOPO. CUMPRA AS TRES PARA VIRAR SYSADMIN.",
-            "VAI TRABALHAR? O BOTAO FAIXA DEIXA O JOGO DISCRETO ACIMA DA BARRA DE TAREFAS.",
+            "Bem-vindo! Clique num servidor para ganhar dinheiro.",
+            "Compre o SSD: ele dobra a receita das torres. Está na loja.",
+            "Hora do café: clique na caneca da mesa. A receita dobra por 30 s.",
+            "Construa mais um servidor no marcador laranja da sala.",
+            "A meta da promoção fica no topo. Cumpra as três para virar Sysadmin.",
+            "Vai trabalhar? O botão Faixa deixa o jogo discreto acima da barra de tarefas.",
         };
 
         void IniciarPrimeiraHora()
         {
             E.Comprou += id => salaIso?.Comprou(id, Time.unscaledTime);
-            E.Promoveu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "PROMOVIDO!"; festaCargo = E.CargoAtual.Nome.ToUpperInvariant(); festaTexto = "A SALA CRESCEU. NOVOS SETORES E EQUIPAMENTOS NA LOJA."; };
-            E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A EMPRESA ESTA NA BOLSA"; festaTexto = "DE TECNICO DE TI NUM ARMARIO A CTO DE UMA NUVEM GLOBAL."; };
-            E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "VENDIDA!"; festaCargo = "+" + c + " CERTIFICACOES"; festaTexto = "UMA EMPRESA NOVA COMECA NO ARMARIO, COM OS BONUS."; };
+            E.Promoveu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Promovido!"; festaCargo = E.CargoAtual.Nome; festaTexto = "A sala cresceu. Novos setores e equipamentos na loja."; };
+            E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A empresa está na bolsa"; festaTexto = "De técnico de TI num armário a CTO de uma nuvem global."; };
+            E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Vendida!"; festaCargo = "+" + c + " certificações"; festaTexto = "Uma empresa nova começa no armário, com os bônus."; };
             E.ChamadoApareceu += texto => Notificar("Chamado urgente: " + texto + "! Clique no papel sobre a mesa.", 8);
             E.ChamadoEncerrado += bonus => { if (bonus <= 0) Notificar("O chamado foi embora sem resposta."); };
         }
 
         void TomarCafe(Vector2 pos)
         {
-            if (faixa.TomarCafe()) Flutuar("CAFE! RECEITA X2", pos, IsoGui.Cor("ffd65c"));
-            else Flutuar(E.CafeAtivo ? "O CAFE AINDA FAZ EFEITO" : "CAFE EM " + Numero(Mathf.Ceil((float)E.RecargaDoCafe)) + "S", pos, IsoGui.Muted);
+            if (faixa.TomarCafe()) Flutuar("Café! Receita ×2", pos, IsoGui.Cor("ffd65c"));
+            else Flutuar(E.CafeAtivo ? "O café ainda faz efeito" : "Café em " + Numero(Mathf.Ceil((float)E.RecargaDoCafe)) + "s", pos, IsoGui.Muted);
         }
 
         void AtenderChamado(Vector2 pos)
@@ -67,11 +67,11 @@ namespace IdleDataCenter.Gerente
 
             var caixa = new Rect(230, 138, 890, 52);
             ui.Caixa(caixa, IsoGui.Cor("1d2a14"), IsoGui.Cor("ffd65c"));
-            ui.Texto("DICA " + (passo + 1) + "/" + Catalogo.PassosTutorial, caixa.x + 14, caixa.y + 8, Ouro, 2);
+            ui.Texto("Dica " + (passo + 1) + "/" + Catalogo.PassosTutorial, caixa.x + 14, caixa.y + 8, Ouro, 2);
             ui.Texto(Dicas[passo], caixa.x + 14, caixa.y + 28, IsoGui.Branco, 2);
             bool informativa = passo >= 4;
             if (informativa && ui.Botao(new Rect(caixa.xMax - 96, caixa.y + 10, 84, 32), "OK", IsoGui.Verde)) E.AvancarTutorial(passo + 1);
-            if (!informativa && ui.Botao(new Rect(caixa.xMax - 96, caixa.y + 10, 84, 32), "PULAR", IsoGui.Borda)) E.AvancarTutorial(Catalogo.PassosTutorial);
+            if (!informativa && ui.Botao(new Rect(caixa.xMax - 96, caixa.y + 10, 84, 32), "Pular", IsoGui.Borda)) E.AvancarTutorial(Catalogo.PassosTutorial);
 
             // alvo da seta
             Vector2? alvo = null;

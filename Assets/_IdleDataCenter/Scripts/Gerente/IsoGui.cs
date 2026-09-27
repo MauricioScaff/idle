@@ -4,11 +4,9 @@ using UnityEngine;
 
 namespace IdleDataCenter.Gerente
 {
-    /// <summary>UI em pixels inteiros e fonte bitmap compartilhada com o jogo original.</summary>
+    /// <summary>Interface desenhada no OnGUI (modo gerente e faixa): caixas, barras, botões e texto na fonte do jogo.</summary>
     public sealed class IsoGui : IDisposable
     {
-        readonly Dictionary<string, Texture2D> textos = new Dictionary<string, Texture2D>();
-        readonly Queue<string> ordem = new Queue<string>();
         public static readonly Color Fundo = Cor("101c30"), Painel = Cor("172941"), Borda = Cor("335775"),
             Branco = Cor("e5f5ff"), Muted = Cor("8babc5"), Cyan = Cor("41d7f5"), Verde = Cor("5fe29b"),
             Laranja = Cor("ffb458"), Roxo = Cor("b798ff");
@@ -30,36 +28,61 @@ namespace IdleDataCenter.Gerente
             Ret(new Rect(r.x + 2, r.y + 2, r.width - 4, 2), new Color(1, 1, 1, .06f));
         }
 
-        Texture2D Fonte(string valor)
+        // ---------------- Texto ----------------
+        // Letra: Pixelify Sans (licença OFL, Resources/Fontes). A "escala" antiga (altura da maiúscula = 5 × escala)
+        // vira um tamanho de fonte com maiúsculas da mesma altura, então os layouts continuam valendo.
+        // O texto é desenhado já no tamanho da tela (fora da matriz do GUI), para a fonte ser rasterizada nítida.
+
+        const float TamanhoPorEscala = 7f;          // tamanho da fonte por unidade de escala
+        const float TopoDaMaiuscula = 0.19f;        // do topo da linha até o topo da maiúscula, em fração do tamanho
+
+        static Font fonte;
+        static GUIStyle estilo;
+
+        static GUIStyle Estilo
         {
-            valor = PixelTexto.Normalizar(valor);
-            if (textos.TryGetValue(valor, out var t)) return t;
-            if (textos.Count >= 384)
+            get
             {
-                string antigo = ordem.Dequeue();
-                UnityEngine.Object.Destroy(textos[antigo]);
-                textos.Remove(antigo);
+                if (estilo != null) return estilo;
+                fonte = Resources.Load<Font>("Fontes/PixelifySans");
+                estilo = new GUIStyle { font = fonte, alignment = TextAnchor.UpperLeft, wordWrap = false, clipping = TextClipping.Overflow, richText = false };
+                estilo.padding = new RectOffset(0, 0, 0, 0);
+                estilo.margin = new RectOffset(0, 0, 0, 0);
+                return estilo;
             }
-            var canvas = new PixelCanvas(Mathf.Max(1, PixelCanvas.LarguraTexto(valor)), 5);
-            canvas.Texto(valor, 0, 0, Color.white, false);
-            canvas.Aplicar();
-            UnityEngine.Object.Destroy(canvas.Sprite);
-            textos[valor] = canvas.Textura;
-            ordem.Enqueue(valor);
-            return canvas.Textura;
+        }
+
+        static int Tamanho(float escala) => Mathf.Max(6, Mathf.RoundToInt(escala * TamanhoPorEscala));
+
+        /// <summary>Largura do texto em unidades do GUI (as mesmas das coordenadas de quem chama).</summary>
+        public float Largura(string s, int escala = 2)
+        {
+            if (string.IsNullOrEmpty(s)) return 0;
+            var e = Estilo;
+            e.fontSize = Tamanho(escala);
+            return e.CalcSize(new GUIContent(s)).x;
         }
 
         public void Texto(string s, float x, float y, Color? c = null, int escala = 2, bool centro = false)
         {
-            if (string.IsNullOrEmpty(s)) return;
-            var t = Fonte(s);
-            float w = t.width * escala;
-            var r = new Rect(Mathf.Round(centro ? x - w / 2 : x), Mathf.Round(y), w, 5 * escala);
-            GUI.color = Cor("091321");
-            GUI.DrawTexture(new Rect(r.x + 1, r.y + 2, r.width, r.height), t);
-            GUI.color = c ?? Branco;
-            GUI.DrawTexture(r, t);
-            GUI.color = Color.white;
+            if (string.IsNullOrEmpty(s) || Event.current.type != EventType.Repaint) return;
+            var e = Estilo;
+            // tamanho e posição na tela de verdade
+            var m = GUI.matrix;
+            float s1 = m.m00;
+            int tamanho = Mathf.Max(6, Mathf.RoundToInt(Tamanho(escala) * s1));
+            e.fontSize = tamanho;
+            var conteudo = new GUIContent(s);
+            var tam = e.CalcSize(conteudo);
+            Vector3 p = m.MultiplyPoint3x4(new Vector3(x, y, 0));
+            float px = Mathf.Round(centro ? p.x - tam.x / 2 : p.x), py = Mathf.Round(p.y - tamanho * TopoDaMaiuscula);
+            GUI.matrix = Matrix4x4.identity;
+            float sombra = Mathf.Max(1, Mathf.Round(tamanho / 14f));
+            e.normal.textColor = new Color(0.035f, 0.075f, 0.13f, (c ?? Branco).a);
+            GUI.Label(new Rect(px + sombra, py + sombra, tam.x + 2, tam.y), conteudo, e);
+            e.normal.textColor = c ?? Branco;
+            GUI.Label(new Rect(px, py, tam.x + 2, tam.y), conteudo, e);
+            GUI.matrix = m;
         }
 
         public bool Botao(Rect r, string titulo, Color accent, bool enabled = true, int escala = 2)
@@ -106,8 +129,6 @@ namespace IdleDataCenter.Gerente
 
         public void Dispose()
         {
-            foreach (var t in textos.Values) UnityEngine.Object.Destroy(t);
-            textos.Clear(); ordem.Clear();
         }
     }
 }

@@ -38,9 +38,9 @@ namespace IdleDataCenter.Gerente
 
             // avisos na barra de notícias (os sons e o save continuam por conta da faixa)
             E.AutomacaoPronta += id => Notificar("Automação pronta: " + Catalogo.BuscarAutomacao(id).Nome, 8);
-            E.Travou += _ => Notificar("Servidor travou. Clique no NOC ou em RESOLVER.");
-            E.DiscoQueimou += () => Notificar("Disco queimou no storage. Clique em STORAGE para trocar.");
-            E.DeployQuebrou += () => Notificar("Deploy quebrou. Clique em DEPLOY para o rollback.");
+            E.Travou += _ => Notificar("Servidor travou. Clique no NOC ou em Reiniciar.");
+            E.DiscoQueimou += () => Notificar("Disco queimou no storage. Clique em Storage para trocar.");
+            E.DeployQuebrou += () => Notificar("Deploy quebrou. Clique em Deploy para o rollback.");
             E.PicoComecou += nome => Notificar("Pico de tráfego: " + nome + "! Escale o cluster.", 10);
             E.QuedaDeEnergia += dc => Notificar("Queda de energia no DC-0" + (dc + 1) + "! Clique no prédio apagado para religar.", 8);
             E.PaneRegional += r => Notificar("Pane regional: " + Catalogo.NomesRegioes[r] + " fora do ar! Clique na região para redirecionar o tráfego.", 8);
@@ -51,7 +51,7 @@ namespace IdleDataCenter.Gerente
         {
             Aberto = true;
             janela = "";
-            Notificar("Data center de " + E.CargoAtual.Nome + ". \"Ir para a faixa\" deixa o jogo discreto enquanto você trabalha.", 7);
+            Notificar("Data center de " + E.CargoAtual.Nome + ". O botão Faixa deixa o jogo discreto enquanto você trabalha.", 7);
         }
 
         public void Fechar() => Aberto = false;

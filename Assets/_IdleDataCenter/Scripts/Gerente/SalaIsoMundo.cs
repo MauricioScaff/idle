@@ -101,7 +101,7 @@ namespace IdleDataCenter.Gerente
             var p = M(PosicaoRegiao[r]);
             bool aberta = r == 0 || r <= E.RegioesExtras;
             bool pane = r > 0 && E.RegiaoEmPane == r;
-            string nome = Catalogo.NomesRegioes[r].ToUpperInvariant();
+            string nome = Catalogo.NomesRegioes[r];
             if (!aberta)
             {
                 // região ainda não aberta: anel tracejado apagado; a próxima recebe o marcador
@@ -128,7 +128,7 @@ namespace IdleDataCenter.Gerente
             }
             if (pane && Piscar()) tela.Texto("!", p.x - 1, p.y - 16, IsoDesenho.C("ff3b4e"), true, 2);
             Alvos.Add(new Alvo { Area = new RectInt(p.x - 12, p.y - 12, 24, 24), Tipo = "regiao:" + r });
-            Placas.Add(new Placa { Setor = "Mundo", Nome = r == 0 ? "SEDE: " + nome : nome, Pos = p + new Vector2Int(0, -14), Cor = r == 0 ? IsoGui.Cor("ffd65c") : IsoGui.Verde });
+            Placas.Add(new Placa { Setor = "Mundo", Nome = r == 0 ? "Sede: " + nome : nome, Pos = p + new Vector2Int(0, -14), Cor = r == 0 ? IsoGui.Cor("ffd65c") : IsoGui.Verde });
         }
 
         void Catavento(Vector2Int p)

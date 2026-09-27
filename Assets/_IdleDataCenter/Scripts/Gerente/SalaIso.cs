@@ -247,7 +247,7 @@ namespace IdleDataCenter.Gerente
             if (E.TemEstagiario) Adicionar(0.1f, 3.9f, 0.9f, 0.9f, () => MesaSimples(0.1f, 3.9f));
 
             // --- Compute: torres (até 3), rack 42U, racks cheios, hypervisor, containers, CI, Kubernetes ---
-            NovaPlaca("Compute", "COMPUTE", 3.2f, 0.5f, AlturaParede + 6, IsoGui.Cyan);
+            NovaPlaca("Compute", "Compute", 3.2f, 0.5f, AlturaParede + 6, IsoGui.Cyan);
             for (int i = 0; i < Mathf.Min(3, E.Torres); i++)
             {
                 float gx = 2f + i, gy = 0.2f; int idx = i;
@@ -293,7 +293,7 @@ namespace IdleDataCenter.Gerente
             if (E.TemBalanceador) Adicionar(15f, 8.6f, 0.8f, 0.8f, () => Balanceador(15f, 8.6f));
 
             // --- Energia: no-breaks encostados na parede da esquerda ---
-            NovaPlaca("Energia", "ENERGIA", 0.4f, 5.9f, 40, IsoGui.Laranja);
+            NovaPlaca("Energia", "Energia", 0.4f, 5.9f, 40, IsoGui.Laranja);
             var posNoBreak = new[] { new Vector2(0.1f, 5.2f), new Vector2(0.1f, 6.1f), new Vector2(1.0f, 6.1f) };
             for (int i = 0; i < Mathf.Min(3, E.Nivel(Catalogo.NoBreak)); i++)
             {
@@ -302,7 +302,7 @@ namespace IdleDataCenter.Gerente
             }
 
             // --- Refrigeração: ar de precisão na parede do fundo ---
-            NovaPlaca("Refrigeracao", "REFRIGERACAO", 7.2f, 0.5f, AlturaParede + 6, IsoGui.Cyan);
+            NovaPlaca("Refrigeracao", "Refrigeração", 7.2f, 0.5f, AlturaParede + 6, IsoGui.Cyan);
             for (int i = 0; i < Mathf.Min(3, E.Nivel(Catalogo.ArCondicionado)); i++)
             {
                 float gx = 6.2f + i;
@@ -310,7 +310,7 @@ namespace IdleDataCenter.Gerente
             }
 
             // --- Storage e backup ---
-            NovaPlaca("Storage", "STORAGE", 10.2f, 0.5f, AlturaParede + 6, IsoGui.Cyan);
+            NovaPlaca("Storage", "Storage", 10.2f, 0.5f, AlturaParede + 6, IsoGui.Cyan);
             for (int i = 0; i < Mathf.Min(3, E.NivelStorage); i++)
             {
                 float gx = 9.2f + i; bool queimado = i == 0 && E.DiscoQueimado;
@@ -320,7 +320,7 @@ namespace IdleDataCenter.Gerente
             if (E.TemBackup) Adicionar(11.2f, 1.1f, 0.7f, 0.6f, () => Fita(11.2f, 1.1f));
 
             // --- Rede: caixas na parede da esquerda e o rack de 10G ---
-            NovaPlaca("Rede", "REDE", 0.3f, 7.9f, 52, IsoGui.Cyan);
+            NovaPlaca("Rede", "Rede", 0.3f, 7.9f, 52, IsoGui.Cyan);
             for (int i = 0; i < Mathf.Min(2, E.Nivel(Catalogo.Link)); i++)
             {
                 float gy = 7.2f + i;
@@ -331,7 +331,7 @@ namespace IdleDataCenter.Gerente
             // --- Laboratório (automações) ---
             if (E.AutomacoesLiberadas)
             {
-                NovaPlaca("Automacao", "LABORATORIO", 10f, 5.4f, 36, IsoGui.Roxo);
+                NovaPlaca("Automacao", "Laboratório", 10f, 5.4f, 36, IsoGui.Roxo);
                 Adicionar(9f, 5f, 2f, 0.8f, () => Laboratorio(9f, 5f));
             }
 
