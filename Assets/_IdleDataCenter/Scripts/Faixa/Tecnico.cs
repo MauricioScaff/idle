@@ -42,19 +42,23 @@ namespace IdleDataCenter
         float MaxX => cenario.LimiteTecnico - deslocamento;
 
         /// <summary>Carrega os quadros de um personagem (prefixo dos arquivos em Resources/Arte). Só o técnico troca de uniforme.</summary>
+        /// <summary>Textura de um quadro do personagem já com o uniforme do cargo (só o técnico troca de roupa). Usada também no modo gerente.</summary>
+        public static Texture2D TexturaDoCargo(string arquivo, string prefixo, int cargo)
+        {
+            var t = ArteGerada.Textura(arquivo);
+            if (prefixo != "tecnico") return t;
+            if (cargo == 1) return ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
+            if (cargo == 2) return ArteGerada.TrocarCorDaRoupa(t, MatizAnalista, brilho: BrilhoAnalista);
+            if (cargo == 3) return ArteGerada.TrocarCorDaRoupa(t, MatizDevOps, brilho: BrilhoDevOps);
+            if (cargo >= 4) return ArteGerada.TrocarCorDaRoupa(t, MatizSre, brilho: BrilhoSre);
+            return t;
+        }
+
         static Quadros Carregar(string prefixo, int cargo)
         {
             string chave = prefixo + "#" + cargo;
             if (cache.TryGetValue(chave, out var q)) return q;
-            Sprite S(string sufixo)
-            {
-                var t = ArteGerada.Textura(prefixo + sufixo);
-                if (prefixo == "tecnico" && cargo == 1) t = ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
-                if (prefixo == "tecnico" && cargo == 2) t = ArteGerada.TrocarCorDaRoupa(t, MatizAnalista, brilho: BrilhoAnalista);
-                if (prefixo == "tecnico" && cargo == 3) t = ArteGerada.TrocarCorDaRoupa(t, MatizDevOps, brilho: BrilhoDevOps);
-                if (prefixo == "tecnico" && cargo >= 4) t = ArteGerada.TrocarCorDaRoupa(t, MatizSre, brilho: BrilhoSre);
-                return ArteGerada.Personagem(t, prefixo + sufixo + "#" + cargo);
-            }
+            Sprite S(string sufixo) => ArteGerada.Personagem(TexturaDoCargo(prefixo + sufixo, prefixo, cargo), prefixo + sufixo + "#" + cargo);
             return cache[chave] = new Quadros
             {
                 Parado = S("_lado"),

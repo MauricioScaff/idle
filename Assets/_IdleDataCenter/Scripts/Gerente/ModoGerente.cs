@@ -6,9 +6,9 @@ namespace IdleDataCenter.Gerente
 {
     /// <summary>
     /// Modo gerente: a mesma janela da faixa cresce para a área de trabalho inteira e mostra o data center
-    /// em vista isométrica (ilustração e interface vindas do protótipo feito no Codex). Usa a mesma Economia
+    /// em vista isométrica (sala desenhada em pixel art pela SalaIso; interface vinda do protótipo feito no Codex). Usa a mesma Economia
     /// da faixa, então dinheiro, compras, automações e promoções são os mesmos nos dois modos.
-    /// Os setores ainda não liberados pelo cargo aparecem escurecidos, com a placa "libera no ...".
+    /// A sala cresce a cada promoção e mostra tudo o que foi comprado.
     /// É o modo principal do jogo; "Ir para a faixa" encolhe tudo para a faixa discreta acima da barra de tarefas.
     /// </summary>
     public partial class ModoGerente : MonoBehaviour
@@ -19,12 +19,6 @@ namespace IdleDataCenter.Gerente
         Faixa faixa;
         Economia E;
         IsoGui ui;
-        Texture2D ambiente, sala, rack, drone;
-        int cargoDaSala = -1;
-        readonly Texture2D[] passos = new Texture2D[4];
-        readonly Rect[] passosUv = new Rect[4];
-        readonly float[] passosAspecto = new float[4];
-        Texture2D rackDesenhado;
 
         string selecionado = "Visao", janela = "", aviso = "";
         float avisoAte, flashCompra;
@@ -38,18 +32,7 @@ namespace IdleDataCenter.Gerente
             this.faixa = faixa;
             E = economia;
             ui = new IsoGui();
-            ambiente = Resources.Load<Texture2D>("Isometrico/DataCenter");
-            rack = Resources.Load<Texture2D>("Isometrico/Rack");
-            if (rack == null) rack = rackDesenhado = IsoSprites.Rack(true);
-            drone = IsoSprites.Drone();
-            for (int i = 0; i < passos.Length; i++)
-            {
-                passos[i] = IsoSprites.Engenheiro(i);
-                var area = ArteGerada.AreaOpaca(passos[i]);
-                passosUv[i] = new Rect((float)area.x / passos[i].width, (float)area.y / passos[i].height,
-                    (float)area.width / passos[i].width, (float)area.height / passos[i].height);
-                passosAspecto[i] = (float)area.width / area.height;
-            }
+            salaIso = new SalaIso(E);
 
             // avisos na barra de notícias (os sons e o save continuam por conta da faixa)
             E.AutomacaoPronta += id => Notificar("Automação pronta: " + Catalogo.BuscarAutomacao(id).Nome, 8);
@@ -75,14 +58,12 @@ namespace IdleDataCenter.Gerente
             if (!Aberto) return;
             if (Input.GetKeyDown(KeyCode.Escape) && !string.IsNullOrEmpty(janela)) Abrir("Visao");   // Esc fecha a janela aberta
             flashCompra = Mathf.Max(0, flashCompra - Time.unscaledDeltaTime);
+            AtualizarSala();
         }
 
         void OnDestroy()
         {
             ui?.Dispose();
-            if (rackDesenhado != null) Destroy(rackDesenhado);
-            if (drone != null) Destroy(drone);
-            foreach (var p in passos) if (p != null) Destroy(p);
         }
 
         void Notificar(string texto, float segundos = 5) { aviso = texto; avisoAte = Time.unscaledTime + segundos; }

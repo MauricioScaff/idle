@@ -81,11 +81,11 @@ namespace IdleDataCenter.Gerente
             if (ui.Botao(new Rect(modal.xMax - 57, modal.y + 15, 40, 32), "X", IsoGui.Borda)) { Abrir("Visao"); return; }
             ui.Ret(new Rect(modal.x + 18, modal.y + 82, modal.width - 36, 2), IsoGui.Borda);
 
-            var setor = SetoresIso.Buscar(janela);
-            if (setor != null && !SetoresIso.Liberado(setor, E.Cargo))
+            int cargoDoSetor = SalaIso.CargoDoSetor(janela);
+            if (cargoDoSetor > E.Cargo)
             {
-                ui.Texto("SETOR BLOQUEADO", modal.center.x, modal.y + 220, IsoGui.Laranja, 4, true);
-                ui.Texto("LIBERA NO CARGO " + Catalogo.Cargos[setor.Cargo].Nome.ToUpperInvariant(), modal.center.x, modal.y + 270, IsoGui.Muted, 2, true);
+                ui.Texto("SETOR AINDA NAO CONSTRUIDO", modal.center.x, modal.y + 220, IsoGui.Laranja, 4, true);
+                ui.Texto("A SALA CRESCE ATE ELE NO CARGO " + Catalogo.Cargos[cargoDoSetor].Nome.ToUpperInvariant(), modal.center.x, modal.y + 270, IsoGui.Muted, 2, true);
                 return;
             }
             if (janela == "Carreira") { Carreira(modal); return; }
