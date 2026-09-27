@@ -41,6 +41,10 @@ namespace IdleDataCenter.Simulacao
         public event Action<double> SlaViolado;
         /// <summary>O pico acabou (true = sobreviveu sem violar o SLA).</summary>
         public event Action<bool> PicoTerminou;
+        /// <summary>Apareceu um chamado urgente (texto).</summary>
+        public event Action<string> ChamadoApareceu;
+        /// <summary>Chamado atendido (bônus) ou perdido (0).</summary>
+        public event Action<double> ChamadoEncerrado;
 
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
@@ -149,7 +153,8 @@ namespace IdleDataCenter.Simulacao
 
         /// <summary>Tudo que multiplica a receita de todos os servidores.</summary>
         public double FatorGeral => FatorEnergia * FatorTemperatura * FatorBanda * FatorStorage
-                                   * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade);
+                                   * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
+                                   * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1);
 
         /// <summary>Hypervisor: cada servidor físico vira várias VMs vendidas como VPS.</summary>
         public double FatorVirtualizacao => 1 + NivelHypervisor * Catalogo.BonusVirtualizacao;
@@ -248,6 +253,7 @@ namespace IdleDataCenter.Simulacao
             // A automação em escrita avança
             AvancarEscrita(segundos);
             AvancarPico(segundos);
+            AvancarCafeEChamados(segundos);
 
             // Novas travadas: cada servidor tem uma chance por segundo (maior com calor, menor com monitoramento)
             double mult = (Quente ? Catalogo.MultiplicadorQuente : 1) / (TemAutomacao(Catalogo.Monitoramento) ? Catalogo.FatorMtbfMonitoramento : 1)
@@ -362,6 +368,76 @@ namespace IdleDataCenter.Simulacao
             Estado.incidentesResolvidos++;
             Voltou?.Invoke(servidor, porTecnico);
         }
+
+        // ---------------- Café e chamados urgentes ----------------
+
+        public bool CafeAtivo => Estado.cafeRestante > 0;
+        public double SegundosDeCafe => Estado.cafeRestante;
+        public double RecargaDoCafe => Math.Max(0, Estado.cafeRecarga);
+        public bool PodeTomarCafe => Estado.cafeRecarga <= 0;
+
+        /// <summary>O técnico toma um café: a receita dobra por 30 s; o próximo só depois de 3 min.</summary>
+        public bool TomarCafe()
+        {
+            if (!PodeTomarCafe) return false;
+            Estado.cafeRestante = Catalogo.DuracaoCafe;
+            Estado.cafeRecarga = Catalogo.RecargaCafe;
+            return true;
+        }
+
+        public bool TemChamado => Estado.chamadoRestante > 0;
+        public string TextoDoChamado => Estado.chamadoTexto;
+        public double SegundosDoChamado => Estado.chamadoRestante;
+        public double BonusDoChamado => Math.Max(25, ReceitaPorSegundo * Catalogo.SegundosDeBonusDoChamado);
+
+        void AvancarCafeEChamados(double segundos)
+        {
+            if (Estado.cafeRestante > 0) Estado.cafeRestante = Math.Max(0, Estado.cafeRestante - segundos);
+            if (Estado.cafeRecarga > 0) Estado.cafeRecarga -= segundos;
+
+            if (TemChamado)
+            {
+                Estado.chamadoRestante -= segundos;
+                if (Estado.chamadoRestante <= 0) EncerrarChamado(0);
+                return;
+            }
+            if (Estado.proximoChamado < 0) Estado.proximoChamado = Catalogo.PrimeiroChamado;
+            Estado.proximoChamado -= segundos;
+            if (Estado.proximoChamado <= 0) AbrirChamado();
+        }
+
+        public void AbrirChamado()
+        {
+            if (TemChamado) return;
+            Estado.chamadoTexto = Catalogo.Chamados[sorteio.Next(Catalogo.Chamados.Length)];
+            Estado.chamadoRestante = Catalogo.TempoParaAtender;
+            ChamadoApareceu?.Invoke(Estado.chamadoTexto);
+        }
+
+        /// <summary>Atende o chamado aberto e recebe o bônus. Retorna o valor (0 se não havia chamado).</summary>
+        public double AtenderChamado()
+        {
+            if (!TemChamado) return 0;
+            double bonus = BonusDoChamado;
+            Ganhar(bonus);
+            Estado.chamadosAtendidos++;
+            EncerrarChamado(bonus);
+            return bonus;
+        }
+
+        void EncerrarChamado(double bonus)
+        {
+            Estado.chamadoRestante = 0;
+            Estado.chamadoTexto = "";
+            Estado.proximoChamado = Catalogo.IntervaloChamadoMin + sorteio.NextDouble() * (Catalogo.IntervaloChamadoMax - Catalogo.IntervaloChamadoMin);
+            ChamadoEncerrado?.Invoke(bonus);
+        }
+
+        // ---------------- Tutorial ----------------
+
+        public int PassoTutorial => Estado.tutorial;
+        public bool TutorialConcluido => Estado.tutorial >= Catalogo.PassosTutorial;
+        public void AvancarTutorial(int ate) { if (ate > Estado.tutorial) Estado.tutorial = Math.Min(ate, Catalogo.PassosTutorial); }
 
         // ---------------- Picos de tráfego (SRE) ----------------
 
@@ -533,6 +609,13 @@ namespace IdleDataCenter.Simulacao
             if (Estado.ultimoSalvamentoUnix <= 0) return 0; // primeiro jogo
             double fora = agoraUnix - Estado.ultimoSalvamentoUnix;
             SegundosFora = fora;
+            // café e chamado são coisas de quem está jogando: não valem com o jogo fechado
+            if (fora >= Catalogo.SegundosMinimosOffline)
+            {
+                Estado.cafeRestante = 0;
+                Estado.cafeRecarga = 0;
+                if (TemChamado) { Estado.chamadoRestante = 0; Estado.chamadoTexto = ""; Estado.proximoChamado = Catalogo.IntervaloChamadoMin; }
+            }
             if (fora >= Catalogo.SegundosMinimosOffline)
             {
                 ConsertadosFora = Estado.travamentos.Count;

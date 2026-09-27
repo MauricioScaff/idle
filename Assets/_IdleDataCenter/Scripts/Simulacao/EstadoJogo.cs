@@ -39,6 +39,16 @@ namespace IdleDataCenter.Simulacao
         public double picoDecorrido;
         public bool picoEscalado, picoViolado;
         public int picosSobrevividos, picosTotal;
+
+        // Café (receita em dobro por um tempo) e chamados urgentes (bônus se atendidos a tempo)
+        public double cafeRestante, cafeRecarga;
+        public double proximoChamado = -1;    // segundos até o próximo (-1 = ainda não agendado)
+        public double chamadoRestante;        // > 0: tem chamado esperando
+        public string chamadoTexto = "";
+        public int chamadosAtendidos;
+
+        // Tutorial do modo gerente: passo atual (Catalogo.PassosTutorial = concluído)
+        public int tutorial;
     }
 
     [Serializable]

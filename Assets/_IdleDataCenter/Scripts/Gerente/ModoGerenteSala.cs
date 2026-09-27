@@ -102,8 +102,8 @@ namespace IdleDataCenter.Gerente
                 string rotulo = "+ " + NomeLongo(item).ToUpperInvariant();
                 float largura = PixelCanvas.LarguraTexto(rotulo) * 2 + 24;
                 var cor = flashCompra > 0 ? IsoGui.Verde : IsoGui.Laranja;
-                if (ui.Botao(new Rect(pos.x - largura / 2, pos.y - 44, largura, 26), rotulo, cor, Livre)) Comprar(item);
-                ui.Texto(Dinheiro(E.Custo(item)), pos.x, pos.y - 14, PodeComprarAqui(item) ? IsoGui.Verde : IsoGui.Branco, 2, true);
+                if (ui.Botao(new Rect(pos.x - largura / 2, pos.y + 12, largura, 26), rotulo, cor, Livre)) Comprar(item);   // embaixo do lugar: não cobre os equipamentos
+                ui.Texto(Dinheiro(E.Custo(item)), pos.x, pos.y + 42, PodeComprarAqui(item) ? IsoGui.Verde : IsoGui.Branco, 2, true);
             }
 
             // pico de tráfego: faixa de alerta embaixo da sala
@@ -116,6 +116,18 @@ namespace IdleDataCenter.Gerente
                     : "PICO: " + E.NomeDoPico.ToUpperInvariant() + "  /  ESCALE EM " + Numero(Mathf.Ceil((float)(E.LimiteParaEscalar - E.SegundosDePico))) + "S";
                 ui.Texto(texto, r.center.x, r.y + 12, IsoGui.Laranja, 2, true);
                 if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) Escalar();
+            }
+
+            // texto do chamado ao lado do papel
+            if (salaIso.Chamado.HasValue && E.TemChamado)
+            {
+                var pos = NaTela(salaIso.Chamado.Value);
+                string texto = "CHAMADO: " + E.TextoDoChamado.ToUpperInvariant() + "  (" + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "S)";
+                float largura = PixelCanvas.LarguraTexto(texto) * 2 + 20;
+                var r = new Rect(pos.x + 24, pos.y - 30, largura, 24);
+                ui.Caixa(r, IsoGui.Cor("2a1f10"), IsoGui.Cor("ffd65c"));
+                ui.Texto(texto, r.x + 10, r.y + 8, IsoGui.Cor("ffd65c"), 2);
+                if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) AtenderChamado(new Vector2(pos.x, pos.y - 20));
             }
 
             // "+R$" subindo
@@ -145,6 +157,8 @@ namespace IdleDataCenter.Gerente
             else if (tipo == "containers" && E.DeployQuebrado) { faixa.FazerRollback(); Flutuar("ROLLBACK", pos, IsoGui.Verde); return; }
             else if (tipo == "k8s" && E.EmPico && !E.PicoFoiEscalado) { Escalar(); Flutuar("ESCALADO", pos, IsoGui.Cyan); return; }
             else if (tipo == "noc") { Abrir("NOC"); return; }
+            else if (tipo == "cafe") { TomarCafe(pos); return; }
+            else if (tipo == "chamado") { AtenderChamado(pos); return; }
 
             double valor = E.ClicarEquipamento();
             Sons.Moeda();
@@ -161,7 +175,7 @@ namespace IdleDataCenter.Gerente
             ui.Texto("IDLE DATA CENTER", 65, 17, IsoGui.Branco, 3);
             ui.Texto("/ MODO GERENTE", 65, 43, IsoGui.Cyan, 2);
             ui.Texto("O SEU DATA CENTER", 22, 66, IsoGui.Muted, 1);
-            Recurso(275, 184, "DINHEIRO", Dinheiro(E.Dinheiro), "+" + Dinheiro(E.ReceitaPorSegundo) + "/S", IsoGui.Verde);
+            Recurso(275, 184, "DINHEIRO", Dinheiro(E.Dinheiro), E.CafeAtivo ? "CAFE X2: " + Numero(Mathf.Ceil((float)E.SegundosDeCafe)) + "S" : "+" + Dinheiro(E.ReceitaPorSegundo) + "/S", E.CafeAtivo ? IsoGui.Cor("ffd65c") : IsoGui.Verde);
             Recurso(469, 174, "ENERGIA", Numero(E.ConsumoKw) + " KW", "DE " + Numero(E.CapacidadeKw) + " KW", E.Sobrecarga ? IsoGui.Laranja : IsoGui.Laranja);
             Recurso(653, 174, "TEMPERATURA", Numero(Mathf.Round((float)E.Temperatura)) + " C", E.Quente ? "QUENTE: RENDE MENOS" : "ESTAVEL", E.Quente ? IsoGui.Laranja : IsoGui.Cyan);
             Recurso(837, 150, "SERVIDORES", E.ContagemServidores.ToString(), E.NaSalaDeRacks ? Numero(E.TrafegoMbps) + " / " + Numero(E.BandaMbps) + " MB" : "SEM LIMITE DE BANDA", IsoGui.Cyan);

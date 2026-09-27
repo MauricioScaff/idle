@@ -73,6 +73,7 @@ namespace IdleDataCenter.Gerente
             GUI.enabled = enabled;
             bool clicked = GUI.Button(r, GUIContent.none, GUIStyle.none);
             GUI.enabled = old;
+            if (clicked) Sons.Tique();
             return clicked;
         }
 

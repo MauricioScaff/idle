@@ -52,6 +52,11 @@ namespace IdleDataCenter
             economia.PicoEscalado += AoEscalar;
             economia.SlaViolado += AoViolarSla;
             economia.PicoTerminou += AoTerminarPico;
+            economia.ChamadoApareceu += AoAparecerChamado;
+            economia.ChamadoEncerrado += AoEncerrarChamado;
+            // quem já passou do começo não precisa do tutorial
+            if (!economia.TutorialConcluido && (economia.Cargo > 0 || economia.Estado.totalGanho > 2000))
+                economia.AvancarTutorial(Catalogo.PassosTutorial);
         }
 
         void Start()
@@ -229,6 +234,33 @@ namespace IdleDataCenter
         /// <summary>Escalar pelo painel.</summary>
         public void Escalar() => economia.Escalar();
 
+        /// <summary>Café: a receita dobra por 30 s (recarga de 3 min). Serve para a faixa e para o modo gerente.</summary>
+        public bool TomarCafe()
+        {
+            if (!economia.TomarCafe())
+            {
+                Loja.MostrarAviso(economia.CafeAtivo ? "O café ainda faz efeito" : "Café em " + Mathf.CeilToInt((float)economia.RecargaDoCafe) + "s", 1.5f);
+                return false;
+            }
+            Loja.MostrarAviso("Café! Receita x2 por 30s", 2.5f, Amarelo);
+            cenario.Tecnico.Comemorar();
+            Sons.Compra();
+            return true;
+        }
+
+        /// <summary>Atende o chamado urgente aberto. Retorna o bônus (0 se não havia).</summary>
+        public double AtenderChamado()
+        {
+            double bonus = economia.AtenderChamado();
+            if (bonus <= 0) return 0;
+            Ganho(bonus, new Vector2(PosicaoDoChamado, 44));
+            Loja.MostrarAviso("Chamado resolvido: +R$ " + Formatar(bonus), 2f, VerdeClaro);
+            Sons.Moeda();
+            return bonus;
+        }
+
+        float PosicaoDoChamado => cenario.PosicaoMesa - 4;
+
         /// <summary>Rollback pelo painel.</summary>
         public void FazerRollback() => economia.FazerRollback(porTecnico: false);
 
@@ -329,6 +361,17 @@ namespace IdleDataCenter
             Loja.MostrarAviso(sobreviveu ? "Pico superado!" : "O pico passou", 2.5f, sobreviveu ? VerdeClaro : Laranja);
             if (sobreviveu) { cenario.Tecnico.Comemorar(); Sons.Conserto(); }
             Salvamento.Salvar(economia.Estado);
+        }
+
+        void AoAparecerChamado(string texto)
+        {
+            Loja.MostrarAviso("Chamado: " + texto, 4f, Amarelo);
+            Sons.Tique();
+        }
+
+        void AoEncerrarChamado(double bonus)
+        {
+            if (bonus <= 0) Loja.MostrarAviso("O chamado foi embora", 1.5f, Laranja);
         }
 
         void AoFicarProntaAutomacao(string id)

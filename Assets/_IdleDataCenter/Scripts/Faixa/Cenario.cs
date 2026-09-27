@@ -103,7 +103,10 @@ namespace IdleDataCenter
 
             AtualizarEquipamentos();
 
-            Decoracao("Caneca", Arte.Caneca, torres[0].Topo + new Vector2(-2, -1), 4).gameObject.AddComponent<Vapor>();
+            var caneca = Decoracao("Caneca", Arte.Caneca, torres[0].Topo + new Vector2(-2, -1), 4);
+            caneca.gameObject.AddComponent<Vapor>();
+            CanecaCafe.Criar(caneca, faixa, economia);                                  // clicar toma um café
+            ChamadoVisual.Criar(transform, new Vector2(PosicaoMesa - 4, 38), faixa, economia);   // chamado urgente sobre a mesa
 
             Tecnico = new GameObject("Tecnico").AddComponent<Tecnico>();
             Tecnico.Iniciar(faixa, this, economia.Cargo);

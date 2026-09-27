@@ -144,6 +144,18 @@ namespace IdleDataCenter.Simulacao
         public const double SegundosPerdidosSemBackup = 120;
         public const double MtbfDeploy = 1200;          // por host de containers
 
+        // --- Café e chamados urgentes (para quem está jogando) ---
+        public const double DuracaoCafe = 30, RecargaCafe = 180, MultiplicadorCafe = 2;
+        public const double PrimeiroChamado = 90, IntervaloChamadoMin = 180, IntervaloChamadoMax = 360;
+        public const double TempoParaAtender = 20;
+        public const double SegundosDeBonusDoChamado = 60;   // o chamado paga 60 s de receita (mínimo R)
+        public static readonly string[] Chamados =
+        {
+            "Impressora não imprime", "É sempre o DNS", "Senha do Wi-Fi", "Mouse sem pilha", "Cliente quer o backup de ontem",
+            "Servidor fazendo barulho", "Esqueci a senha", "A internet caiu (não caiu)", "Planilha travou", "Certificado expirou",
+        };
+        public const int PassosTutorial = 6;
+
         // --- Automações ---
         public const int CargoDasAutomacoes = 2;         // liberam no Analista de Infra
         public const double TempoWatchdog = 5;           // reinicia servidor travado sozinho

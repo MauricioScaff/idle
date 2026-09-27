@@ -624,6 +624,62 @@ namespace IdleDataCenter.Testes
             Assert.IsFalse(e.Escrevendo);
         }
 
+        // ---------- Café e chamados ----------
+
+        [Test]
+        public void CafeDobraAReceitaPorTrintaSegundosEDepoisRecarrega()
+        {
+            var e = Nova();
+            Assert.IsTrue(e.TomarCafe());
+            Assert.AreEqual(2, e.ReceitaPorSegundo, 1e-9);
+            Assert.IsFalse(e.TomarCafe(), "ainda recarregando");
+            e.Avancar(Catalogo.DuracaoCafe);
+            Assert.IsFalse(e.CafeAtivo);
+            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+            e.Avancar(Catalogo.RecargaCafe - Catalogo.DuracaoCafe);
+            Assert.IsTrue(e.PodeTomarCafe);
+        }
+
+        [Test]
+        public void ChamadoApareceEPagaSeAtendidoATempo()
+        {
+            var e = Nova();
+            string texto = null;
+            e.ChamadoApareceu += s => texto = s;
+            for (int i = 0; i < Catalogo.PrimeiroChamado; i++) e.Avancar(1);
+            Assert.IsTrue(e.TemChamado);
+            Assert.IsNotNull(texto);
+            double antes = e.Dinheiro;
+            Assert.AreEqual(Catalogo.SegundosDeBonusDoChamado, e.AtenderChamado(), 1e-9, "60 s da receita de R$ 1/s");
+            Assert.AreEqual(antes + Catalogo.SegundosDeBonusDoChamado, e.Dinheiro, 1e-9);
+            Assert.IsFalse(e.TemChamado);
+        }
+
+        [Test]
+        public void ChamadoIgnoradoSomeSemPagar()
+        {
+            var e = Nova();
+            e.AbrirChamado();
+            double pago = -1;
+            e.ChamadoEncerrado += b => pago = b;
+            for (int i = 0; i < Catalogo.TempoParaAtender; i++) e.Avancar(1);
+            Assert.IsFalse(e.TemChamado);
+            Assert.AreEqual(0, pago, 1e-9);
+            Assert.AreEqual(0, e.AtenderChamado(), 1e-9);
+        }
+
+        [Test]
+        public void CafeEChamadoNaoValemOffline()
+        {
+            var e = Nova();
+            e.TomarCafe();
+            e.AbrirChamado();
+            e.Estado.ultimoSalvamentoUnix = 1000;
+            double ganho = e.AplicarOffline(1000 + 3600);
+            Assert.AreEqual(1800, ganho, 1e-9, "offline sem o café");
+            Assert.IsFalse(e.TemChamado);
+        }
+
         // ---------- Offline ----------
 
         [Test]

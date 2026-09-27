@@ -33,6 +33,7 @@ namespace IdleDataCenter.Gerente
             E = economia;
             ui = new IsoGui();
             salaIso = new SalaIso(E);
+            IniciarPrimeiraHora();
 
             // avisos na barra de notícias (os sons e o save continuam por conta da faixa)
             E.AutomacaoPronta += id => Notificar("Automação pronta: " + Catalogo.BuscarAutomacao(id).Nome, 8);
@@ -155,6 +156,8 @@ namespace IdleDataCenter.Gerente
                 Quaternion.identity, new Vector3(escala, escala, 1));
             DesenharSala();
             Topo(); Navegacao(); Objetivos(); Rodape();
+            Tutorial();
+            Festa();
             if (!string.IsNullOrEmpty(janela)) Loja();
             if (Time.unscaledTime < avisoAte)
             {

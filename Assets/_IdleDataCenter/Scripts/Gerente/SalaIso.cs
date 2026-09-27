@@ -48,6 +48,13 @@ namespace IdleDataCenter.Gerente
         public readonly List<Placa> Placas = new List<Placa>();
         public Vector2Int? Marcador { get; private set; }         // onde fica o "CONSTRUIR" (canvas)
         public Vector2Int? Expansao { get; private set; }         // centro da próxima expansão (canvas)
+        public Vector2Int? Chamado { get; private set; }          // onde flutua o chamado urgente (canvas)
+
+        string ultimaCompra;
+        float ultimaCompraEm = -10;
+
+        /// <summary>Avisa a sala de uma compra: o equipamento novo solta faíscas por um instante.</summary>
+        public void Comprou(string id, float agora) { ultimaCompra = id; ultimaCompraEm = agora; }
 
         // quadros dos personagens (pixels de cima para baixo, já recortados)
         class Quadro { public Color32[] px; public int w, h; }
@@ -106,7 +113,7 @@ namespace IdleDataCenter.Gerente
             t = tempo;
             if (cargoMontado != E.Cargo || tela == null) Montar();
             Alvos.Clear(); Placas.Clear(); fila.Clear();
-            Marcador = null; Expansao = null;
+            Marcador = null; Expansao = null; Chamado = null;
             tela.Limpar(new Color32(0, 0, 0, 0));
 
             PisoEParedes();
@@ -114,6 +121,8 @@ namespace IdleDataCenter.Gerente
             MontarObjetos();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
             foreach (var (_, desenhar) in fila) desenhar();
+            FaiscasDaCompra();
+            ChamadoUrgente();
             tela.Aplicar();
         }
 
@@ -207,6 +216,7 @@ namespace IdleDataCenter.Gerente
             // --- sempre: planta, mesa do técnico com CRT ---
             Adicionar(0.15f, 0.15f, 0.6f, 0.6f, () => Planta(0.15f, 0.15f));
             Adicionar(0.1f, 2f, 0.9f, 1.6f, () => MesaComCrt(0.1f, 2f, E.Escrevendo || E.DeployQuebrado));
+            Clicavel(0.55f, 3.0f, 0.4f, 0.4f, 14, "cafe", 11);   // caneca na ponta da mesa
             if (E.TemEstagiario) Adicionar(0.1f, 3.9f, 0.9f, 0.9f, () => MesaSimples(0.1f, 3.9f));
 
             // --- Compute: torres (até 3), rack 42U, racks cheios, hypervisor, containers, CI, Kubernetes ---
@@ -338,7 +348,81 @@ namespace IdleDataCenter.Gerente
                         for (int i = 0; i <= n; i += 2) d.Ponto(Vector2Int.RoundToInt(Vector2.Lerp(p, q, (float)i / Mathf.Max(1, n))), cor);
                     }
                 }));
-            Marcador = d.P(l.x + 0.4f, l.y + 0.4f, ocupado ? 56 : 0);
+            Marcador = d.P(l.x + 0.4f, l.y + 0.4f, ocupado ? 90 : 0);   // no Sysadmin, acima do rack
+        }
+
+        // ---------------- Efeitos ----------------
+
+        /// <summary>Onde está a unidade mais nova de cada compra (para as faíscas de instalação).</summary>
+        Vector2? LugarDoItem(string id)
+        {
+            int n(string i) => Mathf.Max(1, E.Nivel(i));
+            switch (id)
+            {
+                case Catalogo.Servidor: return new Vector2(2.35f + Mathf.Min(3, E.Torres) - 1, 0.55f);
+                case Catalogo.Ssd: case Catalogo.Ventoinha: return new Vector2(2.35f, 0.55f);
+                case Catalogo.Rack: case Catalogo.Servidor1U: return new Vector2(5.5f, 0.5f);
+                case Catalogo.RackCheio: return new Vector2(4.4f + Mathf.Min(4, n(id)) - 1, 3.4f);
+                case Catalogo.Hypervisor: return new Vector2(8.4f, 3.4f);
+                case Catalogo.Containers: return new Vector2(4.4f + Mathf.Min(4, n(id)) - 1, 5.6f);
+                case Catalogo.ServidorCi: return new Vector2(8.4f, 5.6f);
+                case Catalogo.NoKubernetes: return new Vector2(9.35f + Mathf.Min(6, n(id)) - 1, 8.95f);
+                case Catalogo.Balanceador: return new Vector2(15.4f, 9f);
+                case Catalogo.NoBreak: return n(id) == 1 ? new Vector2(0.5f, 5.55f) : n(id) == 2 ? new Vector2(0.5f, 6.45f) : new Vector2(1.4f, 6.45f);
+                case Catalogo.ArCondicionado: return new Vector2(6.6f + Mathf.Min(3, n(id)) - 1, 0.5f);
+                case Catalogo.Storage: return new Vector2(9.6f + Mathf.Min(3, n(id)) - 1, 0.5f);
+                case Catalogo.Backup: return new Vector2(11.55f, 1.4f);
+                case Catalogo.Link: return new Vector2(0.2f, 7.55f + Mathf.Min(2, n(id)) - 1);
+                case Catalogo.Link10G: return new Vector2(1.35f, 8.45f);
+                case Catalogo.Estagiario: return new Vector2(0.55f, 4.35f);
+                case Catalogo.Observabilidade: return new Vector2(5.5f, 7.4f);
+                default: return null;
+            }
+        }
+
+        void FaiscasDaCompra()
+        {
+            float idade = t - ultimaCompraEm;
+            if (idade > 1.2f || ultimaCompra == null) return;
+            var lugar = LugarDoItem(ultimaCompra);
+            if (lugar == null) return;
+            var centro = d.P(lugar.Value.x, lugar.Value.y, 20);
+            for (int i = 0; i < 14; i++)
+            {
+                float ang = i * 0.449f + i * i * 0.07f, raio = 4 + idade * (22 + (i % 4) * 6);
+                var p = new Vector2Int(centro.x + Mathf.RoundToInt(Mathf.Cos(ang) * raio), centro.y + Mathf.RoundToInt(Mathf.Sin(ang) * raio * 0.6f - idade * 14));
+                var cor = i % 3 == 0 ? IsoDesenho.C("fdf6e3") : IsoDesenho.C("ffd65c");
+                cor.a = (byte)(255 * (1 - idade / 1.2f));
+                tela.Ret(p.x, p.y, 2, 2, cor);
+            }
+        }
+
+        /// <summary>Chamado urgente: um papel flutuando sobre a mesa do técnico, com a barra do tempo que resta.</summary>
+        void ChamadoUrgente()
+        {
+            if (!E.TemChamado) return;
+            float bob = Mathf.Sin(t * 4) * 2;
+            var p = d.P(1.2f, 2.8f, 62 + bob);
+            string[] papel =
+            {
+                "yyyyyyyyy.",
+                "yWWWWWyyyy",
+                "yyyyyyyyyy",
+                "yWWWWWWWyy",
+                "yyyyyyyyyy",
+                "yWWWWWyyyy",
+                "yyyyyyyyyy",
+                "yWWWWWWWyy",
+                "yyyyyyyyyy",
+            };
+            tela.Ret(p.x - 6, p.y - 11, 12, 11, IsoDesenho.C("1b1a2e"));
+            tela.Mapa(papel, p.x - 5, p.y - 10);
+            tela.Ret(p.x + 3, p.y - 10, 2, 2, IsoDesenho.C(Piscar() ? "ff3b4e" : "ff7a8a"));
+            float resta = (float)(E.SegundosDoChamado / Catalogo.TempoParaAtender);
+            tela.Ret(p.x - 6, p.y + 2, 12, 2, IsoDesenho.C("1b1a2e"));
+            tela.Ret(p.x - 6, p.y + 2, Mathf.RoundToInt(12 * resta), 2, IsoDesenho.C(resta > 0.3f ? "ffd65c" : "ff3b4e"));
+            Chamado = p;
+            Alvos.Add(new Alvo { Area = new RectInt(p.x - 8, p.y - 13, 16, 18), Tipo = "chamado" });
         }
 
         // ---------------- Pessoas ----------------
@@ -406,6 +490,16 @@ namespace IdleDataCenter.Gerente
         void MesaComCrt(float gx, float gy, bool digitando)
         {
             MesaSimples(gx, gy, 1.6f);
+            // caneca: com vapor quando dá para tomar café; brilhando enquanto o café faz efeito
+            var corCaneca = E.CafeAtivo && Piscar(0.3f) ? IsoDesenho.C("ffd65c") : IsoDesenho.C("ff8c7a");
+            d.Caixa(gx + 0.6f, gy + 1.25f, 0.18f, 0.18f, 6, corCaneca, IsoDesenho.C("d9604f"), IsoDesenho.C("b84a3c"), 14);
+            if (E.PodeTomarCafe || E.CafeAtivo)
+                for (int i = 0; i < 2; i++)
+                {
+                    float f = (t * 0.7f + i * 0.5f) % 1f;
+                    var v = d.P(gx + 0.69f, gy + 1.34f, 21 + f * 10);
+                    tela.Pixel(v.x + (i == 0 ? 0 : 1), v.y, new Color32(230, 230, 240, (byte)((1 - f) * 200)));
+                }
             // CRT bege virado para o corredor (face direita)
             d.Caixa(gx + 0.15f, gy + 0.4f, 0.5f, 0.6f, 14, IsoDesenho.C("dccca6"), IsoDesenho.C("b9a67f"), IsoDesenho.C("c9b88f"), 14);
             var a = d.FaceDir(gx + 0.15f, gy + 0.4f, 0.5f, 0.6f, 0.15f, 16); var b = d.FaceDir(gx + 0.15f, gy + 0.4f, 0.5f, 0.6f, 0.85f, 16);
