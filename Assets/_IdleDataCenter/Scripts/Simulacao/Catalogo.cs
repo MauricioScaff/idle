@@ -21,15 +21,17 @@ namespace IdleDataCenter.Simulacao
     /// <summary>Automação: um script que o técnico escreve (leva tempo real) e depois trabalha sozinho para sempre.</summary>
     public class AutomacaoDef
     {
+        public const int CargoAnalista = 2;
         public string Id;
         public string Nome;
         public string Descricao;    // o que ela faz, em uma linha
+        public int Cargo = CargoAnalista;   // cargo a partir do qual pode ser escrita
         public string Requisito;    // id de melhoria que precisa estar comprada (ou null)
         public double Custo;
         public double Segundos;     // tempo para escrever
     }
 
-    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados }
+    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas }
 
     public class MetaDef
     {
@@ -63,6 +65,10 @@ namespace IdleDataCenter.Simulacao
         public const string Storage = "storage";
         public const string Backup = "backup";
         public const string Link = "link";
+        public const string Hypervisor = "hypervisor";   // cargo 4 (DevOps)
+        public const string Containers = "containers";
+        public const string ServidorCi = "ci";
+        public const string Link10G = "link10g";
 
         // --- Receita ---
         public const double ReceitaBaseServidor = 1;   // servidor torre sem melhorias (R$/s)
@@ -73,6 +79,9 @@ namespace IdleDataCenter.Simulacao
         public const int ServidoresPorRackCheio = 8;
         public const double ReceitaRackCheio = 72;     // 8 servidores 1U novos
         public const double BonusStorage = 0.25;       // banco de dados gerenciado: +25% da receita por nível
+        public const double BonusVirtualizacao = 0.4;  // VMs: servidores +40% por nível de hypervisor
+        public const double ReceitaHostContainers = 250; // apps por host
+        public const double BonusCi = 0.5;             // deploys contínuos: apps +50%
 
         /// <summary>Clique no servidor vale isto + ValorCliqueReceita × receita por segundo.</summary>
         public const double ValorCliqueBase = 2;
@@ -87,6 +96,11 @@ namespace IdleDataCenter.Simulacao
         public const double ConsumoStorage = 0.3;
         /// <summary>A sala de racks (cargo 3) já vem com quadro de energia próprio.</summary>
         public const double CapacidadeSalaDeRacksKw = 10;
+        /// <summary>Na sala virtualizada (DevOps), mais um quadro de energia e contenção de corredor.</summary>
+        public const double CapacidadeSalaVirtualizadaKw = 4;
+        public const double GrausSalaVirtualizada = 8;
+        public const double ConsumoHostContainers = 1.0;
+        public const double ConsumoServidorCi = 0.5;
 
         // --- Temperatura (°C) ---
         public const double TemperaturaAmbiente = 22;
@@ -105,6 +119,8 @@ namespace IdleDataCenter.Simulacao
         public const double TrafegoRackCheio = 160;
         public const double BandaBase = 200;
         public const double BandaPorLink = 300;
+        public const double TrafegoHostContainers = 120;
+        public const double BandaLink10G = 1500;
 
         // --- Incidentes ---
         public const double MtbfServidorTorre = 300;   // segundos, em média, entre travadas
@@ -115,12 +131,16 @@ namespace IdleDataCenter.Simulacao
         public const double MtbfDisco = 1200;          // por nível de storage (mais discos, mais falhas)
         /// <summary>Sem backup, um disco queimado custa esta quantidade de segundos de receita em reembolsos.</summary>
         public const double SegundosPerdidosSemBackup = 120;
+        public const double MtbfDeploy = 1200;          // por host de containers
 
         // --- Automações ---
         public const int CargoDasAutomacoes = 2;         // liberam no Analista de Infra
         public const double TempoWatchdog = 5;           // reinicia servidor travado sozinho
         public const double TempoHotSpare = 5;           // troca de disco automática
         public const double FatorMtbfMonitoramento = 2;  // incidentes pela metade
+        public const double TempoRollbackAutomatico = 5;
+        public const double FatorPipeline = 4;           // testes no pipeline: 4x menos deploys quebrados
+        public const double DescontoIac = 0.15;          // infra como código: melhorias 15% mais baratas
 
         // --- Progresso offline ---
         public const double TaxaOffline = 0.5;
@@ -151,7 +171,17 @@ namespace IdleDataCenter.Simulacao
                     new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 60, Texto = "Resolver 60 incidentes" },
                 },
             },
-            new CargoDef { Nome = "Analista de Infra", Lugar = "Sala de racks", MetasParaPromocao = new MetaDef[0] },
+            new CargoDef
+            {
+                Nome = "Analista de Infra", Lugar = "Sala de racks",
+                MetasParaPromocao = new[]
+                {
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 1, Texto = "Restaurar um backup" },
+                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 3, Texto = "3 automações ativas" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 5000000, Texto = "Faturar R$ 5M" },
+                },
+            },
+            new CargoDef { Nome = "Engenheiro DevOps", Lugar = "Sala virtualizada", MetasParaPromocao = new MetaDef[0] },
         };
 
         public static readonly IReadOnlyList<MelhoriaDef> Melhorias = new[]
@@ -170,6 +200,11 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Storage, Nome = "Storage", Efeito = "RAID: receita +25%", Cargo = 2, NivelMaximo = 3, CustoBase = 150000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Backup, Nome = "Backup fita", Efeito = "Salva os dados", Cargo = 2, Requisito = Storage, NivelMaximo = 1, CustoBase = 100000, FatorCusto = 1 },
             new MelhoriaDef { Id = Link, Nome = "Link fibra", Efeito = "+300 Mbps", Cargo = 2, NivelMaximo = 2, CustoBase = 50000, FatorCusto = 3 },
+
+            new MelhoriaDef { Id = Hypervisor, Nome = "Hypervisor", Efeito = "VMs: servidores +40%", Cargo = 3, NivelMaximo = 3, CustoBase = 1200000, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = Containers, Nome = "Containers", Efeito = "+250/s em apps, 1 kW, 120 Mb", Cargo = 3, NivelMaximo = 4, CustoBase = 800000, FatorCusto = 1.8 },
+            new MelhoriaDef { Id = ServidorCi, Nome = "Servidor CI", Efeito = "Deploy contínuo: apps +50%", Cargo = 3, Requisito = Containers, NivelMaximo = 1, CustoBase = 1500000, FatorCusto = 1 },
+            new MelhoriaDef { Id = Link10G, Nome = "Link 10G", Efeito = "+1500 Mbps", Cargo = 3, NivelMaximo = 1, CustoBase = 700000, FatorCusto = 1 },
         };
 
         // --- Ids das automações ---
@@ -178,6 +213,9 @@ namespace IdleDataCenter.Simulacao
         public const string Monitoramento = "monitoramento";
         public const string CronFaturamento = "cron";
         public const string Plantao = "plantao";
+        public const string Pipeline = "pipeline";
+        public const string RollbackAutomatico = "rollback";
+        public const string InfraComoCodigo = "iac";
 
         public static readonly IReadOnlyList<AutomacaoDef> Automacoes = new[]
         {
@@ -186,6 +224,9 @@ namespace IdleDataCenter.Simulacao
             new AutomacaoDef { Id = Monitoramento, Nome = "Monitoramento", Descricao = "Alerta antes da falha: metade dos incidentes", Custo = 400000, Segundos = 480 },
             new AutomacaoDef { Id = CronFaturamento, Nome = "Cron de faturamento", Descricao = "Receita offline sobe para 75%", Custo = 300000, Segundos = 360 },
             new AutomacaoDef { Id = Plantao, Nome = "Plantão 24h", Descricao = "Offline a 100%, até 24 h", Requisito = null, Custo = 600000, Segundos = 600 },
+            new AutomacaoDef { Id = Pipeline, Nome = "Pipeline com testes", Descricao = "4x menos deploys quebrados", Cargo = 3, Requisito = ServidorCi, Custo = 1000000, Segundos = 600 },
+            new AutomacaoDef { Id = RollbackAutomatico, Nome = "Rollback automático", Descricao = "Deploy quebrado volta em 5 s", Cargo = 3, Requisito = Containers, Custo = 800000, Segundos = 480 },
+            new AutomacaoDef { Id = InfraComoCodigo, Nome = "Infra como código", Descricao = "Melhorias 15% mais baratas", Cargo = 3, Custo = 1500000, Segundos = 720 },
         };
 
         public static AutomacaoDef BuscarAutomacao(string id)

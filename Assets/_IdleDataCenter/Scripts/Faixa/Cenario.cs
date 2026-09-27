@@ -8,6 +8,7 @@ namespace IdleDataCenter
     /// <summary>
     /// O cômodo onde o técnico trabalha, montado conforme o cargo: armário (Técnico de TI), salinha com rack,
     /// no-break e refrigeração (Sysadmin) ou sala de racks com storage, backup e link (Analista de Infra).
+    /// No DevOps, a sala de racks escurece e ganha o canto virtualizado (DevOpsVisual).
     /// Na promoção, o cenário inteiro é destruído e montado de novo.
     /// Coordenadas locais: x a partir da borda esquerda, y a partir de baixo (piso em y = AlturaPiso).
     /// </summary>
@@ -24,6 +25,8 @@ namespace IdleDataCenter
             public float Rack, NoBreak, Refrigeracao, Storage, Fita;
             public float[] RacksCheios = new float[0];
             public Vector2 Link;
+            public float Hypervisor, Ci;
+            public float[] HostsContainers = new float[0];
         }
 
         static readonly Planta Armario = new Planta { Largura = 200, Torres = new float[] { 176, 152, 128 } };
@@ -34,6 +37,14 @@ namespace IdleDataCenter
             Largura = 456, Torres = new float[] { 234, 210, 186 }, Rack = 262, RacksCheios = new float[] { 288, 314, 340, 366 },
             NoBreak = 392, Refrigeracao = 428, Storage = 124, Fita = 150, Link = new Vector2(392, 26),
         };
+        // DevOps: a sala de racks ganha o canto virtualizado à direita (hypervisor, containers, CI e a esteira)
+        static readonly Planta SalaVirtualizada = new Planta
+        {
+            Largura = 624, Torres = SalaDeRacks.Torres, Rack = SalaDeRacks.Rack, RacksCheios = SalaDeRacks.RacksCheios,
+            NoBreak = SalaDeRacks.NoBreak, Refrigeracao = SalaDeRacks.Refrigeracao, Storage = SalaDeRacks.Storage,
+            Fita = SalaDeRacks.Fita, Link = SalaDeRacks.Link,
+            Hypervisor = 474, HostsContainers = new float[] { 498, 518, 538, 558 }, Ci = 596,
+        };
 
         Faixa faixa;
         Economia economia;
@@ -42,6 +53,8 @@ namespace IdleDataCenter
         RackVisual rack;
         readonly List<RackVisual> racksCheios = new List<RackVisual>();
         EquipamentoVisual noBreak, refrigeracao, storage, fita, link;
+        RackVisual hypervisor;
+        DevOpsVisual devOps;
         Tecnico estagiario;
 
         public int Largura { get; private set; }
@@ -63,11 +76,11 @@ namespace IdleDataCenter
             this.faixa = faixa;
             this.economia = economia;
             transform.position = posicao;
-            planta = economia.Cargo >= 2 ? SalaDeRacks : economia.Cargo == 1 ? Salinha : Armario;
+            planta = economia.Cargo >= 3 ? SalaVirtualizada : economia.Cargo == 2 ? SalaDeRacks : economia.Cargo == 1 ? Salinha : Armario;
             Largura = planta.Largura;
 
             var fundo = gameObject.AddComponent<SpriteRenderer>();
-            fundo.sprite = economia.Cargo >= 2 ? PixelArt.SalaDeRacks(Largura, Altura, AlturaPiso)
+            fundo.sprite = economia.Cargo >= 2 ? PixelArt.SalaDeRacks(Largura, Altura, AlturaPiso, escura: economia.Cargo >= 3)
                          : economia.Cargo == 1 ? PixelArt.Salinha(Largura, Altura, AlturaPiso)
                          : PixelArt.Armario(Largura, Altura, AlturaPiso);
             gameObject.AddComponent<BoxCollider2D>(); // o cômodo inteiro "segura" o clique
@@ -172,6 +185,23 @@ namespace IdleDataCenter
                 link = new GameObject("Link").AddComponent<EquipamentoVisual>();
                 link.Iniciar(transform, "link", planta.Link, false);
             }
+            if (economia.NivelHypervisor > 0 && hypervisor == null)
+            {
+                hypervisor = new GameObject("Hypervisor").AddComponent<RackVisual>();
+                hypervisor.Iniciar(faixa, transform, new Vector2(planta.Hypervisor, AlturaPiso), faixa.ClicarEquipamento);
+                hypervisor.DefinirQuantidade(int.MaxValue);
+                hypervisor.Tingir(PixelArt.Hex("c9b8ff"));   // VMs: o rack ganha um tom lilás
+                if (Tecnico != null) faixa.Faiscas(hypervisor.Topo, 4);
+            }
+            if (planta.HostsContainers.Length > 0 && (economia.HostsContainers > 0 || economia.TemCi))
+            {
+                if (devOps == null)
+                {
+                    devOps = new GameObject("DevOps").AddComponent<DevOpsVisual>();
+                    devOps.Iniciar(faixa, economia, transform, planta.HostsContainers, planta.Ci);
+                }
+                else devOps.Atualizar();
+            }
             if (economia.TemEstagiario && estagiario == null && Tecnico != null)
             {
                 estagiario = new GameObject("Estagiario").AddComponent<Tecnico>();
@@ -185,11 +215,14 @@ namespace IdleDataCenter
             economia.EhTorre(servidor) && servidor < torres.Count ? torres[servidor].Topo
             : rack != null ? rack.Topo : TopoMaisProximo;
 
+        public void LimparEsteira() => devOps?.LimparEsteira();
+
         public void PularTudo()
         {
             foreach (var t in torres) t.Pular();
             rack?.Pular();
             foreach (var r in racksCheios) r.Pular();
+            hypervisor?.Pular();
         }
 
         /// <summary>Reflete os servidores travados (LEDs vermelhos e alertas), a sobrecarga e o calor.</summary>
@@ -210,6 +243,13 @@ namespace IdleDataCenter
             var lista = economia.Travamentos;
             if (lista.Count == 0)
             {
+                // deploy quebrado: o rollback é feito no terminal da mesa
+                if (economia.DeployQuebrado)
+                {
+                    x = PosicaoMesa;
+                    TopoDoIncidente = (Vector2)(Tela.transform.position - transform.position) + new Vector2(4, 6);
+                    return true;
+                }
                 // disco queimado: ele troca o disco de frente para o storage
                 if (!economia.DiscoQueimado || storage == null) return false;
                 x = planta.Storage;

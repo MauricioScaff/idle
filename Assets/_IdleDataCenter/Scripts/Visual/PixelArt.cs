@@ -112,11 +112,13 @@ namespace IdleDataCenter
         /// Sala de racks do Analista de Infra: paredes de painel cinza-azulado, piso técnico elevado
         /// (placas com algumas perfuradas, por onde sobe o ar frio) e uma calha de cabos com fibra laranja no teto.
         /// </summary>
-        public static Sprite SalaDeRacks(int w, int h, int alturaPiso)
+        public static Sprite SalaDeRacks(int w, int h, int alturaPiso, bool escura = false)
         {
             var tex = NovaTextura(w, h);
             var px = new Color32[w * h];
-            Color32 parede = Hex("4a5680"), parede2 = Hex("46517a"), junta = Hex("3c4670"), faixa = Hex("56638f");
+            // escura = sala virtualizada do DevOps (era "cloud native": azul escuro com LEDs)
+            Color32 parede = Hex(escura ? "232a4f" : "4a5680"), parede2 = Hex(escura ? "1f2648" : "46517a"),
+                    junta = Hex(escura ? "1a203f" : "3c4670"), faixa = Hex(escura ? "2e7d8f" : "56638f");
             Color32 placa = Hex("9aa3b8"), placaLinha = Hex("6c7389"), furo = Hex("7a8198");
             Color32 calha = Hex("2e3350"), calhaBorda = Hex("5a6184"), fibra = Hex("ff9f43"), fibra2 = Hex("5cc8ff");
             for (int y = 0; y < h; y++)

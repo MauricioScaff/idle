@@ -250,7 +250,7 @@ namespace IdleDataCenter.Testes
             e.Estado.melhorias.Find(m => m.id == Catalogo.Servidor1U).nivel = 5;
             Assert.IsTrue(e.Promover());
             Assert.AreEqual("Analista de Infra", e.CargoAtual.Nome);
-            Assert.IsFalse(e.TemProximoCargo, "Analista é o último cargo por enquanto");
+            Assert.IsFalse(e.PodePromover, "o Analista tem metas próprias");
         }
 
         // ---------- Analista de Infra ----------
@@ -345,6 +345,100 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.Storage, 1);
             e.Avancar(1);
             Assert.IsTrue(e.DiscoQueimado);
+        }
+
+        // ---------- Engenheiro DevOps ----------
+
+        static Economia NoDevOps(double dinheiro = 0, double sorteio = 0.9999)
+        {
+            var e = Nova(dinheiro, sorteio);
+            e.Estado.cargo = 3;
+            return e;
+        }
+
+        [Test]
+        public void AnalistaViraDevOpsComBackupEAutomacoes()
+        {
+            var e = Nova();
+            e.Estado.cargo = 2;
+            e.Estado.totalGanho = 5000000;
+            e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.CronFaturamento });
+            Assert.IsFalse(e.PodePromover, "falta restaurar um backup");
+            e.Estado.backupsRestaurados = 1;
+            Assert.IsTrue(e.Promover());
+            Assert.AreEqual("Engenheiro DevOps", e.CargoAtual.Nome);
+            Assert.IsFalse(e.TemProximoCargo, "DevOps é o último cargo por enquanto");
+        }
+
+        [Test]
+        public void HypervisorAumentaSoOsServidores()
+        {
+            var e = NoDevOps();
+            DefinirNivel(e, Catalogo.Hypervisor, 2);
+            Assert.AreEqual(1.8, e.ReceitaPorSegundo, 1e-9);
+            DefinirNivel(e, Catalogo.Containers, 1);
+            Assert.AreEqual(1.8 + Catalogo.ReceitaHostContainers, e.ReceitaPorSegundo, 1e-9);
+        }
+
+        [Test]
+        public void CiAumentaOsAppsEDeployQuebradoDerrubaOsApps()
+        {
+            var e = NoDevOps();
+            DefinirNivel(e, Catalogo.Containers, 1);
+            DefinirNivel(e, Catalogo.ServidorCi, 1);
+            Assert.AreEqual(1 + 375, e.ReceitaPorSegundo, 1e-9);
+            e.QuebrarDeploy();
+            Assert.IsTrue(e.DeployQuebrado);
+            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+            e.FazerRollback(porTecnico: false);
+            Assert.AreEqual(1 + 375, e.ReceitaPorSegundo, 1e-9);
+        }
+
+        [Test]
+        public void RollbackAutomaticoEmCincoSegundos()
+        {
+            var e = NoDevOps();
+            DefinirNivel(e, Catalogo.Containers, 1);
+            e.QuebrarDeploy();
+            e.Avancar(Catalogo.TempoRollbackAutomatico);
+            Assert.IsTrue(e.DeployQuebrado, "sem a automação, o técnico leva 30 s");
+            e.Estado.automacoes.Add(Catalogo.RollbackAutomatico);
+            e.Avancar(0.01);
+            Assert.IsFalse(e.DeployQuebrado);
+        }
+
+        [Test]
+        public void PipelineComTestesQuebraMenosDeploys()
+        {
+            var sem = NoDevOps(sorteio: 0.5);
+            DefinirNivel(sem, Catalogo.Containers, 1);
+            sem.Avancar(1000);   // chance 1000/1200 > 0.5
+            Assert.IsTrue(sem.DeployQuebrado);
+
+            var com = NoDevOps(sorteio: 0.5);
+            DefinirNivel(com, Catalogo.Containers, 1);
+            com.Estado.automacoes.Add(Catalogo.Pipeline);
+            com.Avancar(1000);   // chance 1000/4800 < 0.5
+            Assert.IsFalse(com.DeployQuebrado);
+        }
+
+        [Test]
+        public void InfraComoCodigoBarateiaAsMelhorias()
+        {
+            var e = NoDevOps();
+            double antes = e.Custo(Catalogo.Hypervisor);
+            e.Estado.automacoes.Add(Catalogo.InfraComoCodigo);
+            Assert.AreEqual(Math.Round(antes * 0.85), e.Custo(Catalogo.Hypervisor), 1e-9);
+        }
+
+        [Test]
+        public void AutomacoesDoDevOpsEsperamOCargo()
+        {
+            var e = Nova(1e8);
+            e.Estado.cargo = 2;
+            Assert.IsFalse(e.PodeEscrever(Catalogo.InfraComoCodigo));
+            e.Estado.cargo = 3;
+            Assert.IsTrue(e.PodeEscrever(Catalogo.InfraComoCodigo));
         }
 
         // ---------- Automações ----------

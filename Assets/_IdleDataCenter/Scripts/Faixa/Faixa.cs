@@ -44,6 +44,8 @@ namespace IdleDataCenter
             economia.DiscoQueimou += AoQueimarDisco;
             economia.DiscoTrocado += AoTrocarDisco;
             economia.AutomacaoPronta += AoFicarProntaAutomacao;
+            economia.DeployQuebrou += AoQuebrarDeploy;
+            economia.DeployVoltou += AoVoltarDeploy;
         }
 
         void Start()
@@ -82,6 +84,7 @@ namespace IdleDataCenter
                 }
                 if (arg == "-incidente") economia.Travar(0);
                 if (arg == "-promover") economia.Promover(); // só se as metas estiverem cumpridas
+                if (arg == "-alternar-painel") InvokeRepeating(nameof(AlternarPainel), 5f, 4f); // abre e fecha sozinho (teste da janela)
             }
         }
 
@@ -189,6 +192,17 @@ namespace IdleDataCenter
             economia.TrocarDisco(porTecnico: false);
         }
 
+        /// <summary>Clique nos containers ou no CI: com deploy quebrado faz o rollback na hora, senão rende um clique.</summary>
+        public void ClicarContainers(Vector2 topo)
+        {
+            if (!economia.DeployQuebrado) { ClicarEquipamento(topo); return; }
+            Faiscas(topo, 3);
+            economia.FazerRollback(porTecnico: false);
+        }
+
+        /// <summary>Rollback pelo painel.</summary>
+        public void FazerRollback() => economia.FazerRollback(porTecnico: false);
+
         /// <summary>Trocar o disco pelo painel.</summary>
         public void TrocarDisco() => economia.TrocarDisco(porTecnico: false);
 
@@ -246,6 +260,20 @@ namespace IdleDataCenter
             if (peloTecnico) cenario.Tecnico.Comemorar();
             Sons.Conserto();
             Salvamento.Salvar(economia.Estado);
+        }
+
+        void AoQuebrarDeploy()
+        {
+            Loja.MostrarAviso("Deploy quebrou!", 2f, Vermelho);
+            Sons.Alerta();
+        }
+
+        void AoVoltarDeploy(bool peloTecnico)
+        {
+            Loja.MostrarAviso(economia.TemAutomacao(Catalogo.RollbackAutomatico) ? "Rollback automático" : "Rollback feito", 1.8f, VerdeClaro);
+            if (peloTecnico) cenario.Tecnico.Comemorar();
+            cenario.LimparEsteira();
+            Sons.Conserto();
         }
 
         void AoFicarProntaAutomacao(string id)
@@ -453,7 +481,11 @@ namespace IdleDataCenter
             if (escolhido == null)
             {
                 // clique fora de tudo (em outro programa ou na área transparente): fecha o painel
-                if (painel.Aberto) FecharPainel();
+                if (painel.Aberto)
+                {
+                    Debug.Log($"Painel fechado por clique fora (cursor {janela.PosicaoCursor}, sobre a janela: {janela.CursorSobreAJanela})");
+                    FecharPainel();
+                }
                 return;
             }
             if (escolhido is Painel painelClicado)

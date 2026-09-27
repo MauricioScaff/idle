@@ -66,6 +66,9 @@ namespace IdleDataCenter
             return s;
         }
 
+        /// <summary>Tinge o gabinete (os LEDs continuam com as cores próprias).</summary>
+        public void Tingir(Color cor) => GetComponent<SpriteRenderer>().color = cor;
+
         public void DefinirQuantidade(int quantidade)
         {
             for (int v = 0; v < unidades.Count; v++) unidades[v].ativa = v < quantidade;

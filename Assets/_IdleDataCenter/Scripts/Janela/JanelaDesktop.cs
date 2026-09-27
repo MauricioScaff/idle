@@ -28,9 +28,10 @@ namespace IdleDataCenter
             get
             {
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
-                if (Ativa) return Mathf.Max(2, Mathf.RoundToInt(2f * Dpi / 96f));
-#endif
+                return Mathf.Max(2, Mathf.RoundToInt(2f * Dpi / 96f)); // pelo DPI desde o começo (antes da janela ficar pronta também)
+#else
                 return Mathf.Max(1, Screen.height / Mathf.Max(AlturaVirtual, AlturaVirtualAtual));
+#endif
             }
         }
 
@@ -40,14 +41,15 @@ namespace IdleDataCenter
             get
             {
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
-                if (Ativa) return Mathf.Max(3, Mathf.RoundToInt(3f * Dpi / 96f));
-#endif
+                return Mathf.Max(3, Mathf.RoundToInt(3f * Dpi / 96f));
+#else
                 return Mathf.Max(1, Mathf.RoundToInt(Escala * 1.5f));
+#endif
             }
         }
 
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
-        uint Dpi { get { uint d = GetDpiForWindow(hwnd); return d == 0 ? 96 : d; } }
+        uint Dpi { get { uint d = hwnd != IntPtr.Zero ? GetDpiForWindow(hwnd) : GetDpiForSystem(); return d == 0 ? 96 : d; } }
 #endif
 
         /// <summary>A maior altura (em pixels de arte) que cabe acima da barra de tarefas.</summary>
@@ -66,12 +68,37 @@ namespace IdleDataCenter
         public void DefinirAlturaVirtual(int altura)
         {
             AlturaVirtualAtual = Mathf.Clamp(altura, AlturaVirtual, AlturaVirtualMaxima);
+            Debug.Log($"Janela: altura {AlturaVirtualAtual} (pedida {altura}), ativa={Ativa}");
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
             if (!Ativa) return;
-            Screen.SetResolution(ultimaArea.Largura, AlturaFisica(), FullScreenMode.Windowed);
-            Posicionar();
+            Redimensionar();
 #endif
         }
+
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+        int reaplicarEstilo;   // quadros até reaplicar o estilo depois de um SetResolution
+
+        /// <summary>
+        /// Muda o tamanho da janela depois que ela já está pronta. Não usa o SetResolution do Unity: ele devolve
+        /// a borda e a barra de título e centraliza a janela. O SetWindowPos (em Posicionar) redimensiona e o Unity
+        /// acompanha o novo tamanho; o estilo é conferido de novo alguns quadros depois, por garantia.
+        /// </summary>
+        void Redimensionar()
+        {
+            Posicionar();
+            reaplicarEstilo = 3;
+        }
+
+        /// <summary>Janela sem borda, "layered" com cor-chave preta e o quadro do DWM estendido sobre toda a área.</summary>
+        void AplicarEstilo()
+        {
+            SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(WS_POPUP | (visivel ? WS_VISIBLE : 0)));
+            SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW | (clicavel ? 0 : WS_EX_TRANSPARENT)));
+            SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
+            var margens = new MARGINS { cxLeftWidth = -1 };
+            DwmExtendFrameIntoClientArea(hwnd, ref margens);
+        }
+#endif
 
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
         IntPtr hwnd;
@@ -129,17 +156,14 @@ namespace IdleDataCenter
             }
 
             ultimaArea = AreaDeTrabalho();
+            AlturaVirtualAtual = Mathf.Clamp(AlturaVirtualAtual, AlturaVirtual, (ultimaArea.Bottom - ultimaArea.Top) / Escala);
             Screen.SetResolution(ultimaArea.Largura, AlturaFisica(), FullScreenMode.Windowed);
             yield return null;
             yield return null;
 
             // Validado no Unity 6.6 + D3D11 (sem flip model): janela "layered" com cor-chave preta,
             // mais o quadro do DWM estendido sobre toda a área. Preto puro vira transparente.
-            SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(WS_POPUP | WS_VISIBLE));
-            SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW));
-            SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
-            var margens = new MARGINS { cxLeftWidth = -1 };
-            DwmExtendFrameIntoClientArea(hwnd, ref margens);
+            AplicarEstilo();
             Posicionar();
             Ativa = true;
             Ajustes.Mudou += () => proximaChecagem = 0; // monitor ou tela cheia mudou: reavalia já
@@ -200,6 +224,9 @@ namespace IdleDataCenter
             if (atalho && !atalhoPressionado) AlternarOculta();
             atalhoPressionado = atalho;
 
+            // depois de um SetResolution: estilo transparente de volta e janela colada na barra de tarefas
+            if (reaplicarEstilo > 0 && --reaplicarEstilo == 0) { AplicarEstilo(); Posicionar(); }
+
             if (Time.unscaledTime < proximaChecagem) return;
             proximaChecagem = Time.unscaledTime + 2f;
 
@@ -213,8 +240,10 @@ namespace IdleDataCenter
             if (!area.Equals(ultimaArea) || Screen.height != AlturaFisica())
             {
                 ultimaArea = area;
-                Screen.SetResolution(area.Largura, AlturaFisica(), FullScreenMode.Windowed);
+                Redimensionar();
             }
+            // rede de segurança: se algo devolveu a barra de título, tira de novo
+            if ((GetWindowLongPtr(hwnd, GWL_STYLE).ToInt64() & WS_CAPTION) != 0) AplicarEstilo();
             Posicionar(); // também reafirma o "sempre por cima", que a barra de tarefas às vezes rouba
         }
 
@@ -278,7 +307,7 @@ namespace IdleDataCenter
         // --- Win32 ---
 
         const int GWL_STYLE = -16, GWL_EXSTYLE = -20;
-        const long WS_POPUP = 0x80000000L, WS_VISIBLE = 0x10000000L;
+        const long WS_POPUP = 0x80000000L, WS_VISIBLE = 0x10000000L, WS_CAPTION = 0x00C00000L;
         const long WS_EX_LAYERED = 0x80000L, WS_EX_TRANSPARENT = 0x20L, WS_EX_TOOLWINDOW = 0x80L;
         const uint LWA_COLORKEY = 0x1;
         const uint SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20, SWP_SHOWWINDOW = 0x40;
@@ -306,6 +335,7 @@ namespace IdleDataCenter
         [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr hWnd, StringBuilder nome, int max);
         [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int indice, IntPtr valor);
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int indice);
         [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hWnd, IntPtr depoisDe, int x, int y, int cx, int cy, uint flags);
         [DllImport("user32.dll")] static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint corChave, byte alfa, uint flags);
         [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hWnd, int comando);
@@ -323,6 +353,7 @@ namespace IdleDataCenter
         const uint GA_ROOT = 2;
         [DllImport("user32.dll")] static extern bool ScreenToClient(IntPtr hWnd, ref POINT p);
         [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr hWnd);
+        [DllImport("user32.dll")] static extern uint GetDpiForSystem();
         [DllImport("user32.dll")] static extern bool SystemParametersInfo(uint acao, uint param, ref RECT r, uint winIni);
         [DllImport("dwmapi.dll")] static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS m);
         [DllImport("shell32.dll")] static extern int SHQueryUserNotificationState(out int estado);

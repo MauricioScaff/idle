@@ -7,7 +7,7 @@ namespace IdleDataCenter
     /// O personagem (arte do PixelLab). No dia a dia passeia, digita na mesa ou "confere" o servidor
     /// mais próximo. Quando algo trava, corre até lá e fica consertando (solta faíscas) até o servidor
     /// voltar: sozinho ele leva 30 s, e um clique seu no servidor resolve na hora.
-    /// Clicar nele dá um pulinho com coração. No cargo de Sysadmin a camiseta vira verde-água; no de Analista, polo azul-marinho.
+    /// Clicar nele dá um pulinho com coração. No cargo de Sysadmin a camiseta vira verde-água; no de Analista, polo azul-marinho; no DevOps, moletom roxo.
     /// </summary>
     public class Tecnico : MonoBehaviour, IClicavel
     {
@@ -19,6 +19,7 @@ namespace IdleDataCenter
         const float VelocidadeCorrendo = 34f;
         const float MatizSysadmin = 0.46f;     // verde-água
         const float MatizAnalista = 0.63f, BrilhoAnalista = 0.55f;  // polo azul-marinho
+        const float MatizDevOps = 0.77f, BrilhoDevOps = 0.85f;      // moletom roxo
 
         static readonly Dictionary<string, Quadros> cache = new Dictionary<string, Quadros>();
 
@@ -48,7 +49,8 @@ namespace IdleDataCenter
             {
                 var t = ArteGerada.Textura(prefixo + sufixo);
                 if (prefixo == "tecnico" && cargo == 1) t = ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
-                if (prefixo == "tecnico" && cargo >= 2) t = ArteGerada.TrocarCorDaRoupa(t, MatizAnalista, brilho: BrilhoAnalista);
+                if (prefixo == "tecnico" && cargo == 2) t = ArteGerada.TrocarCorDaRoupa(t, MatizAnalista, brilho: BrilhoAnalista);
+                if (prefixo == "tecnico" && cargo >= 3) t = ArteGerada.TrocarCorDaRoupa(t, MatizDevOps, brilho: BrilhoDevOps);
                 return ArteGerada.Personagem(t, prefixo + sufixo + "#" + cargo);
             }
             return cache[chave] = new Quadros
@@ -92,6 +94,8 @@ namespace IdleDataCenter
 
             // Emergência tem prioridade sobre qualquer outra coisa
             bool temIncidente = cenario.AlvoDeConserto(out float xIncidente);
+            // rollback é no terminal da mesa: só o técnico faz, o estagiário segue a vida
+            if (temIncidente && !usaMesa && Mathf.Approximately(xIncidente, cenario.PosicaoMesa)) temIncidente = false;
             if (temIncidente && estado != Estado.Emergencia)
             {
                 if (estado == Estado.Digitando && usaMesa) cenario.Tela.Digitando = false;
@@ -125,13 +129,15 @@ namespace IdleDataCenter
                     break;
 
                 case Estado.Emergencia:
-                    if (!temIncidente) { Parar(); break; }
+                    if (!temIncidente) { if (usaMesa) cenario.Tela.Digitando = false; Parar(); break; }
                     float destino = Mathf.Clamp(xIncidente - deslocamento, MinX, MaxX);
+                    bool naMesa = usaMesa && Mathf.Approximately(xIncidente, cenario.PosicaoMesa); // rollback é no terminal
                     sr.flipX = destino < x;
                     x = Mathf.MoveTowards(x, destino, VelocidadeCorrendo * dt);
                     if (Mathf.Approximately(x, destino))
                     {
-                        sr.flipX = false;
+                        sr.flipX = naMesa;
+                        if (naMesa) cenario.Tela.Digitando = true;
                         SoltarFaiscas(cenario.TopoDoIncidente);
                     }
                     break;

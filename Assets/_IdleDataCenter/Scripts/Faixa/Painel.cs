@@ -27,6 +27,7 @@ namespace IdleDataCenter
         {
             [1] = new[] { "O armário vira uma salinha.", "Rack 42U com servidores 1U.", "Energia e temperatura", "passam a importar." },
             [2] = new[] { "A salinha vira sala de racks,", "com energia e ar de precisão.", "Racks cheios, storage e backup.", "A banda do link passa a importar." },
+            [3] = new[] { "A sala escurece: vira", "sala virtualizada.", "Hypervisor, containers e CI.", "Deploys às vezes quebram." },
         };
 
         Faixa faixa;
@@ -274,7 +275,7 @@ namespace IdleDataCenter
             // Incidentes
             Caixa(x, 108, 132, 62, "Incidentes");
             var lista = economia.Travamentos;
-            if (lista.Count == 0 && !economia.DiscoQueimado)
+            if (lista.Count == 0 && !economia.DiscoQueimado && !economia.DeployQuebrado)
             {
                 T("Tudo funcionando", x + 5, 124, "#6fd36f", false);
                 T($"{economia.Estado.incidentesResolvidos} resolvidos", x + 5, 134, "#7d82ad", false);
@@ -289,9 +290,20 @@ namespace IdleDataCenter
                 int idx = s;
                 Botao(new RectInt(x + 70, y, 57, 14), "Reiniciar", "#fdf6e3", "#7a2a3a", () => faixa.Reiniciar(idx));
             }
-            if (economia.DiscoQueimado && lista.Count < 3)
+            int linha = Math.Min(3, lista.Count);
+            if (economia.DeployQuebrado && linha < 3)
             {
-                int y = 121 + lista.Count * 16;
+                int y = 121 + linha * 16;
+                linha++;
+                bool piscar = Mathf.FloorToInt(t * 3) % 2 == 0;
+                R(x + 5, y + 2, 3, 3, piscar ? "#ff8cc6" : "#5a2a3a");
+                T("Deploy quebrado", x + 11, y + 1, "#fdf6e3", false);
+                T($"{economia.TempoRollback - economia.SegundosDeployQuebrado:0}s, apps fora", x + 11, y + 8, "#ff7a8a", false);
+                Botao(new RectInt(x + 70, y, 57, 14), "Rollback", "#fdf6e3", "#7a2a5a", faixa.FazerRollback);
+            }
+            if (economia.DiscoQueimado && linha < 3)
+            {
+                int y = 121 + linha * 16;
                 bool piscar = Mathf.FloorToInt(t * 3) % 2 == 0;
                 R(x + 5, y + 2, 3, 3, piscar ? "#b48cff" : "#3a2a5a");
                 T("Disco queimado", x + 11, y + 1, "#fdf6e3", false);
@@ -404,32 +416,35 @@ namespace IdleDataCenter
             for (int i = 0; i < Catalogo.Automacoes.Count; i++)
             {
                 var a = Catalogo.Automacoes[i];
-                int y = 56 + i * 35;
+                int y = 55 + i * 22;   // linhas compactas: cabem as 8 automações
                 bool ativa = economia.TemAutomacao(a.Id), escrevendo = emEscrita == a, req = economia.RequisitoAutomacaoOk(a);
-                R(80, y, 472, 32, ativa ? "#223a36" : "#252947");
+                bool cedo = economia.Cargo < a.Cargo;   // ainda não chegou no cargo que libera
+                R(80, y, 472, 20, ativa ? "#223a36" : cedo ? "#1f2238" : "#252947");
                 // ícone de terminal ">_"
-                R(86, y + 8, 16, 14, "#171a2e");
-                T(">_", 88, y + 12, ativa ? "#5cff8a" : escrevendo && Mathf.FloorToInt(t * 2) % 2 == 0 ? "#5cc8ff" : "#4d5170", false);
-                T(a.Nome, 110, y + 6, ativa ? "#6fd36f" : "#fdf6e3", true, 1);
-                T(a.Descricao, 110, y + 18, "#a3a0bd", false);
+                R(86, y + 4, 14, 12, "#171a2e");
+                T(">_", 87, y + 8, ativa ? "#5cff8a" : escrevendo && Mathf.FloorToInt(t * 2) % 2 == 0 ? "#5cc8ff" : "#4d5170", false);
+                T(a.Nome, 106, y + 3, ativa ? "#6fd36f" : cedo ? "#6c7099" : "#fdf6e3", true, 1);
+                T(a.Descricao, 106, y + 12, cedo ? "#4d5170" : "#a3a0bd", false);
 
                 if (ativa)
                 {
-                    T("Ativa", 546 - L("Ativa"), y + 12, "#5cff8a", false);
+                    T("Ativa", 546 - L("Ativa"), y + 8, "#5cff8a", false);
                     continue;
                 }
                 if (escrevendo)
                 {
                     string pct = $"{economia.ProgressoEscrita * 100:0}%";
-                    Barra(444, y + 14, 70, 4, (float)economia.ProgressoEscrita, "#5cc8ff");
-                    T(pct, 546 - L(pct), y + 12, "#5cc8ff", false);
+                    Barra(444, y + 9, 70, 4, (float)economia.ProgressoEscrita, "#5cc8ff");
+                    T(pct, 546 - L(pct), y + 8, "#5cc8ff", false);
                     continue;
                 }
                 string custo = "R$ " + F(a.Custo);
-                T(custo, 432 - L(custo), y + 12, economia.Dinheiro >= a.Custo ? "#ffd65c" : "#7d82ad", false);
-                string rotulo = !req ? "Precisa: " + Catalogo.Buscar(a.Requisito).Nome : economia.Escrevendo ? "Aguarde" : "Escrever";
+                T(custo, 432 - L(custo), y + 8, !cedo && economia.Dinheiro >= a.Custo ? "#ffd65c" : "#7d82ad", false);
+                string rotulo = cedo ? "Libera no " + Catalogo.Cargos[a.Cargo].Nome.Split(' ').Last()
+                              : !req ? "Precisa: " + Catalogo.Buscar(a.Requisito).Nome
+                              : economia.Escrevendo ? "Aguarde" : "Escrever";
                 string id = a.Id;
-                Botao(new RectInt(440, y + 6, 106, 20), rotulo, "#1b1a2e", "#5cc8ff", () => faixa.EscreverAutomacao(id), economia.PodeEscrever(id));
+                Botao(new RectInt(440, y + 2, 106, 16), rotulo, "#1b1a2e", "#5cc8ff", () => faixa.EscreverAutomacao(id), economia.PodeEscrever(id));
             }
         }
 
@@ -530,6 +545,7 @@ namespace IdleDataCenter
             new ConfigCena { Arte = "cena_homelab", Terminal = new Rect(0, 0, 0.35f, 1), Leds = new Rect(0.72f, 0.25f, 0.28f, 0.75f), Luzes = new Rect(0.39f, 0, 0.30f, 0.47f), Pele = new Rect(0.33f, 0, 0.12f, 1), TemGato = true },
             new ConfigCena { Arte = "cena_sysadmin", Terminal = Rect.zero, Leds = new Rect(0.42f, 0.2f, 0.58f, 0.8f), Luzes = new Rect(0, 0, 0.15f, 0.6f), Pele = new Rect(0.36f, 0, 0.12f, 0.35f) },
             new ConfigCena { Arte = "cena_infra", Terminal = Rect.zero, Leds = new Rect(0.33f, 0.1f, 0.67f, 0.8f), Luzes = new Rect(0, 0.4f, 0.17f, 0.3f), Pele = new Rect(0.18f, 0.1f, 0.14f, 0.35f) },
+            new ConfigCena { Arte = "cena_devops", Terminal = Rect.zero, Leds = new Rect(0, 0.1f, 0.55f, 0.4f), Luzes = new Rect(0.6f, 0.05f, 0.4f, 0.6f), Pele = new Rect(0.37f, 0.35f, 0.1f, 0.35f) },
         };
 
         Color32[] cenaPx;
@@ -614,7 +630,7 @@ namespace IdleDataCenter
         {
             const int SW = 344, SH = 150;
             if (cenaPx == null || cenaCargo != economia.Cargo) CarregarCena(economia.Cargo);
-            bool alerta = economia.Travamentos.Count > 0 || economia.DiscoQueimado;
+            bool alerta = economia.Travamentos.Count > 0 || economia.DiscoQueimado || economia.DeployQuebrado;
             tela.Recortar(x0, y0, SW, SH);
             tela.Imagem(cenaPx, cenaW, cenaH, x0, y0);
 

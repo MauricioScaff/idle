@@ -29,6 +29,10 @@ namespace IdleDataCenter.Simulacao
         public event Action<bool, double, bool> DiscoTrocado;
         /// <summary>Uma automação terminou de ser escrita e já está trabalhando (id).</summary>
         public event Action<string> AutomacaoPronta;
+        /// <summary>Um deploy quebrou (apps fora do ar).</summary>
+        public event Action DeployQuebrou;
+        /// <summary>Rollback feito (true se foi o técnico ou a automação, false se foi clique).</summary>
+        public event Action<bool> DeployVoltou;
 
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
@@ -57,6 +61,12 @@ namespace IdleDataCenter.Simulacao
         public bool NaSalaDeRacks => Estado.cargo >= 2;
         public bool DiscoQueimado => Estado.discoQueimado;
         public double SegundosDiscoQueimado => Estado.discoSegundos;
+        public int NivelHypervisor => Nivel(Catalogo.Hypervisor);
+        public int HostsContainers => Nivel(Catalogo.Containers);
+        public bool TemCi => Nivel(Catalogo.ServidorCi) > 0;
+        public bool NaSalaVirtualizada => Estado.cargo >= 3;
+        public bool DeployQuebrado => Estado.deployQuebrado;
+        public double SegundosDeployQuebrado => Estado.deploySegundos;
 
         /// <summary>Quantos servidores existem de verdade (os racks cheios contam cada servidor).</summary>
         public int ContagemServidores => TotalServidores + RacksCheios * Catalogo.ServidoresPorRackCheio;
@@ -64,6 +74,11 @@ namespace IdleDataCenter.Simulacao
         /// <summary>Quanto tempo o técnico leva para consertar sozinho (com estagiário, metade).</summary>
         public double TempoConserto =>
             TemAutomacao(Catalogo.Watchdog) ? Catalogo.TempoWatchdog
+            : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
+
+        /// <summary>Quanto tempo um deploy quebrado fica fora até o rollback sem clique.</summary>
+        public double TempoRollback =>
+            TemAutomacao(Catalogo.RollbackAutomatico) ? Catalogo.TempoRollbackAutomatico
             : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
 
         /// <summary>Quanto tempo um disco queimado fica até ser trocado sem clique (com hot-spare, quase nada).</summary>
@@ -78,9 +93,11 @@ namespace IdleDataCenter.Simulacao
 
         // Energia
         public double ConsumoKw => Torres * Catalogo.ConsumoServidorTorre + ServidoresRack * Catalogo.ConsumoServidor1U
-                                 + RacksCheios * Catalogo.ConsumoRackCheio + NivelStorage * Catalogo.ConsumoStorage;
+                                 + RacksCheios * Catalogo.ConsumoRackCheio + NivelStorage * Catalogo.ConsumoStorage
+                                 + HostsContainers * Catalogo.ConsumoHostContainers + (TemCi ? Catalogo.ConsumoServidorCi : 0);
         public double CapacidadeKw => Catalogo.CapacidadeBaseKw + Nivel(Catalogo.NoBreak) * Catalogo.CapacidadePorNoBreak
-                                    + (NaSalaDeRacks ? Catalogo.CapacidadeSalaDeRacksKw : 0);
+                                    + (NaSalaDeRacks ? Catalogo.CapacidadeSalaDeRacksKw : 0)
+                                    + (NaSalaVirtualizada ? Catalogo.CapacidadeSalaVirtualizadaKw : 0);
         public bool Sobrecarga => ConsumoKw > CapacidadeKw + 1e-9;
         /// <summary>Com sobrecarga, a receita cai na proporção da energia que falta.</summary>
         public double FatorEnergia => Sobrecarga ? CapacidadeKw / ConsumoKw : 1;
@@ -89,15 +106,16 @@ namespace IdleDataCenter.Simulacao
         public double Temperatura =>
             Catalogo.TemperaturaAmbiente + ConsumoKw * Catalogo.GrausPorKw * (NaSalaDeRacks ? Catalogo.FatorCalorSalaDeRacks : 1)
             - Nivel(Catalogo.ArCondicionado) * Catalogo.GrausPorArCondicionado
-            - (NaSalaDeRacks ? Catalogo.GrausArDePrecisao : 0);
+            - (NaSalaDeRacks ? Catalogo.GrausArDePrecisao : 0)
+            - (NaSalaVirtualizada ? Catalogo.GrausSalaVirtualizada : 0);
         public bool Quente => Temperatura > Catalogo.TemperaturaQuente;
         public double FatorTemperatura =>
             Temperatura > Catalogo.TemperaturaCritica ? 0.3 : Quente ? 0.6 : 1;
 
         // Banda: com o link saturado, todo mundo fica lento e a receita cai na proporção
         public double TrafegoMbps => Torres * Catalogo.TrafegoTorre + ServidoresRack * Catalogo.TrafegoServidor1U
-                                   + RacksCheios * Catalogo.TrafegoRackCheio;
-        public double BandaMbps => Catalogo.BandaBase + Nivel(Catalogo.Link) * Catalogo.BandaPorLink;
+                                   + RacksCheios * Catalogo.TrafegoRackCheio + HostsContainers * Catalogo.TrafegoHostContainers;
+        public double BandaMbps => Catalogo.BandaBase + Nivel(Catalogo.Link) * Catalogo.BandaPorLink + Nivel(Catalogo.Link10G) * Catalogo.BandaLink10G;
         public bool LinkSaturado => TrafegoMbps > BandaMbps + 1e-9;
         public double FatorBanda => LinkSaturado ? BandaMbps / TrafegoMbps : 1;
 
@@ -107,6 +125,13 @@ namespace IdleDataCenter.Simulacao
         /// <summary>Tudo que multiplica a receita de todos os servidores.</summary>
         public double FatorGeral => FatorEnergia * FatorTemperatura * FatorBanda * FatorStorage;
 
+        /// <summary>Hypervisor: cada servidor físico vira várias VMs vendidas como VPS.</summary>
+        public double FatorVirtualizacao => 1 + NivelHypervisor * Catalogo.BonusVirtualizacao;
+
+        /// <summary>Receita dos apps nos containers (zero com deploy quebrado).</summary>
+        public double ReceitaApps => DeployQuebrado ? 0
+            : HostsContainers * Catalogo.ReceitaHostContainers * (TemCi ? 1 + Catalogo.BonusCi : 1) * FatorGeral;
+
         public bool Travado(int servidor) => Estado.travamentos.Exists(t => t.servidor == servidor);
         public IReadOnlyList<Travamento> Travamentos => Estado.travamentos;
 
@@ -114,9 +139,9 @@ namespace IdleDataCenter.Simulacao
         public double ReceitaBruta(int servidor) => EhTorre(servidor) ? ReceitaTorre : Catalogo.ReceitaServidor1U;
 
         public double ReceitaDoServidor(int servidor) =>
-            Travado(servidor) ? 0 : ReceitaBruta(servidor) * FatorGeral;
+            Travado(servidor) ? 0 : ReceitaBruta(servidor) * FatorGeral * FatorVirtualizacao;
 
-        public double ReceitaDosRacksCheios => RacksCheios * Catalogo.ReceitaRackCheio * FatorGeral;
+        public double ReceitaDosRacksCheios => RacksCheios * Catalogo.ReceitaRackCheio * FatorGeral * FatorVirtualizacao;
 
         public double ReceitaPorSegundo
         {
@@ -124,7 +149,7 @@ namespace IdleDataCenter.Simulacao
             {
                 double soma = 0;
                 for (int i = 0; i < TotalServidores; i++) soma += ReceitaDoServidor(i);
-                return soma + ReceitaDosRacksCheios;
+                return soma + ReceitaDosRacksCheios + ReceitaApps;
             }
         }
 
@@ -144,7 +169,8 @@ namespace IdleDataCenter.Simulacao
         }
 
         public bool NoMaximo(string id) => Nivel(id) >= Catalogo.Buscar(id).NivelMaximo;
-        public double Custo(string id) => Catalogo.Buscar(id).Custo(Nivel(id));
+        public double Custo(string id) =>
+            Math.Round(Catalogo.Buscar(id).Custo(Nivel(id)) * (TemAutomacao(Catalogo.InfraComoCodigo) ? 1 - Catalogo.DescontoIac : 1));
         public bool RequisitoOk(string id)
         {
             var req = Catalogo.Buscar(id).Requisito;
@@ -204,6 +230,16 @@ namespace IdleDataCenter.Simulacao
             }
             else if (NivelStorage > 0 && sorteio.NextDouble() < segundos * mult * NivelStorage / Catalogo.MtbfDisco)
                 QueimarDisco();
+
+            // Deploys: cada host de containers recebe versões novas; às vezes uma quebra
+            if (DeployQuebrado)
+            {
+                Estado.deploySegundos += segundos;
+                if (Estado.deploySegundos >= TempoRollback) FazerRollback(porTecnico: true);
+            }
+            else if (HostsContainers > 0 && sorteio.NextDouble() < segundos * HostsContainers
+                     / (Catalogo.MtbfDeploy * (TemAutomacao(Catalogo.Pipeline) ? Catalogo.FatorPipeline : 1)))
+                QuebrarDeploy();
         }
 
         /// <summary>Clique no servidor. Se estiver travado, reinicia; senão rende um bônus. Retorna o valor ganho.</summary>
@@ -265,6 +301,24 @@ namespace IdleDataCenter.Simulacao
             return perda;
         }
 
+        public void QuebrarDeploy()
+        {
+            if (HostsContainers == 0 || DeployQuebrado) return;
+            Estado.deployQuebrado = true;
+            Estado.deploySegundos = 0;
+            DeployQuebrou?.Invoke();
+        }
+
+        /// <summary>Volta a versão anterior: os apps voltam a rodar.</summary>
+        public void FazerRollback(bool porTecnico)
+        {
+            if (!DeployQuebrado) return;
+            Estado.deployQuebrado = false;
+            Estado.deploySegundos = 0;
+            Estado.incidentesResolvidos++;
+            DeployVoltou?.Invoke(porTecnico);
+        }
+
         void Resolver(int servidor, bool porTecnico)
         {
             if (Estado.travamentos.RemoveAll(t => t.servidor == servidor) == 0) return;
@@ -287,7 +341,7 @@ namespace IdleDataCenter.Simulacao
         public bool PodeEscrever(string id)
         {
             var a = Catalogo.BuscarAutomacao(id);
-            return AutomacoesLiberadas && !Escrevendo && !TemAutomacao(id) && RequisitoAutomacaoOk(a) && Estado.dinheiro >= a.Custo;
+            return Estado.cargo >= a.Cargo && !Escrevendo && !TemAutomacao(id) && RequisitoAutomacaoOk(a) && Estado.dinheiro >= a.Custo;
         }
 
         /// <summary>Paga e começa a escrever (uma por vez; o técnico fica na mesa digitando).</summary>
@@ -322,6 +376,7 @@ namespace IdleDataCenter.Simulacao
                 case TipoMeta.TotalGanho: return Estado.totalGanho;
                 case TipoMeta.ServidoresRack: return ServidoresRack;
                 case TipoMeta.BackupsRestaurados: return Estado.backupsRestaurados;
+                case TipoMeta.AutomacoesAtivas: return AutomacoesAtivas;
                 default: return Estado.incidentesResolvidos;
             }
         }
@@ -387,6 +442,7 @@ namespace IdleDataCenter.Simulacao
                 Estado.incidentesResolvidos += ConsertadosFora;
                 Estado.travamentos.Clear();
                 if (DiscoQueimado) { TrocarDisco(porTecnico: true); ConsertadosFora++; }
+                if (DeployQuebrado) { FazerRollback(porTecnico: true); ConsertadosFora++; }
             }
             if (fora >= Catalogo.SegundosMinimosOffline) AvancarEscrita(fora); // o script continua sendo escrito
             double ganho = CalcularGanhoOffline(fora);

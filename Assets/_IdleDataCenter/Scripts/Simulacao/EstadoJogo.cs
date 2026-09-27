@@ -28,6 +28,10 @@ namespace IdleDataCenter.Simulacao
         public List<string> automacoes = new List<string>();   // prontas e ativas
         public string escrevendo = "";       // id da que o técnico está escrevendo (vazio = nenhuma)
         public double segundosEscritos;
+
+        // DevOps: deploy quebrado derruba os apps até o rollback
+        public bool deployQuebrado;
+        public double deploySegundos;
     }
 
     [Serializable]

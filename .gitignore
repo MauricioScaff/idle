@@ -19,3 +19,6 @@
 # Sistema
 .DS_Store
 Thumbs.db
+
+# configuração local de outras ferramentas (não é do jogo)
+.codex/
