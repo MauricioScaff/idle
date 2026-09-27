@@ -26,6 +26,10 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.Datacenter: return "Novo datacenter";
                 case Catalogo.Fibra: return "Fibra entre DCs";
                 case Catalogo.Gerador: return "Gerador diesel";
+                case Catalogo.Regiao: return "Nova região";
+                case Catalogo.CaboSubmarino: return "Cabo submarino";
+                case Catalogo.Renovavel: return "Energia renovável";
+                case Catalogo.Gpu: return "Cluster de GPU";
                 case Catalogo.ArCondicionado: return "Ar-condicionado";
                 default: return Catalogo.Buscar(id).Nome;
             }
@@ -45,6 +49,7 @@ namespace IdleDataCenter.Gerente
                 case "NOC": return new[] { Catalogo.Observabilidade };
                 case "Equipe": return new[] { Catalogo.Estagiario };
                 case "Campus": return new[] { Catalogo.Datacenter, Catalogo.Fibra, Catalogo.Cdn, Catalogo.Gerador };
+                case "Mundo": return new[] { Catalogo.Regiao, Catalogo.CaboSubmarino, Catalogo.Renovavel, Catalogo.Gpu };
                 default:
                     // "Melhorias": tudo o que já dá para comprar primeiro, depois o que falta liberar, e o completo no fim
                     return Catalogo.Melhorias
@@ -66,6 +71,7 @@ namespace IdleDataCenter.Gerente
             "Melhorias", "TUDO O QUE DA PARA COMPRAR, DE TODOS OS SETORES",
             "Carreira", "METAS PARA A PROXIMA PROMOCAO",
             "Campus", "PREDIOS NOVOS, FIBRA ENTRE ELES, CDN E GERADORES",
+            "Mundo", "REGIOES, CABOS SUBMARINOS, ENERGIA VERDE E NUVEM DE IA",
         };
 
         static string Subtitulo(string janela)
@@ -166,6 +172,7 @@ namespace IdleDataCenter.Gerente
             if (E.DiscoQueimado) { ui.Texto("DISCO QUEIMADO NO STORAGE", r.x + 16, y, IsoGui.Laranja, 2); y += 20; }
             if (E.DeployQuebrado) { ui.Texto("DEPLOY QUEBRADO / APPS FORA", r.x + 16, y, IsoGui.Laranja, 2); y += 20; }
             if (E.TemQuedaDeEnergia) { ui.Texto("QUEDA DE ENERGIA NO DC-0" + (E.DatacenterSemEnergia + 1), r.x + 16, y, IsoGui.Laranja, 2); y += 20; }
+            if (E.TemPaneRegional) { ui.Texto("PANE REGIONAL: " + Catalogo.NomesRegioes[E.RegiaoEmPane].ToUpperInvariant(), r.x + 16, y, IsoGui.Laranja, 2); y += 20; }
             if (Incidentes == 0) ui.Texto("NENHUM. " + E.Estado.incidentesResolvidos + " RESOLVIDOS ATE HOJE.", r.x + 16, y, IsoGui.Verde, 2);
             if (ui.Botao(new Rect(r.xMax - 250, r.y + 16, 234, 34), "RESOLVER TUDO", IsoGui.Laranja, Incidentes > 0)) Resolver();
 
@@ -181,12 +188,14 @@ namespace IdleDataCenter.Gerente
         {
             var metas = E.CargoAtual.MetasParaPromocao;
             ui.Texto("CARGO ATUAL: " + E.CargoAtual.Nome.ToUpperInvariant(), modal.x + 29, modal.y + 109, IsoGui.Cyan, 3);
-            if (!E.TemProximoCargo)
+            if (E.IpoFeito)
             {
-                ui.Texto("CARGO MAXIMO POR ORA. OS PROXIMOS CHEGAM NAS NOVAS VERSOES.", modal.x + 29, modal.y + 150, IsoGui.Muted, 2);
+                ui.Texto("A EMPRESA ESTA NA BOLSA. VOCE CHEGOU AO TOPO DA CARREIRA.", modal.x + 29, modal.y + 150, IsoGui.Cor("ffd65c"), 2);
+                ui.Texto("O PRESTIGIO (RECOMECAR COM BONUS) CHEGA NA PROXIMA VERSAO.", modal.x + 29, modal.y + 176, IsoGui.Muted, 2);
                 return;
             }
-            ui.Texto("PROXIMO: " + Catalogo.Cargos[E.Cargo + 1].Nome.ToUpperInvariant(), modal.x + 29, modal.y + 140, IsoGui.Laranja, 2);
+            bool ipo = !E.TemProximoCargo;
+            ui.Texto(ipo ? "PROXIMO: ABRIR O CAPITAL (IPO)" : "PROXIMO: " + Catalogo.Cargos[E.Cargo + 1].Nome.ToUpperInvariant(), modal.x + 29, modal.y + 140, IsoGui.Laranja, 2);
             for (int i = 0; i < metas.Length; i++)
             {
                 var m = metas[i];
@@ -198,8 +207,11 @@ namespace IdleDataCenter.Gerente
                 ui.Texto(prog, modal.xMax - 40 - PixelCanvas.LarguraTexto(prog) * 2, y + 4, IsoGui.Muted, 2);
                 ui.Barra(new Rect(modal.x + 29, y + 26, modal.width - 62, 16), E.Progresso(m) / m.Alvo, ok ? IsoGui.Verde : IsoGui.Cyan);
             }
-            if (ui.Botao(new Rect(modal.center.x - 160, modal.yMax - 70, 320, 44), E.PodePromover ? "SER PROMOVIDO!" : "CUMPRA AS METAS", IsoGui.Laranja, E.PodePromover, 3))
-                faixa.Promover();
+            bool pode = ipo ? E.PodeFazerIpo : E.PodePromover;
+            if (ui.Botao(new Rect(modal.center.x - 160, modal.yMax - 70, 320, 44), pode ? (ipo ? "ABRIR O CAPITAL!" : "SER PROMOVIDO!") : "CUMPRA AS METAS", IsoGui.Laranja, pode, 3))
+            {
+                if (ipo) faixa.FazerIpo(); else faixa.Promover();
+            }
         }
     }
 }

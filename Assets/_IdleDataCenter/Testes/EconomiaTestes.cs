@@ -576,7 +576,7 @@ namespace IdleDataCenter.Testes
             e.Estado.automacoes.Add(Catalogo.Chaos);
             Assert.IsTrue(e.Promover());
             Assert.AreEqual("Arquiteto", e.CargoAtual.Nome);
-            Assert.IsFalse(e.TemProximoCargo, "Arquiteto é o último cargo por enquanto");
+            Assert.IsFalse(e.PodePromover, "o Arquiteto tem metas próprias");
         }
 
         [Test]
@@ -623,6 +623,71 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.LinkSaturado);
             DefinirNivel(e, Catalogo.Cdn, 2);          // 40% do tráfego: 132 Mbps
             Assert.IsFalse(e.LinkSaturado);
+        }
+
+        // ---------- CTO e IPO ----------
+
+        static Economia NoMundo(double dinheiro = 0)
+        {
+            var e = Nova(dinheiro);
+            e.Estado.cargo = 6;
+            return e;
+        }
+
+        [Test]
+        public void ArquitetoViraCto()
+        {
+            var e = NoCampus();
+            DefinirNivel(e, Catalogo.Datacenter, 3);
+            e.Estado.totalGanho = 2000000000;
+            for (int i = 0; i < 12; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
+            Assert.IsTrue(e.Promover());
+            Assert.AreEqual("CTO", e.CargoAtual.Nome);
+            Assert.IsFalse(e.TemProximoCargo, "CTO é o último cargo");
+            Assert.IsFalse(e.PodePromover);
+        }
+
+        [Test]
+        public void RegiaoCaboRenovavelEGpuRendem()
+        {
+            var e = NoMundo();
+            DefinirNivel(e, Catalogo.Regiao, 1);
+            Assert.AreEqual(1 + Catalogo.ReceitaRegiao, e.ReceitaPorSegundo, 1e-6);
+            DefinirNivel(e, Catalogo.CaboSubmarino, 1);
+            Assert.AreEqual(1 + Catalogo.ReceitaRegiao * 1.25, e.ReceitaPorSegundo, 1e-6);
+            DefinirNivel(e, Catalogo.Gpu, 1);
+            Assert.AreEqual(1 + Catalogo.ReceitaRegiao * 1.25 + Catalogo.ReceitaGpu, e.ReceitaPorSegundo, 1e-6);
+            DefinirNivel(e, Catalogo.Renovavel, 2);
+            Assert.AreEqual((1 + Catalogo.ReceitaRegiao * 1.25 + Catalogo.ReceitaGpu) * 1.3, e.ReceitaPorSegundo, 1e-6);
+        }
+
+        [Test]
+        public void PaneRegionalDerrubaUmaRegiaoEFailoverRedireciona()
+        {
+            var e = NoMundo();
+            DefinirNivel(e, Catalogo.Regiao, 2);
+            e.DerrubarRegiao(1);
+            Assert.IsTrue(e.TemPaneRegional);
+            Assert.AreEqual(1 + Catalogo.ReceitaRegiao, e.ReceitaPorSegundo, 1e-6);
+            e.Estado.automacoes.Add(Catalogo.Multirregiao);
+            e.Avancar(Catalogo.TempoFailoverMultirregiao);
+            Assert.IsFalse(e.TemPaneRegional);
+        }
+
+        [Test]
+        public void IpoFechaACarreira()
+        {
+            var e = NoMundo();
+            Assert.IsFalse(e.PodeFazerIpo);
+            DefinirNivel(e, Catalogo.Regiao, 3);
+            e.Estado.totalGanho = 50000000000;
+            for (int i = 0; i < 15; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
+            Assert.IsTrue(e.PodeFazerIpo);
+            bool festa = false;
+            e.Ipo += () => festa = true;
+            Assert.IsTrue(e.FazerIpo());
+            Assert.IsTrue(festa && e.IpoFeito);
+            Assert.IsFalse(e.PodeFazerIpo, "só uma vez");
         }
 
         // ---------- Automações ----------

@@ -42,6 +42,7 @@ namespace IdleDataCenter.Gerente
             E.DeployQuebrou += () => Notificar("Deploy quebrou. Clique em DEPLOY para o rollback.");
             E.PicoComecou += nome => Notificar("Pico de tráfego: " + nome + "! Escale o cluster.", 10);
             E.QuedaDeEnergia += dc => Notificar("Queda de energia no DC-0" + (dc + 1) + "! Clique no prédio apagado para religar.", 8);
+            E.PaneRegional += r => Notificar("Pane regional: " + Catalogo.NomesRegioes[r] + " fora do ar! Clique na região para redirecionar o tráfego.", 8);
             E.Promoveu += c => Notificar("Promovido a " + E.CargoAtual.Nome + "! Novos setores liberados.", 10);
         }
 
@@ -110,7 +111,7 @@ namespace IdleDataCenter.Gerente
             Notificar("O técnico começou a escrever: " + a.Nome + ".");
         }
 
-        int Incidentes => E.Travamentos.Count + (E.DiscoQueimado ? 1 : 0) + (E.DeployQuebrado ? 1 : 0) + (E.TemQuedaDeEnergia ? 1 : 0);
+        int Incidentes => E.Travamentos.Count + (E.DiscoQueimado ? 1 : 0) + (E.DeployQuebrado ? 1 : 0) + (E.TemQuedaDeEnergia ? 1 : 0) + (E.TemPaneRegional ? 1 : 0);
 
         /// <summary>Resolve tudo o que está quebrado agora (como clicar em cada coisa na faixa).</summary>
         void Resolver()
@@ -120,6 +121,7 @@ namespace IdleDataCenter.Gerente
             if (E.DiscoQueimado) faixa.TrocarDisco();
             if (E.DeployQuebrado) faixa.FazerRollback();
             if (E.TemQuedaDeEnergia) faixa.Religar();
+            if (E.TemPaneRegional) faixa.Redirecionar();
             Notificar(quantidade > 0 ? quantidade + (quantidade == 1 ? " incidente resolvido." : " incidentes resolvidos.") : "Tudo funcionando.");
         }
 

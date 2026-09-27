@@ -19,7 +19,8 @@ namespace IdleDataCenter.Testes
             var promocoes = new double[Catalogo.Cargos.Count];
             var completo = new double[Catalogo.Cargos.Count];
             double primeiroBackup = -1;
-            const double limite = 120 * 3600;
+            double ipo = -1;
+            const double limite = 200 * 3600;
 
             for (double t = 0; t < limite; t += 1)
             {
@@ -29,17 +30,18 @@ namespace IdleDataCenter.Testes
                 var script = Catalogo.Automacoes.Where(a => e.PodeEscrever(a.Id)).OrderBy(a => a.Custo).FirstOrDefault();
                 if (script != null && barata == null) e.EscreverAutomacao(script.Id);
                 if (e.PodePromover) { e.Promover(); promocoes[e.Cargo] = t; }
+                if (e.PodeFazerIpo) { e.FazerIpo(); ipo = t; }
                 if (e.Estado.backupsRestaurados > 0 && primeiroBackup < 0) primeiroBackup = t;
 
                 bool tudo = e.MelhoriasDoCargo().All(m => e.NoMaximo(m.Id))
                             && Catalogo.Automacoes.Where(a => a.Cargo <= e.Cargo && e.Cargo >= Catalogo.CargoDasAutomacoes).All(a => e.TemAutomacao(a.Id));
                 if (tudo && completo[e.Cargo] == 0) completo[e.Cargo] = t;
-                if (e.Cargo == Catalogo.Cargos.Count - 1 && tudo) break;
+                if (e.Cargo == Catalogo.Cargos.Count - 1 && tudo && ipo > 0) break;
             }
 
             string H(double s) => s <= 0 ? "-" : $"{(int)(s / 3600)}h{(int)(s % 3600 / 60):00}";
             UnityEngine.Debug.Log($"RITMO: Sysadmin {H(promocoes[1])} (completo {H(completo[1])}); Analista {H(promocoes[2])} (1º backup {H(primeiroBackup)}, completo {H(completo[2])}); " +
-                                  $"DevOps {H(promocoes[3])} (completo {H(completo[3])}); SRE {H(promocoes[4])} (completo {H(completo[4])}, {e.Estado.picosSobrevividos}/{e.Estado.picosTotal} picos); Arquiteto {H(promocoes[5])} (completo {H(completo[5])}); {e.Estado.incidentesResolvidos} incidentes; " +
+                                  $"DevOps {H(promocoes[3])} (completo {H(completo[3])}); SRE {H(promocoes[4])} (completo {H(completo[4])}, {e.Estado.picosSobrevividos}/{e.Estado.picosTotal} picos); Arquiteto {H(promocoes[5])} (completo {H(completo[5])}); CTO {H(promocoes[6])} (completo {H(completo[6])}, IPO {H(ipo)}); {e.Estado.incidentesResolvidos} incidentes; " +
                                   $"receita final {e.ReceitaPorSegundo:0}/s; temperatura {e.Temperatura:0} C; " +
                                   $"energia {e.ConsumoKw:0.0}/{e.CapacidadeKw:0.0} kW; banda {e.TrafegoMbps:0}/{e.BandaMbps:0} Mbps");
 
@@ -52,6 +54,8 @@ namespace IdleDataCenter.Testes
             Assert.That(completo[4], Is.GreaterThan(promocoes[4] + 3 * 3600), "SRE acaba rápido demais");
             Assert.That(promocoes[5], Is.InRange(promocoes[4] + 3 * 3600, promocoes[4] + 14 * 3600), "promoção a Arquiteto fora do ritmo");
             Assert.That(completo[5], Is.GreaterThan(promocoes[5] + 4 * 3600), "Arquiteto acaba rápido demais");
+            Assert.That(promocoes[6], Is.InRange(promocoes[5] + 3 * 3600, promocoes[5] + 16 * 3600), "promoção a CTO fora do ritmo");
+            Assert.That(ipo, Is.GreaterThan(promocoes[6] + 4 * 3600), "IPO rápido demais");
         }
     }
 }

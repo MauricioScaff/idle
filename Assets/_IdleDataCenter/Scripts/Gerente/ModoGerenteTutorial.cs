@@ -10,7 +10,7 @@ namespace IdleDataCenter.Gerente
     public partial class ModoGerente
     {
         float festaDesde = -10;
-        string festaCargo = "";
+        string festaCargo = "", festaTitulo = "PROMOVIDO!", festaTexto = "";
 
         static readonly string[] Dicas =
         {
@@ -25,7 +25,8 @@ namespace IdleDataCenter.Gerente
         void IniciarPrimeiraHora()
         {
             E.Comprou += id => salaIso?.Comprou(id, Time.unscaledTime);
-            E.Promoveu += c => { verCampus = true; festaDesde = Time.unscaledTime; festaCargo = E.CargoAtual.Nome.ToUpperInvariant(); };
+            E.Promoveu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "PROMOVIDO!"; festaCargo = E.CargoAtual.Nome.ToUpperInvariant(); festaTexto = "A SALA CRESCEU. NOVOS SETORES E EQUIPAMENTOS NA LOJA."; };
+            E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A EMPRESA ESTA NA BOLSA"; festaTexto = "DE TECNICO DE TI NUM ARMARIO A CTO DE UMA NUVEM GLOBAL."; };
             E.ChamadoApareceu += texto => Notificar("Chamado urgente: " + texto + "! Clique no papel sobre a mesa.", 8);
             E.ChamadoEncerrado += bonus => { if (bonus <= 0) Notificar("O chamado foi embora sem resposta."); };
         }
@@ -117,9 +118,9 @@ namespace IdleDataCenter.Gerente
             }
             var r = new Rect(areaCentral.center.x - 300, areaCentral.center.y - 60, 600, 120);
             ui.Caixa(r, IsoGui.Cor("2a1f10"), IsoGui.Cor("ffd65c"));
-            ui.Texto("PROMOVIDO!", r.center.x, r.y + 22, IsoGui.Cor("ffd65c"), 6, true);
+            ui.Texto(festaTitulo, r.center.x, r.y + 22, IsoGui.Cor("ffd65c"), 6, true);
             ui.Texto(festaCargo, r.center.x, r.y + 64, IsoGui.Branco, 3, true);
-            ui.Texto("A SALA CRESCEU. NOVOS SETORES E EQUIPAMENTOS NA LOJA.", r.center.x, r.y + 94, IsoGui.Muted, 2, true);
+            ui.Texto(festaTexto, r.center.x, r.y + 94, IsoGui.Muted, 2, true);
         }
     }
 }

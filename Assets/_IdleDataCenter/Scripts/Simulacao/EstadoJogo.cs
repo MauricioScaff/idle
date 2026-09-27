@@ -51,6 +51,11 @@ namespace IdleDataCenter.Simulacao
         public int quedaDc = -1;
         public double quedaSegundos;
 
+        // CTO: pane regional (índice da região extra, -1 = nenhuma) e o IPO
+        public int paneRegiao = -1;
+        public double paneSegundos;
+        public bool ipoFeito;
+
         // Tutorial do modo gerente: passo atual (Catalogo.PassosTutorial = concluído)
         public int tutorial;
     }

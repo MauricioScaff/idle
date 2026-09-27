@@ -30,6 +30,7 @@ namespace IdleDataCenter
             [3] = new[] { "A sala escurece: vira", "sala virtualizada.", "Hypervisor, containers e CI.", "Deploys às vezes quebram." },
             [4] = new[] { "Data center pequeno com", "cluster Kubernetes e NOC.", "Picos de tráfego: escale", "a tempo ou pague multa de SLA." },
             [5] = new[] { "A sala vira o prédio DC-01", "num campus com vários", "datacenters, fibra e CDN.", "Cuidado com quedas de energia." },
+            [6] = new[] { "O campus vira um ponto", "no mapa-múndi: regiões,", "cabos submarinos e IA.", "No fim, o IPO." },
         };
 
         Faixa faixa;
@@ -253,11 +254,13 @@ namespace IdleDataCenter
             // Metas da próxima promoção
             var metas = economia.CargoAtual.MetasParaPromocao;
             bool ultimo = !economia.TemProximoCargo;
-            Caixa(x, 20, 132, 84, ultimo ? "Cargo máximo (por ora)" : "Promoção: " + Catalogo.Cargos[economia.Cargo + 1].Nome);
-            if (ultimo)
+            // no CTO, as metas são as do IPO (abrir o capital), o fim da carreira
+            Caixa(x, 20, 132, 84, !ultimo ? "Promoção: " + Catalogo.Cargos[economia.Cargo + 1].Nome : economia.IpoFeito ? "Empresa na bolsa!" : "IPO: abrir o capital");
+            if (ultimo && economia.IpoFeito)
             {
-                T("Novos cargos chegam", x + 5, 36, "#a3a0bd", false);
-                T("nas próximas versões.", x + 5, 44, "#a3a0bd", false);
+                T("Você chegou ao topo.", x + 5, 36, "#ffd65c", false);
+                T("Prestígio em breve.", x + 5, 44, "#a3a0bd", false);
+                metas = new MetaDef[0];
             }
             for (int i = 0; i < metas.Length; i++)
             {
@@ -273,6 +276,9 @@ namespace IdleDataCenter
             if (!ultimo)
                 Botao(new RectInt(x + 5, 76, 122, 22), economia.PodePromover ? "Ser promovido!" : "Cumpra as metas",
                     "#1b1a2e", "#ffd65c", faixa.Promover, economia.PodePromover);
+            else if (!economia.IpoFeito)
+                Botao(new RectInt(x + 5, 76, 122, 22), economia.PodeFazerIpo ? "Abrir o capital!" : "Cumpra as metas",
+                    "#1b1a2e", "#ffd65c", faixa.FazerIpo, economia.PodeFazerIpo);
 
             // Incidentes
             Caixa(x, 108, 132, 62, "Incidentes");
@@ -293,6 +299,16 @@ namespace IdleDataCenter
                 Botao(new RectInt(x + 70, y, 57, 14), "Reiniciar", "#fdf6e3", "#7a2a3a", () => faixa.Reiniciar(idx));
             }
             int linha = Math.Min(3, lista.Count);
+            if (economia.TemPaneRegional && linha < 3)
+            {
+                int y = 121 + linha * 16;
+                linha++;
+                bool piscar = Mathf.FloorToInt(t * 3) % 2 == 0;
+                R(x + 5, y + 2, 3, 3, piscar ? "#ff3b4e" : "#5a1a24");
+                T("Pane: " + Catalogo.NomesRegioes[economia.RegiaoEmPane], x + 11, y + 1, "#fdf6e3", false);
+                T($"{economia.TempoRedirecionar - economia.SegundosDePane:0}s", x + 11, y + 8, "#ff7a8a", false);
+                Botao(new RectInt(x + 70, y, 57, 14), "Redirecionar", "#fdf6e3", "#7a2a3a", faixa.Redirecionar);
+            }
             if (economia.TemQuedaDeEnergia && linha < 3)
             {
                 int y = 121 + linha * 16;
@@ -528,17 +544,24 @@ namespace IdleDataCenter
             }
 
             int x = 266;
-            if (!economia.TemProximoCargo)
+            bool ipo = !economia.TemProximoCargo;
+            if (ipo && economia.IpoFeito)
             {
-                Caixa(x, 20, 290, 212, "Próximo cargo");
-                T("Parabéns, " + economia.CargoAtual.Nome + "!", x + 10, 40, "#ffd65c", true, 2);
-                T("Os próximos cargos chegam nas próximas versões.", x + 10, 64, "#a3a0bd", false);
+                Caixa(x, 20, 290, 212, "Fim da carreira");
+                T("Empresa na bolsa!", x + 10, 40, "#ffd65c", true, 2);
+                T("De técnico de TI num armário a CTO", x + 10, 64, "#a3a0bd", false);
+                T("de uma nuvem global. O prestígio", x + 10, 72, "#a3a0bd", false);
+                T("(recomeçar com bônus) vem em breve.", x + 10, 80, "#a3a0bd", false);
                 return;
             }
-            var proximo = Catalogo.Cargos[economia.Cargo + 1];
-            Caixa(x, 20, 290, 212, "Próximo cargo");
-            T(proximo.Nome, x + 10, 36, "#ffd65c", true, 2);
-            if (Novidades.TryGetValue(economia.Cargo + 1, out var linhas))
+            Caixa(x, 20, 290, 212, ipo ? "O grande final" : "Próximo cargo");
+            T(ipo ? "IPO: abrir o capital" : Catalogo.Cargos[economia.Cargo + 1].Nome, x + 10, 36, "#ffd65c", true, 2);
+            if (ipo)
+            {
+                T("Cumpra as metas e leve a empresa", x + 10, 54, "#a3a0bd", false);
+                T("para a bolsa de valores.", x + 10, 62, "#a3a0bd", false);
+            }
+            else if (Novidades.TryGetValue(economia.Cargo + 1, out var linhas))
                 for (int i = 0; i < linhas.Length; i++) T(linhas[i], x + 10, 54 + i * 8, "#a3a0bd", false);
 
             var metas = economia.CargoAtual.MetasParaPromocao;
@@ -554,8 +577,12 @@ namespace IdleDataCenter
                 T(prog, x + 280 - L(prog), y, "#7d82ad", false);
                 Barra(x + 10, y + 8, 270, 5, (float)(economia.Progresso(m) / m.Alvo), ok ? "#5cff8a" : "#5aa9ff");
             }
-            Botao(new RectInt(x + 10, 184, 270, 38), economia.PodePromover ? "Ser promovido!" : "Cumpra as metas",
-                "#1b1a2e", "#ffd65c", faixa.Promover, economia.PodePromover, 2);
+            if (ipo)
+                Botao(new RectInt(x + 10, 184, 270, 38), economia.PodeFazerIpo ? "Abrir o capital!" : "Cumpra as metas",
+                    "#1b1a2e", "#ffd65c", faixa.FazerIpo, economia.PodeFazerIpo, 2);
+            else
+                Botao(new RectInt(x + 10, 184, 270, 38), economia.PodePromover ? "Ser promovido!" : "Cumpra as metas",
+                    "#1b1a2e", "#ffd65c", faixa.Promover, economia.PodePromover, 2);
         }
 
         // ---------------- Cena da era (arte do PixelLab) com animações por cima ----------------

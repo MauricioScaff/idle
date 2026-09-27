@@ -31,7 +31,7 @@ namespace IdleDataCenter.Simulacao
         public double Segundos;     // tempo para escrever
     }
 
-    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos, Datacenters }
+    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos, Datacenters, Regioes }
 
     public class MetaDef
     {
@@ -76,6 +76,10 @@ namespace IdleDataCenter.Simulacao
         public const string Fibra = "fibra";
         public const string Cdn = "cdn";
         public const string Gerador = "gerador";
+        public const string Regiao = "regiao";              // cargo 7 (CTO)
+        public const string CaboSubmarino = "cabo";
+        public const string Renovavel = "renovavel";
+        public const string Gpu = "gpu";
 
         // --- Receita ---
         public const double ReceitaBaseServidor = 1;   // servidor torre sem melhorias (R$/s)
@@ -96,6 +100,12 @@ namespace IdleDataCenter.Simulacao
         public const double BonusFibra = 0.2;           // rede global: +20% por datacenter interligado
         public const double BonusCdn = 0.3;             // CDN: +30% por nível
         public const double ReducaoTrafegoCdn = 0.3;    // e 30% menos tráfego no link do DC-01 por nível
+        public const double ReceitaRegiao = 100000;     // cada região nova (vários campi)
+        public const double BonusCabo = 0.25;            // cabo submarino: +25% por região ligada
+        public const double BonusRenovavel = 0.15;       // contratos "verdes": +15% por nível
+        public const double ReceitaGpu = 60000;          // nuvem de IA, por cluster de GPU
+        public const double BonusAiops = 0.2;
+        public static readonly string[] NomesRegioes = { "América do Sul", "América do Norte", "Europa", "Ásia" };
 
         /// <summary>Clique no servidor vale isto + ValorCliqueReceita × receita por segundo.</summary>
         public const double ValorCliqueBase = 2;
@@ -176,6 +186,8 @@ namespace IdleDataCenter.Simulacao
         // --- Queda de energia nos datacenters (Arquiteto) ---
         public const double MtbfQuedaDeEnergia = 1500;   // por datacenter extra
         public const double TempoGerador = 5, TempoFailover = 2;
+        public const double MtbfPaneRegional = 2400;     // por região extra
+        public const double TempoFailoverMultirregiao = 2;
 
         // --- Picos de tráfego (SRE) ---
         public const double PrimeiroPico = 600;          // segundos depois de virar SRE
@@ -250,7 +262,27 @@ namespace IdleDataCenter.Simulacao
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 250000000, Texto = "Faturar R$ 250M" },
                 },
             },
-            new CargoDef { Nome = "Arquiteto", Lugar = "Campus de datacenters", MetasParaPromocao = new MetaDef[0] },
+            new CargoDef
+            {
+                Nome = "Arquiteto", Lugar = "Campus de datacenters",
+                MetasParaPromocao = new[]
+                {
+                    new MetaDef { Tipo = TipoMeta.Datacenters, Alvo = 4, Texto = "Ter 4 datacenters" },
+                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 12, Texto = "12 automações ativas" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 2000000000, Texto = "Faturar R$ 2B" },
+                },
+            },
+            // o último cargo: as "metas" do CTO são as do IPO (abrir o capital), o fim da carreira
+            new CargoDef
+            {
+                Nome = "CTO", Lugar = "Mapa-múndi",
+                MetasParaPromocao = new[]
+                {
+                    new MetaDef { Tipo = TipoMeta.Regioes, Alvo = 4, Texto = "Estar em 4 regiões" },
+                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 15, Texto = "15 automações ativas" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 50000000000, Texto = "Faturar R$ 50B" },
+                },
+            },
         };
 
         public static readonly IReadOnlyList<MelhoriaDef> Melhorias = new[]
@@ -283,6 +315,11 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Fibra, Nome = "Fibra", Efeito = "Liga um DC: receita +20%", Cargo = 5, Requisito = Datacenter, NivelMaximo = 3, CustoBase = 30000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Cdn, Nome = "CDN", Efeito = "+30% e -30% de tráfego", Cargo = 5, NivelMaximo = 3, CustoBase = 40000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Gerador, Nome = "Gerador", Efeito = "Queda de luz: volta em 5 s", Cargo = 5, Requisito = Datacenter, NivelMaximo = 1, CustoBase = 20000000, FatorCusto = 1 },
+
+            new MelhoriaDef { Id = Regiao, Nome = "Região", Efeito = "Nova região: +100K/s", Cargo = 6, NivelMaximo = 3, CustoBase = 1500000000, FatorCusto = 3 },
+            new MelhoriaDef { Id = CaboSubmarino, Nome = "Cabo sub.", Efeito = "Liga uma região: +25%", Cargo = 6, Requisito = Regiao, NivelMaximo = 3, CustoBase = 800000000, FatorCusto = 3 },
+            new MelhoriaDef { Id = Renovavel, Nome = "Renovável", Efeito = "Energia verde: +15%", Cargo = 6, NivelMaximo = 3, CustoBase = 1000000000, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = Gpu, Nome = "GPU / IA", Efeito = "Nuvem de IA: +60K/s", Cargo = 6, NivelMaximo = 3, CustoBase = 1200000000, FatorCusto = 2.8 },
         };
 
         // --- Ids das automações ---
@@ -299,6 +336,8 @@ namespace IdleDataCenter.Simulacao
         public const string Runbooks = "runbooks";
         public const string Failover = "failover";
         public const string BalanceamentoGlobal = "global";
+        public const string Multirregiao = "multirregiao";
+        public const string Aiops = "aiops";
 
         public static readonly IReadOnlyList<AutomacaoDef> Automacoes = new[]
         {
@@ -315,6 +354,8 @@ namespace IdleDataCenter.Simulacao
             new AutomacaoDef { Id = Runbooks, Nome = "Runbooks automáticos", Descricao = "Todo conserto automático em 3 s", Cargo = 4, Custo = 10000000, Segundos = 1080 },
             new AutomacaoDef { Id = Failover, Nome = "Failover entre DCs", Descricao = "Queda de energia volta em 2 s", Cargo = 5, Requisito = Datacenter, Custo = 60000000, Segundos = 1200 },
             new AutomacaoDef { Id = BalanceamentoGlobal, Nome = "Balanceamento global", Descricao = "Tráfego no DC certo: receita +15%", Cargo = 5, Requisito = Fibra, Custo = 90000000, Segundos = 1500 },
+            new AutomacaoDef { Id = Multirregiao, Nome = "Failover multirregião", Descricao = "Pane regional volta em 2 s", Cargo = 6, Requisito = Regiao, Custo = 900000000, Segundos = 1800 },
+            new AutomacaoDef { Id = Aiops, Nome = "AIOps", Descricao = "IA cuidando da operação: +20%", Cargo = 6, Requisito = Gpu, Custo = 1500000000, Segundos = 2400 },
         };
 
         public static AutomacaoDef BuscarAutomacao(string id)

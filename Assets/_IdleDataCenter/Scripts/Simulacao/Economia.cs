@@ -49,6 +49,11 @@ namespace IdleDataCenter.Simulacao
         public event Action<int> QuedaDeEnergia;
         /// <summary>O datacenter voltou (true se foi sozinho: técnico, gerador ou failover).</summary>
         public event Action<int, bool> EnergiaVoltou;
+        /// <summary>Pane regional (índice da região: 1 = América do Norte, 2 = Europa, 3 = Ásia).</summary>
+        public event Action<int> PaneRegional;
+        public event Action<int, bool> RegiaoVoltou;
+        /// <summary>A empresa abriu o capital (fim da carreira).</summary>
+        public event Action Ipo;
 
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
@@ -92,6 +97,21 @@ namespace IdleDataCenter.Simulacao
         public bool PicoViolado => Estado.picoViolado;
         public double SegundosDePico => Estado.picoDecorrido;
         public double SegundosAteProximoPico => Estado.proximoPico;
+        public int RegioesExtras => Nivel(Catalogo.Regiao);
+        public int TotalRegioes => 1 + RegioesExtras;
+        public bool NoMundo => Estado.cargo >= 6;
+        public int RegioesLigadas => Math.Min(Nivel(Catalogo.CaboSubmarino), RegioesExtras);
+        public int RegiaoEmPane => Estado.paneRegiao;
+        public bool TemPaneRegional => Estado.paneRegiao > 0;
+        public double SegundosDePane => Estado.paneSegundos;
+        public double TempoRedirecionar =>
+            TemAutomacao(Catalogo.Multirregiao) ? Catalogo.TempoFailoverMultirregiao
+            : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
+        public bool IpoFeito => Estado.ipoFeito;
+        /// <summary>No CTO, cumprir as metas libera o IPO (não há próximo cargo).</summary>
+        public bool PodeFazerIpo => Estado.cargo == Catalogo.Cargos.Count - 1 && !Estado.ipoFeito
+                                    && Array.TrueForAll(CargoAtual.MetasParaPromocao, Cumprida);
+
         public int DatacentersExtras => Nivel(Catalogo.Datacenter);
         public int TotalDatacenters => 1 + DatacentersExtras;
         public bool NoCampus => Estado.cargo >= 5;
@@ -186,6 +206,14 @@ namespace IdleDataCenter.Simulacao
         double FatorCampus => (1 + DatacentersInterligados * Catalogo.BonusFibra) * (1 + Nivel(Catalogo.Cdn) * Catalogo.BonusCdn)
                             * (TemAutomacao(Catalogo.BalanceamentoGlobal) ? 1.15 : 1);
 
+        /// <summary>Vale para tudo no mundo: energia renovável e AIOps.</summary>
+        public double FatorGlobal => (1 + Nivel(Catalogo.Renovavel) * Catalogo.BonusRenovavel) * (TemAutomacao(Catalogo.Aiops) ? 1 + Catalogo.BonusAiops : 1);
+
+        /// <summary>Receita das regiões novas (a que estiver em pane não rende) e dos clusters de GPU.</summary>
+        public double ReceitaMundial =>
+            ((RegioesExtras - (TemPaneRegional ? 1 : 0)) * Catalogo.ReceitaRegiao * (1 + RegioesLigadas * Catalogo.BonusCabo)
+             + Nivel(Catalogo.Gpu) * Catalogo.ReceitaGpu) * FatorEmpresa;
+
         /// <summary>Receita dos datacenters novos (o que estiver sem energia não rende).</summary>
         public double ReceitaDatacenters =>
             (DatacentersExtras - (TemQuedaDeEnergia ? 1 : 0)) * Catalogo.ReceitaDatacenter * FatorEmpresa;
@@ -223,7 +251,7 @@ namespace IdleDataCenter.Simulacao
             {
                 double soma = 0;
                 for (int i = 0; i < TotalServidores; i++) soma += ReceitaDoServidor(i);
-                return (soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes) * FatorCampus + ReceitaDatacenters;
+                return ((soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes) * FatorCampus + ReceitaDatacenters + ReceitaMundial) * FatorGlobal;
             }
         }
 
@@ -289,6 +317,7 @@ namespace IdleDataCenter.Simulacao
             AvancarPico(segundos);
             AvancarCafeEChamados(segundos);
             AvancarQuedaDeEnergia(segundos);
+            AvancarPaneRegional(segundos);
 
             // Novas travadas: cada servidor tem uma chance por segundo (maior com calor, menor com monitoramento)
             double mult = (Quente ? Catalogo.MultiplicadorQuente : 1) / (TemAutomacao(Catalogo.Monitoramento) ? Catalogo.FatorMtbfMonitoramento : 1)
@@ -402,6 +431,48 @@ namespace IdleDataCenter.Simulacao
             if (Estado.travamentos.RemoveAll(t => t.servidor == servidor) == 0) return;
             Estado.incidentesResolvidos++;
             Voltou?.Invoke(servidor, porTecnico);
+        }
+
+        // ---------------- Pane regional e IPO (CTO) ----------------
+
+        void AvancarPaneRegional(double segundos)
+        {
+            if (TemPaneRegional)
+            {
+                Estado.paneSegundos += segundos;
+                if (Estado.paneSegundos >= TempoRedirecionar) Redirecionar(sozinho: true);
+                return;
+            }
+            if (RegioesExtras > 0 && sorteio.NextDouble() < segundos * RegioesExtras / Catalogo.MtbfPaneRegional)
+                DerrubarRegiao(1 + sorteio.Next(RegioesExtras));
+        }
+
+        public void DerrubarRegiao(int regiao)
+        {
+            if (TemPaneRegional || regiao < 1 || regiao > RegioesExtras) return;
+            Estado.paneRegiao = regiao;
+            Estado.paneSegundos = 0;
+            PaneRegional?.Invoke(regiao);
+        }
+
+        /// <summary>Redireciona o tráfego da região em pane para as outras (clique ou sozinho).</summary>
+        public void Redirecionar(bool sozinho = false)
+        {
+            if (!TemPaneRegional) return;
+            int regiao = Estado.paneRegiao;
+            Estado.paneRegiao = -1;
+            Estado.paneSegundos = 0;
+            Estado.incidentesResolvidos++;
+            RegiaoVoltou?.Invoke(regiao, sozinho);
+        }
+
+        /// <summary>Abre o capital: o fim da carreira (o jogo continua).</summary>
+        public bool FazerIpo()
+        {
+            if (!PodeFazerIpo) return false;
+            Estado.ipoFeito = true;
+            Ipo?.Invoke();
+            return true;
         }
 
         // ---------------- Queda de energia (Arquiteto) ----------------
@@ -619,6 +690,7 @@ namespace IdleDataCenter.Simulacao
                 case TipoMeta.HostsContainers: return HostsContainers;
                 case TipoMeta.PicosSobrevividos: return Estado.picosSobrevividos;
                 case TipoMeta.Datacenters: return TotalDatacenters;
+                case TipoMeta.Regioes: return TotalRegioes;
                 default: return Estado.incidentesResolvidos;
             }
         }
@@ -695,6 +767,7 @@ namespace IdleDataCenter.Simulacao
                 // pico em andamento quando o jogo fechou: acaba sem contar nem multar
                 if (EmPico) { Estado.picoNome = ""; Estado.picoDecorrido = 0; Estado.picoEscalado = Estado.picoViolado = false; }
                 if (TemQuedaDeEnergia) { Religar(sozinho: true); ConsertadosFora++; }
+                if (TemPaneRegional) { Redirecionar(sozinho: true); ConsertadosFora++; }
             }
             if (fora >= Catalogo.SegundosMinimosOffline) AvancarEscrita(fora); // o script continua sendo escrito
             double ganho = CalcularGanhoOffline(fora);

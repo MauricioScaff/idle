@@ -30,6 +30,7 @@ namespace IdleDataCenter.Gerente
                 case "Storage": case "Rede": case "Automacao": return 2;
                 case "NOC": return 3;
                 case "Campus": return 5;
+                case "Mundo": return 6;
                 default: return -1;
             }
         }
@@ -109,13 +110,16 @@ namespace IdleDataCenter.Gerente
 
         // ---------------- Desenho ----------------
 
-        /// <param name="campus">No Arquiteto: true mostra o quarteirão com os prédios; false, a sala de dentro do DC-01.</param>
-        public void Desenhar(float tempo, bool campus = false)
+        public enum Vista { Sala, Campus, Mundo }
+
+        /// <param name="vista">Sala (dentro do DC-01), Campus (Arquiteto em diante) ou Mundo (CTO).</param>
+        public void Desenhar(float tempo, Vista vista = Vista.Sala)
         {
             t = tempo;
             Alvos.Clear(); Placas.Clear(); fila.Clear();
             Marcador = null; Expansao = null; Chamado = null;
-            if (campus)
+            if (vista == Vista.Mundo) { DesenharMundo(); return; }
+            if (vista == Vista.Campus)
             {
                 if (cargoDosPersonagens != E.Cargo) CarregarPersonagens();
                 DesenharCampus();

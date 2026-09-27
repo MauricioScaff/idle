@@ -11,8 +11,26 @@ namespace IdleDataCenter.Gerente
         float proximoQuadroSala;
         Rect retSala;
         int zoomSala = 2;
-        bool verCampus = true;   // no Arquiteto: campus (true) ou a sala de dentro do DC-01 (false)
-        bool MostrandoCampus => E.NoCampus && verCampus;
+        /// <summary>Vista escolhida; se ainda não existe no cargo, cai para a próxima mais de perto.</summary>
+        SalaIso.Vista vistaEscolhida = SalaIso.Vista.Mundo;
+        SalaIso.Vista VistaAtual =>
+            vistaEscolhida == SalaIso.Vista.Mundo && E.NoMundo ? SalaIso.Vista.Mundo
+            : vistaEscolhida != SalaIso.Vista.Sala && E.NoCampus ? SalaIso.Vista.Campus : SalaIso.Vista.Sala;
+        bool MostrandoCampus => VistaAtual == SalaIso.Vista.Campus;
+
+        /// <summary>Botão do topo da sala: mapa-múndi → campus → DC-01 → (de volta ao mapa).</summary>
+        void ProximaVista()
+        {
+            switch (VistaAtual)
+            {
+                case SalaIso.Vista.Mundo: vistaEscolhida = SalaIso.Vista.Campus; break;
+                case SalaIso.Vista.Campus: vistaEscolhida = SalaIso.Vista.Sala; break;
+                default: vistaEscolhida = E.NoMundo ? SalaIso.Vista.Mundo : SalaIso.Vista.Campus; break;
+            }
+        }
+
+        string RotuloProximaVista => VistaAtual == SalaIso.Vista.Mundo ? "VER O CAMPUS"
+            : VistaAtual == SalaIso.Vista.Campus ? "ENTRAR NO DC-01" : E.NoMundo ? "VER O MAPA-MUNDI" : "VER O CAMPUS";
 
         /// <summary>Textos "+R$" que sobem de onde se clicou.</summary>
         readonly List<(string texto, Vector2 pos, float nasceu, Color cor)> flutuantes = new List<(string, Vector2, float, Color)>();
@@ -29,7 +47,7 @@ namespace IdleDataCenter.Gerente
                 case 2: return Catalogo.RackCheio;
                 case 3: return Catalogo.Containers;
                 case 4: return Catalogo.NoKubernetes;
-                default: return MostrandoCampus ? Catalogo.Datacenter : Catalogo.NoKubernetes;
+                default: return VistaAtual == SalaIso.Vista.Mundo ? Catalogo.Regiao : MostrandoCampus ? Catalogo.Datacenter : Catalogo.NoKubernetes;
             }
         }
 
@@ -39,7 +57,7 @@ namespace IdleDataCenter.Gerente
             if (salaIso == null) salaIso = new SalaIso(E);
             if (Time.unscaledTime < proximoQuadroSala) return;
             proximoQuadroSala = Time.unscaledTime + 1f / 12f;
-            salaIso.Desenhar(Time.unscaledTime, MostrandoCampus);
+            salaIso.Desenhar(Time.unscaledTime, VistaAtual);
         }
 
         Vector2 NaTela(Vector2Int p) => new Vector2(retSala.x + p.x * zoomSala, retSala.y + p.y * zoomSala);
@@ -57,10 +75,11 @@ namespace IdleDataCenter.Gerente
             GUI.DrawTexture(retSala, salaIso.Textura, ScaleMode.StretchToFill);
 
             ui.Ret(new Rect(areaCentral.x, areaCentral.y, areaCentral.width, 23), new Color(.04f, .1f, .18f, .9f));
-            ui.Texto(MostrandoCampus ? "CAMPUS  /  " + E.TotalDatacenters + (E.TotalDatacenters == 1 ? " DATACENTER" : " DATACENTERS") : "DC-01  /  " + (E.NoCampus ? "SALA DE RACKS" : E.CargoAtual.Lugar.ToUpperInvariant()),
+            ui.Texto(VistaAtual == SalaIso.Vista.Mundo ? "MUNDO  /  " + E.TotalRegioes + (E.TotalRegioes == 1 ? " REGIAO" : " REGIOES")
+                : MostrandoCampus ? "CAMPUS  /  " + E.TotalDatacenters + (E.TotalDatacenters == 1 ? " DATACENTER" : " DATACENTERS") : "DC-01  /  " + (E.NoCampus ? "SALA DE RACKS" : E.CargoAtual.Lugar.ToUpperInvariant()),
                 areaCentral.x + 12, areaCentral.y + 7, IsoGui.Cyan);
-            if (E.NoCampus && ui.Botao(new Rect(areaCentral.x + 300, areaCentral.y + 1, 230, 21), verCampus ? "ENTRAR NO DC-01" : "VER O CAMPUS", IsoGui.Cyan, Livre, 2))
-                verCampus = !verCampus;
+            if (E.NoCampus && ui.Botao(new Rect(areaCentral.x + 300, areaCentral.y + 1, 250, 21), RotuloProximaVista, IsoGui.Cyan, Livre, 2))
+                ProximaVista();
             const string dica = "CLIQUE NOS EQUIPAMENTOS E NAS PLACAS";
             ui.Texto(dica, areaCentral.xMax - 12 - PixelCanvas.LarguraTexto(dica) * 2, areaCentral.y + 7, IsoGui.Muted);
 
@@ -81,7 +100,7 @@ namespace IdleDataCenter.Gerente
             foreach (var p in salaIso.Placas)
             {
                 var pos = NaTela(p.Pos);
-                bool alerta = (p.Setor == "Campus" && E.TemQuedaDeEnergia) || (p.Setor == "Storage" && E.DiscoQueimado) || (p.Setor == "NOC" && Incidentes > 0)
+                bool alerta = (p.Setor == "Mundo" && E.TemPaneRegional) || (p.Setor == "Campus" && E.TemQuedaDeEnergia) || (p.Setor == "Storage" && E.DiscoQueimado) || (p.Setor == "NOC" && Incidentes > 0)
                               || (p.Setor == "Energia" && E.Sobrecarga) || (p.Setor == "Refrigeracao" && E.Quente) || (p.Setor == "Rede" && E.LinkSaturado);
                 var cor = alerta && Mathf.FloorToInt(Time.unscaledTime * 3) % 2 == 0 ? IsoGui.Laranja : p.Cor;
                 int largura = PixelCanvas.LarguraTexto(p.Nome) * 2 + 22;
@@ -164,10 +183,16 @@ namespace IdleDataCenter.Gerente
             else if (tipo == "k8s" && E.EmPico && !E.PicoFoiEscalado) { Escalar(); Flutuar("ESCALADO", pos, IsoGui.Cyan); return; }
             else if (tipo == "noc") { Abrir("NOC"); return; }
             else if (tipo == "cafe") { TomarCafe(pos); return; }
+            else if (tipo.StartsWith("regiao:"))
+            {
+                int r = int.Parse(tipo.Substring(7));
+                if (r == 0) { vistaEscolhida = SalaIso.Vista.Campus; Notificar("Campus da sede, na América do Sul."); return; }
+                if (E.RegiaoEmPane == r) { faixa.Redirecionar(); Flutuar("TRAFEGO REDIRECIONADO", pos, IsoGui.Verde); return; }
+            }
             else if (tipo.StartsWith("dc:"))
             {
                 int dc = int.Parse(tipo.Substring(3));
-                if (dc == 0) { verCampus = false; Notificar("Dentro do DC-01. \"Ver o campus\" volta para o quarteirão."); return; }
+                if (dc == 0) { vistaEscolhida = SalaIso.Vista.Sala; Notificar("Dentro do DC-01. \"Ver o campus\" volta para o quarteirão."); return; }
                 if (E.DatacenterSemEnergia == dc) { faixa.Religar(); Flutuar("ENERGIA DE VOLTA", pos, IsoGui.Verde); return; }
             }
             else if (tipo == "chamado") { AtenderChamado(pos); return; }
@@ -210,7 +235,7 @@ namespace IdleDataCenter.Gerente
         {
             ("Visao", "VISAO GERAL"), ("Compute", "COMPUTE"), ("Energia", "ENERGIA"), ("Refrigeracao", "REFRIGERACAO"),
             ("Storage", "STORAGE"), ("Rede", "REDE"), ("NOC", "NOC"), ("Equipe", "EQUIPE"), ("Automacao", "AUTOMACAO"),
-            ("Campus", "CAMPUS"), ("Melhorias", "MELHORIAS"), ("Carreira", "CARREIRA"),
+("Campus", "CAMPUS"), ("Mundo", "MUNDO"), ("Melhorias", "MELHORIAS"), ("Carreira", "CARREIRA"),
         };
 
         void Navegacao()
@@ -221,7 +246,7 @@ namespace IdleDataCenter.Gerente
             {
                 var (id, rotulo) = Menus[i];
                 bool travado = SalaIso.CargoDoSetor(id) > E.Cargo;
-                var r = new Rect(10, 128 + i * 42, 156, 36);
+                var r = new Rect(10, 126 + i * 40, 156, 35);
                 bool ativo = selecionado == id;
                 ui.Caixa(r, ativo ? IsoGui.Cor("165d81") : IsoGui.Painel, ativo ? IsoGui.Cyan : IsoGui.Borda);
                 ui.Icone(i, r.x + 10, r.y + 11, travado ? IsoGui.Borda : ativo ? IsoGui.Cyan : IsoGui.Muted);
@@ -240,13 +265,27 @@ namespace IdleDataCenter.Gerente
             const int x = 1174, largura = 252;
             ui.Caixa(new Rect(x, 94, largura, 242));
             var metas = E.CargoAtual.MetasParaPromocao;
-            ui.Texto(E.TemProximoCargo ? "PROMOCAO" : "CARREIRA", x + 17, 113, IsoGui.Branco, 3);
+            ui.Texto(E.TemProximoCargo ? "PROMOCAO" : E.IpoFeito ? "CARREIRA" : "IPO", x + 17, 113, IsoGui.Branco, 3);
             ui.Ret(new Rect(x + 12, 141, largura - 24, 2), IsoGui.Borda);
-            if (!E.TemProximoCargo)
+            if (!E.TemProximoCargo && E.IpoFeito)
             {
-                ui.Texto("CARGO MAXIMO POR ORA", x + 17, 160, IsoGui.Verde, 2);
-                ui.Texto("NOVOS CARGOS NAS", x + 17, 186, IsoGui.Muted, 2);
-                ui.Texto("PROXIMAS VERSOES", x + 17, 204, IsoGui.Muted, 2);
+                ui.Texto("EMPRESA NA BOLSA!", x + 17, 160, IsoGui.Cor("ffd65c"), 2);
+                ui.Texto("VOCE CHEGOU AO TOPO.", x + 17, 186, IsoGui.Muted, 2);
+                ui.Texto("PRESTIGIO EM BREVE.", x + 17, 204, IsoGui.Muted, 2);
+            }
+            else if (!E.TemProximoCargo)
+            {
+                ui.Texto("PARA O IPO (ABRIR O CAPITAL)", x + 17, 152, IsoGui.Cor("ffd65c"), 1);
+                for (int i = 0; i < metas.Length && i < 3; i++)
+                {
+                    var m = metas[i];
+                    int y = 168 + i * 40;
+                    bool ok = E.Cumprida(m);
+                    ui.Texto(m.Texto.ToUpperInvariant(), x + 17, y, ok ? IsoGui.Verde : IsoGui.Branco, 2);
+                    ui.Barra(new Rect(x + 16, y + 16, 219, 12), E.Progresso(m) / m.Alvo, ok ? IsoGui.Verde : IsoGui.Cyan);
+                }
+                if (ui.Botao(new Rect(x + 14, 290, 224, 34), E.PodeFazerIpo ? "ABRIR O CAPITAL!" : "CUMPRA AS METAS", IsoGui.Laranja, E.PodeFazerIpo))
+                    faixa.FazerIpo();
             }
             else
             {
@@ -320,9 +359,9 @@ namespace IdleDataCenter.Gerente
             {
                 ui.Texto("META: " + proxima.Texto.ToUpperInvariant(), 199, 862, IsoGui.Branco, 2);
                 ui.Barra(new Rect(609, 857, 233, 18), E.Progresso(proxima) / proxima.Alvo, IsoGui.Verde);
-                ui.Texto("PREMIO: PROMOCAO", 858, 862, IsoGui.Laranja, 2);
+                ui.Texto(E.TemProximoCargo ? "PREMIO: PROMOCAO" : "PREMIO: IPO", 858, 862, IsoGui.Laranja, 2);
             }
-            else ui.Texto(E.PodePromover ? "TODAS AS METAS CUMPRIDAS: SEJA PROMOVIDO!" : "CARGO MAXIMO POR ORA", 199, 862, IsoGui.Verde, 2);
+            else ui.Texto(E.PodePromover ? "TODAS AS METAS CUMPRIDAS: SEJA PROMOVIDO!" : E.PodeFazerIpo ? "TUDO PRONTO: ABRA O CAPITAL!" : E.IpoFeito ? "EMPRESA NA BOLSA!" : "CARGO MAXIMO POR ORA", 199, 862, IsoGui.Verde, 2);
 
             ui.Caixa(new Rect(1174, 788, 252, 90));
             ui.Texto(E.Escrevendo ? "ESCREVENDO SCRIPT" : "LABORATORIO", 1190, 804, IsoGui.Roxo, 2);

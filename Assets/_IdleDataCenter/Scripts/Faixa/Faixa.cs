@@ -56,6 +56,9 @@ namespace IdleDataCenter
             economia.ChamadoEncerrado += AoEncerrarChamado;
             economia.QuedaDeEnergia += dc => { Loja.MostrarAviso("Queda de energia no DC-0" + (dc + 1) + "!", 3f, Vermelho); Sons.Alerta(); };
             economia.EnergiaVoltou += (dc, sozinho) => { Loja.MostrarAviso("DC-0" + (dc + 1) + " religado", 2f, VerdeClaro); Sons.Conserto(); };
+            economia.PaneRegional += r => { Loja.MostrarAviso("Pane: " + Catalogo.NomesRegioes[r] + "!", 3f, Vermelho); Sons.Alerta(); };
+            economia.RegiaoVoltou += (r, sozinho) => { Loja.MostrarAviso(Catalogo.NomesRegioes[r] + " de volta", 2f, VerdeClaro); Sons.Conserto(); };
+            economia.Ipo += () => { Loja.MostrarAviso("IPO! Empresa na bolsa!", 6f, Amarelo); Sons.Promocao(); Salvamento.Salvar(economia.Estado); };
             // quem já passou do começo não precisa do tutorial
             if (!economia.TutorialConcluido && (economia.Cargo > 0 || economia.Estado.totalGanho > 2000))
                 economia.AvancarTutorial(Catalogo.PassosTutorial);
@@ -262,6 +265,12 @@ namespace IdleDataCenter
         }
 
         float PosicaoDoChamado => cenario.PosicaoMesa - 4;
+
+        /// <summary>Redireciona o tráfego da região em pane (painel, modo gerente).</summary>
+        public void Redirecionar() => economia.Redirecionar();
+
+        /// <summary>Abre o capital (fim da carreira).</summary>
+        public void FazerIpo() => economia.FazerIpo();
 
         /// <summary>Religa o datacenter que ficou sem energia (painel, modo gerente).</summary>
         public void Religar() => economia.Religar();
