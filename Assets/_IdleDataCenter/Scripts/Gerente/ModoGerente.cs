@@ -5,22 +5,23 @@ using UnityEngine;
 namespace IdleDataCenter.Gerente
 {
     /// <summary>
-    /// Modo gerente: a mesma janela da faixa cresce para a área de trabalho inteira e mostra o data center
-    /// em vista isométrica (sala desenhada em pixel art pela SalaIso; interface vinda do protótipo feito no Codex). Usa a mesma Economia
-    /// da faixa, então dinheiro, compras, automações e promoções são os mesmos nos dois modos.
-    /// A sala cresce a cada promoção e mostra tudo o que foi comprado.
-    /// É o modo principal do jogo; "Ir para a faixa" encolhe tudo para a faixa discreta acima da barra de tarefas.
+    /// Modo gerente (a tela principal): a mesma janela da faixa cresce para uma janela normal e mostra o data center
+    /// em vista isométrica, grande, na frente da cidade (que muda com a hora). A interface flutua por cima em poucas
+    /// caixas: dinheiro, meta e cargo no topo; à direita o que pede atenção (ou a próxima compra); embaixo LOJA,
+    /// AUTOMAÇÃO e CARREIRA. Usa a mesma Economia da faixa, então tudo vale nos dois modos.
     /// </summary>
     public partial class ModoGerente : MonoBehaviour
     {
         const float W = 1440, H = 900;
-        readonly Rect areaCentral = new Rect(184, 94, 978, 676);
+        /// <summary>Onde a sala cabe, entre o topo e a barra de botões (a sala pode passar por baixo das caixas).</summary>
+        readonly Rect areaSala = new Rect(180, 136, 1080, 664);
+        readonly CidadeFundo cidade = new CidadeFundo();
 
         Faixa faixa;
         Economia E;
         IsoGui ui;
 
-        string selecionado = "Visao", janela = "", aviso = "";
+        string janela = "", aviso = "";
         float avisoAte, flashCompra;
         double ultimoDeploy;
         int pagina;
@@ -32,7 +33,7 @@ namespace IdleDataCenter.Gerente
             this.faixa = faixa;
             E = economia;
             ui = new IsoGui();
-            salaIso = new SalaIso(E);
+            salaIso = new SalaIso(E) { MostrarExpansao = false };
             IniciarPrimeiraHora();
 
             // avisos na barra de notícias (os sons e o save continuam por conta da faixa)
@@ -50,7 +51,6 @@ namespace IdleDataCenter.Gerente
         {
             Aberto = true;
             janela = "";
-            selecionado = "Visao";
             Notificar("Data center de " + E.CargoAtual.Nome + ". \"Ir para a faixa\" deixa o jogo discreto enquanto você trabalha.", 7);
         }
 
@@ -79,10 +79,12 @@ namespace IdleDataCenter.Gerente
 
         void Abrir(string secao)
         {
-            selecionado = secao;
             janela = secao == "Visao" ? "" : secao;
             pagina = 0;
         }
+
+        /// <summary>Teste: força a hora da cidade ao fundo (0 a 24).</summary>
+        public void DefinirHora(float hora) => cidade.HoraFixa = hora;
 
         static string Numero(double n) => n.ToString("0.#", CultureInfo.InvariantCulture);
         static string Dinheiro(double n) => "R$ " + Faixa.Formatar(n);
@@ -157,21 +159,20 @@ namespace IdleDataCenter.Gerente
             ui.Ret(new Rect(0, 0, Screen.width, Screen.height), IsoGui.Fundo);   // cobre a faixa por trás
             // nos primeiros quadros depois de crescer, o Unity ainda desenha no tamanho antigo (da faixa): só o fundo
             if (Screen.height < 400) return;
+            // a cidade cobre a janela inteira, inclusive as bordas que sobram fora da tela de 1440 x 900
+            cidade.Atualizar();
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), cidade.Textura, ScaleMode.ScaleAndCrop);
             var anterior = GUI.matrix;
             float escala = Mathf.Min(Screen.width / W, Screen.height / H);
             GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - W * escala) / 2, (Screen.height - H * escala) / 2, 0),
                 Quaternion.identity, new Vector3(escala, escala, 1));
             DesenharSala();
-            Topo(); Navegacao(); Objetivos(); Rodape();
-            Tutorial();
+            Hud();
+            CartaoAtencao();
+            Barra();
+            if (!Tutorial() && Time.unscaledTime < avisoAte) Aviso(aviso);
             Festa();
             if (!string.IsNullOrEmpty(janela)) Loja();
-            if (Time.unscaledTime < avisoAte)
-            {
-                var r = new Rect(226, 739, 890, 28);
-                ui.Caixa(r, IsoGui.Cor("162c40"), IsoGui.Cyan);
-                ui.Texto(aviso, r.center.x, r.y + 9, IsoGui.Branco, 2, true);
-            }
             GUI.matrix = anterior;
         }
     }

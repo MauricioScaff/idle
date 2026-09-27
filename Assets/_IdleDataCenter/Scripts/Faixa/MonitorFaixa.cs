@@ -282,7 +282,7 @@ namespace IdleDataCenter
 
         void ProximaCompra(Rect r)
         {
-            var def = Proxima();
+            var def = E.MelhoriaMaisBarata();
             if (def == null)
             {
                 ui.Caixa(r);
@@ -305,19 +305,6 @@ namespace IdleDataCenter
                 ui.Barra(botao, E.Dinheiro / Math.Max(1, E.Custo(def.Id)), IsoGui.Borda);
                 ui.Texto("JUNTANDO...", botao.center.x, botao.y + 9, IsoGui.Muted, 2, true);
             }
-        }
-
-        /// <summary>A melhoria mais barata que dá para comprar (inclui as que ficaram para trás nos cargos anteriores).</summary>
-        MelhoriaDef Proxima()
-        {
-            MelhoriaDef melhor = null;
-            foreach (var m in Catalogo.Melhorias)
-            {
-                if (m.Cargo > E.Cargo || E.NoMaximo(m.Id) || !E.RequisitoOk(m.Id)) continue;
-                if (m.Id == Catalogo.Estagiario && E.Estado.desafio == Catalogo.SemEstagiario) continue;
-                if (melhor == null || E.Custo(m.Id) < E.Custo(melhor.Id)) melhor = m;
-            }
-            return melhor;
         }
 
         void Icones(float x)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using IdleDataCenter.Simulacao;
@@ -8,7 +9,7 @@ namespace IdleDataCenter.Gerente
     public partial class ModoGerente
     {
         SalaIso salaIso;
-        float proximoQuadroSala;
+        float proximoQuadroSala, proximaRenda;
         Rect retSala;
         int zoomSala = 2;
         /// <summary>Vista escolhida; se ainda não existe no cargo, cai para a próxima mais de perto.</summary>
@@ -18,26 +19,22 @@ namespace IdleDataCenter.Gerente
             : vistaEscolhida != SalaIso.Vista.Sala && E.NoCampus ? SalaIso.Vista.Campus : SalaIso.Vista.Sala;
         bool MostrandoCampus => VistaAtual == SalaIso.Vista.Campus;
 
-        /// <summary>Botão do topo da sala: mapa-múndi → campus → DC-01 → (de volta ao mapa).</summary>
-        void ProximaVista()
-        {
-            switch (VistaAtual)
-            {
-                case SalaIso.Vista.Mundo: vistaEscolhida = SalaIso.Vista.Campus; break;
-                case SalaIso.Vista.Campus: vistaEscolhida = SalaIso.Vista.Sala; break;
-                default: vistaEscolhida = E.NoMundo ? SalaIso.Vista.Mundo : SalaIso.Vista.Campus; break;
-            }
-        }
+        static readonly Color Ouro = IsoGui.Cor("ffd65c"), Vermelho = IsoGui.Cor("ff5a6a"), Energia = IsoGui.Cor("ffbf3f"), Frio = IsoGui.Cor("5aa9ff");
 
-        string RotuloProximaVista => VistaAtual == SalaIso.Vista.Mundo ? "VER O CAMPUS"
-            : VistaAtual == SalaIso.Vista.Campus ? "ENTRAR NO DC-01" : E.NoMundo ? "VER O MAPA-MUNDI" : "VER O CAMPUS";
+        static readonly string[] Moeda = { ".###.", "##.##", "#.#.#", "##.##", ".###." },
+            Raio = { "..#..", ".##..", "#####", "..##.", "..#.." }, Termometro = { ".#.", ".#.", ".#.", "###", "###" },
+            Rede = { "....#", "...##", "..###", ".####", "#####" }, Sacola = { "#####", "#...#", "#####", "#.#.#", "#####" },
+            Engrenagem = { ".#.#.", "#####", ".#.#.", "#####", ".#.#." }, Subir = { "..#..", ".###.", "#.#.#", "..#..", "..#.." },
+            IconeFaixa = { ".....", ".....", ".....", "#####", "#####" }, Cadeado = { ".###.", ".#.#.", "#####", "##.##", "#####" },
+            Foguete = { "..#..", ".###.", ".###.", "#####", "#.#.#" };
 
-        /// <summary>Textos "+R$" que sobem de onde se clicou.</summary>
+        /// <summary>Textos "+R$" que sobem de onde se clicou (ou de onde o dinheiro está sendo feito).</summary>
         readonly List<(string texto, Vector2 pos, float nasceu, Color cor)> flutuantes = new List<(string, Vector2, float, Color)>();
 
         bool Livre => string.IsNullOrEmpty(janela);
+        bool Pisca => Mathf.FloorToInt(Time.unscaledTime * 3) % 2 == 0;
 
-        /// <summary>O que o marcador "CONSTRUIR" do piso compra em cada cargo (o equipamento principal da fase).</summary>
+        /// <summary>O que o marcador "+ ..." do piso compra em cada cargo (o equipamento principal da fase).</summary>
         string ItemPrincipal()
         {
             switch (E.Cargo)
@@ -54,7 +51,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Redesenha a sala (chamado no Update, uns 12 quadros por segundo).</summary>
         void AtualizarSala()
         {
-            if (salaIso == null) salaIso = new SalaIso(E);
+            if (salaIso == null) salaIso = new SalaIso(E) { MostrarExpansao = false };
             if (Time.unscaledTime < proximoQuadroSala) return;
             proximoQuadroSala = Time.unscaledTime + 1f / 12f;
             salaIso.Desenhar(Time.unscaledTime, VistaAtual);
@@ -62,32 +59,30 @@ namespace IdleDataCenter.Gerente
 
         Vector2 NaTela(Vector2Int p) => new Vector2(retSala.x + p.x * zoomSala, retSala.y + p.y * zoomSala);
 
+        Rect NaTela(RectInt r) => new Rect(NaTela(new Vector2Int(r.x, r.y)), new Vector2(r.width * zoomSala, r.height * zoomSala));
+
         void Flutuar(string texto, Vector2 pos, Color cor) => flutuantes.Add((texto, pos, Time.unscaledTime, cor));
+
+        // ---------------- Sala ----------------
 
         void DesenharSala()
         {
-            ui.Ret(areaCentral, IsoGui.Cor("0c1626"));
             if (salaIso == null || salaIso.Textura == null) AtualizarSala();
-            // zoom inteiro: pixels nítidos; salas pequenas (começo do jogo) ficam mais perto
-            zoomSala = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min((areaCentral.width - 8) / salaIso.Largura, (areaCentral.height - 30) / salaIso.Altura)));
-            float w = salaIso.Largura * zoomSala, h = salaIso.Altura * zoomSala;
-            retSala = new Rect(Mathf.Round(areaCentral.center.x - w / 2), Mathf.Round(areaCentral.y + 24 + (areaCentral.height - 24 - h) / 2), w, h);
+            // zoom inteiro pelo tamanho da sala de verdade (não da tela toda): salas pequenas ficam bem perto
+            var area = VistaAtual == SalaIso.Vista.Sala ? salaIso.AreaDaSala : new RectInt(0, 0, salaIso.Largura, salaIso.Altura);
+            zoomSala = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(areaSala.width / area.width, areaSala.height / area.height)));
+            float ox = Mathf.Round(areaSala.center.x - (area.x + area.width / 2f) * zoomSala);
+            float oy = Mathf.Round(areaSala.center.y - (area.y + area.height / 2f) * zoomSala);
+            retSala = new Rect(ox, oy, salaIso.Largura * zoomSala, salaIso.Altura * zoomSala);
             GUI.DrawTexture(retSala, salaIso.Textura, ScaleMode.StretchToFill);
 
-            ui.Ret(new Rect(areaCentral.x, areaCentral.y, areaCentral.width, 23), new Color(.04f, .1f, .18f, .9f));
-            ui.Texto(VistaAtual == SalaIso.Vista.Mundo ? "MUNDO  /  " + E.TotalRegioes + (E.TotalRegioes == 1 ? " REGIAO" : " REGIOES")
-                : MostrandoCampus ? "CAMPUS  /  " + E.TotalDatacenters + (E.TotalDatacenters == 1 ? " DATACENTER" : " DATACENTERS") : "DC-01  /  " + (E.NoCampus ? "SALA DE RACKS" : E.CargoAtual.Lugar.ToUpperInvariant()),
-                areaCentral.x + 12, areaCentral.y + 7, IsoGui.Cyan);
-            if (E.NoCampus && ui.Botao(new Rect(areaCentral.x + 300, areaCentral.y + 1, 250, 21), RotuloProximaVista, IsoGui.Cyan, Livre, 2))
-                ProximaVista();
-            const string dica = "CLIQUE NOS EQUIPAMENTOS E NAS PLACAS";
-            ui.Texto(dica, areaCentral.xMax - 12 - PixelCanvas.LarguraTexto(dica) * 2, areaCentral.y + 7, IsoGui.Muted);
+            Vida();
 
             // equipamentos clicáveis (destaque sob o cursor)
             var mouse = Event.current.mousePosition;
             foreach (var alvo in salaIso.Alvos)
             {
-                var r = new Rect(NaTela(new Vector2Int(alvo.Area.x, alvo.Area.y)), new Vector2(alvo.Area.width * zoomSala, alvo.Area.height * zoomSala));
+                var r = NaTela(alvo.Area);
                 if (Livre && r.Contains(mouse))
                 {
                     ui.Ret(new Rect(r.x, r.y, r.width, 2), IsoGui.Cyan); ui.Ret(new Rect(r.x, r.yMax - 2, r.width, 2), IsoGui.Cyan);
@@ -96,27 +91,15 @@ namespace IdleDataCenter.Gerente
                 if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) ClicarNaSala(alvo.Tipo, new Vector2(r.center.x, r.y));
             }
 
-            // placas dos setores
+            // placas dos setores: abrem a loja na aba do setor
             foreach (var p in salaIso.Placas)
             {
                 var pos = NaTela(p.Pos);
                 bool alerta = (p.Setor == "Mundo" && E.TemPaneRegional) || (p.Setor == "Campus" && E.TemQuedaDeEnergia) || (p.Setor == "Storage" && E.DiscoQueimado) || (p.Setor == "NOC" && Incidentes > 0)
                               || (p.Setor == "Energia" && E.Sobrecarga) || (p.Setor == "Refrigeracao" && E.Quente) || (p.Setor == "Rede" && E.LinkSaturado);
-                var cor = alerta && Mathf.FloorToInt(Time.unscaledTime * 3) % 2 == 0 ? IsoGui.Laranja : p.Cor;
-                int largura = PixelCanvas.LarguraTexto(p.Nome) * 2 + 22;
-                if (ui.Botao(new Rect(pos.x - largura / 2, pos.y - 26, largura, 24), p.Nome, cor, Livre)) Abrir(p.Setor);
-            }
-
-            // próxima expansão da sala
-            if (salaIso.Expansao.HasValue && E.TemProximoCargo)
-            {
-                var pos = NaTela(salaIso.Expansao.Value);
-                string texto = "EXPANSAO: " + Catalogo.Cargos[E.Cargo + 1].Nome.ToUpperInvariant();
-                int largura = PixelCanvas.LarguraTexto(texto) * 2 + 24;
-                var r = new Rect(pos.x - largura / 2, pos.y - 14, largura, 28);
-                ui.Caixa(r, IsoGui.Cor("2a1f10"), IsoGui.Laranja);
-                ui.Texto(texto, r.center.x, r.y + 9, IsoGui.Laranja, 2, true);
-                if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) Abrir("Carreira");
+                var cor = alerta && Pisca ? IsoGui.Laranja : p.Cor;
+                int largura = PixelCanvas.LarguraTexto(p.Nome) * 2 + 26;
+                if (ui.Botao(new Rect(pos.x - largura / 2, pos.y - 30, largura, 28), p.Nome, cor, Livre)) Abrir(p.Setor);
             }
 
             // marcador de construção: compra o equipamento principal do cargo
@@ -125,22 +108,10 @@ namespace IdleDataCenter.Gerente
             {
                 var pos = NaTela(salaIso.Marcador.Value);
                 string rotulo = "+ " + NomeLongo(item).ToUpperInvariant();
-                float largura = PixelCanvas.LarguraTexto(rotulo) * 2 + 24;
+                float largura = PixelCanvas.LarguraTexto(rotulo) * 2 + 28;
                 var cor = flashCompra > 0 ? IsoGui.Verde : IsoGui.Laranja;
-                if (ui.Botao(new Rect(pos.x - largura / 2, pos.y + 12, largura, 26), rotulo, cor, Livre)) Comprar(item);   // embaixo do lugar: não cobre os equipamentos
-                ui.Texto(Dinheiro(E.Custo(item)), pos.x, pos.y + 42, PodeComprarAqui(item) ? IsoGui.Verde : IsoGui.Branco, 2, true);
-            }
-
-            // pico de tráfego: faixa de alerta embaixo da sala
-            if (E.EmPico && !E.PicoFoiEscalado)
-            {
-                bool piscar = Mathf.FloorToInt(Time.unscaledTime * 3) % 2 == 0;
-                var r = new Rect(areaCentral.x + 150, areaCentral.yMax - 76, areaCentral.width - 300, 34);
-                ui.Caixa(r, piscar ? IsoGui.Cor("5a2a10") : IsoGui.Cor("3a1a08"), IsoGui.Laranja);
-                string texto = E.PicoViolado ? "SLA VIOLADO! ESCALE PARA RECUPERAR"
-                    : "PICO: " + E.NomeDoPico.ToUpperInvariant() + "  /  ESCALE EM " + Numero(Mathf.Ceil((float)(E.LimiteParaEscalar - E.SegundosDePico))) + "S";
-                ui.Texto(texto, r.center.x, r.y + 12, IsoGui.Laranja, 2, true);
-                if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) Escalar();
+                if (ui.Botao(new Rect(pos.x - largura / 2, pos.y + 12, largura, 30), rotulo, cor, Livre)) Comprar(item);   // embaixo do lugar: não cobre os equipamentos
+                ui.Texto(Dinheiro(E.Custo(item)), pos.x, pos.y + 48, PodeComprarAqui(item) ? IsoGui.Verde : IsoGui.Branco, 2, true);
             }
 
             // texto do chamado ao lado do papel
@@ -149,19 +120,69 @@ namespace IdleDataCenter.Gerente
                 var pos = NaTela(salaIso.Chamado.Value);
                 string texto = "CHAMADO: " + E.TextoDoChamado.ToUpperInvariant() + "  (" + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "S)";
                 float largura = PixelCanvas.LarguraTexto(texto) * 2 + 20;
-                var r = new Rect(pos.x + 24, pos.y - 30, largura, 24);
-                ui.Caixa(r, IsoGui.Cor("2a1f10"), IsoGui.Cor("ffd65c"));
-                ui.Texto(texto, r.x + 10, r.y + 8, IsoGui.Cor("ffd65c"), 2);
+                var r = new Rect(pos.x + 24, pos.y - 30, largura, 26);
+                ui.Caixa(r, IsoGui.Cor("2a1f10"), Ouro);
+                ui.Texto(texto, r.x + 10, r.y + 8, Ouro, 2);
                 if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) AtenderChamado(new Vector2(pos.x, pos.y - 20));
             }
 
-            // "+R$" subindo
+            // "+R$" subindo e sumindo
             for (int i = flutuantes.Count - 1; i >= 0; i--)
             {
                 var (texto, pos, nasceu, cor) = flutuantes[i];
                 float idade = Time.unscaledTime - nasceu;
-                if (idade > 1f) { flutuantes.RemoveAt(i); continue; }
-                ui.Texto(texto, pos.x, pos.y - 10 - idade * 30, cor, 2, true);
+                if (idade > 1.2f) { flutuantes.RemoveAt(i); continue; }
+                cor.a = Mathf.Clamp01(1.4f - idade);
+                ui.Texto(texto, pos.x, pos.y - 10 - idade * 36, cor, 2, true);
+            }
+        }
+
+        /// <summary>
+        /// Sala viva: o dinheiro sobe dos equipamentos que estão rendendo, o que quebrou solta faíscas
+        /// e a caneca fumega enquanto o café faz efeito.
+        /// </summary>
+        void Vida()
+        {
+            var renda = new List<Rect>();
+            foreach (var a in salaIso.Alvos)
+            {
+                var r = NaTela(a.Area);
+                bool quebrado = (a.Tipo.StartsWith("servidor:") && E.Travado(int.Parse(a.Tipo.Substring(9))))
+                             || (a.Tipo == "rack" && E.Travamentos.Any(t => t.servidor >= E.Torres))
+                             || (a.Tipo == "storage" && E.DiscoQueimado) || (a.Tipo == "containers" && E.DeployQuebrado)
+                             || (a.Tipo == "dc:" + E.DatacenterSemEnergia && E.TemQuedaDeEnergia) || (a.Tipo == "regiao:" + E.RegiaoEmPane && E.TemPaneRegional);
+                if (quebrado) Faiscas(r);
+                else if (a.Tipo.StartsWith("servidor:") || a.Tipo == "rack" || a.Tipo == "equipamento" || a.Tipo == "containers" || a.Tipo == "k8s" || a.Tipo.StartsWith("dc:") || a.Tipo.StartsWith("regiao:"))
+                    renda.Add(r);
+                if (a.Tipo == "cafe" && E.CafeAtivo) Fumaca(r);
+            }
+            if (renda.Count > 0 && Time.unscaledTime >= proximaRenda && E.ReceitaPorSegundo > 0)
+            {
+                const float intervalo = 1.1f;
+                proximaRenda = Time.unscaledTime + intervalo;
+                var r = renda[UnityEngine.Random.Range(0, renda.Count)];
+                Flutuar("+" + Dinheiro(E.ReceitaPorSegundo * intervalo), new Vector2(r.center.x, r.y + 6), Ouro);
+            }
+        }
+
+        void Faiscas(Rect r)
+        {
+            float t = Time.unscaledTime;
+            for (int k = 0; k < 5; k++)
+            {
+                float a = t * 7 + k * 1.3f;
+                if (Mathf.Sin(a * 3) <= 0) continue;
+                ui.Ret(new Rect(r.center.x + Mathf.Cos(a) * r.width * 0.45f, r.y + r.height * 0.3f + Mathf.Sin(a * 1.7f) * r.height * 0.25f, 4, 4), k % 2 == 0 ? Ouro : Color.white);
+            }
+        }
+
+        void Fumaca(Rect r)
+        {
+            float t = Time.unscaledTime;
+            for (int k = 0; k < 3; k++)
+            {
+                float f = (t * 0.6f + k / 3f) % 1f;
+                ui.Ret(new Rect(r.center.x + Mathf.Sin(f * 6 + k) * 3 * zoomSala, r.y - f * 12 * zoomSala, zoomSala * 2, zoomSala * 2), new Color(0.91f, 0.93f, 0.97f, 0.6f * (1 - f)));
             }
         }
 
@@ -192,186 +213,214 @@ namespace IdleDataCenter.Gerente
             else if (tipo.StartsWith("dc:"))
             {
                 int dc = int.Parse(tipo.Substring(3));
-                if (dc == 0) { vistaEscolhida = SalaIso.Vista.Sala; Notificar("Dentro do DC-01. \"Ver o campus\" volta para o quarteirão."); return; }
+                if (dc == 0) { vistaEscolhida = SalaIso.Vista.Sala; Notificar("Dentro do DC-01. O botão CAMPUS volta para o quarteirão."); return; }
                 if (E.DatacenterSemEnergia == dc) { faixa.Religar(); Flutuar("ENERGIA DE VOLTA", pos, IsoGui.Verde); return; }
             }
             else if (tipo == "chamado") { AtenderChamado(pos); return; }
 
             double valor = E.ClicarEquipamento();
             Sons.Moeda();
-            Flutuar("+" + Dinheiro(valor), pos, IsoGui.Cor("ffd65c"));
+            Flutuar("+" + Dinheiro(valor), pos, Ouro);
         }
 
-        // ---------------- Barra superior ----------------
+        // ---------------- Topo: dinheiro, meta e cargo ----------------
 
-        void Topo()
+        void Hud()
         {
-            ui.Ret(new Rect(0, 0, W, 84), IsoGui.Cor("0b1627"));
-            ui.Ret(new Rect(0, 81, W, 3), IsoGui.Borda);
-            ui.Icone(0, 20, 19, IsoGui.Cyan, 5);
-            ui.Texto("IDLE DATA CENTER", 65, 17, IsoGui.Branco, 3);
-            ui.Texto("/ MODO GERENTE", 65, 43, IsoGui.Cyan, 2);
-            ui.Texto("O SEU DATA CENTER", 22, 66, IsoGui.Muted, 1);
-            Recurso(275, 184, "DINHEIRO", Dinheiro(E.Dinheiro), E.CafeAtivo ? "CAFE X2: " + Numero(Mathf.Ceil((float)E.SegundosDeCafe)) + "S" : "+" + Dinheiro(E.ReceitaPorSegundo) + "/S", E.CafeAtivo ? IsoGui.Cor("ffd65c") : IsoGui.Verde);
-            Recurso(469, 174, "ENERGIA", Numero(E.ConsumoKw) + " KW", "DE " + Numero(E.CapacidadeKw) + " KW", E.Sobrecarga ? IsoGui.Laranja : IsoGui.Laranja);
-            Recurso(653, 174, "TEMPERATURA", Numero(Mathf.Round((float)E.Temperatura)) + " C", E.Quente ? "QUENTE: RENDE MENOS" : "ESTAVEL", E.Quente ? IsoGui.Laranja : IsoGui.Cyan);
-            Recurso(837, 150, "SERVIDORES", E.ContagemServidores.ToString(), E.NaSalaDeRacks ? Numero(E.TrafegoMbps) + " / " + Numero(E.BandaMbps) + " MB" : "SEM LIMITE DE BANDA", IsoGui.Cyan);
-            Recurso(997, 154, "AUTOMACOES", E.AutomacoesAtivas + " / " + Catalogo.Automacoes.Count, E.Escrevendo ? "ESCREVENDO..." : E.AutomacoesLiberadas ? "LABORATORIO LIVRE" : "LIBERA NO ANALISTA", IsoGui.Roxo);
-            Recurso(1161, 264, "CARGO", E.CargoAtual.Nome.ToUpperInvariant(), E.CargoAtual.Lugar.ToUpperInvariant(), IsoGui.Laranja);
+            // dinheiro
+            ui.Caixa(new Rect(20, 20, 330, 104));
+            ui.Texto(E.CafeAtivo ? "DINHEIRO  /  CAFE X2: " + Numero(Mathf.Ceil((float)E.SegundosDeCafe)) + "S" : "DINHEIRO", 40, 34, E.CafeAtivo ? Ouro : IsoGui.Muted, 2);
+            Mapa(Moeda, 40, 58, Ouro, 5);
+            string dinheiro = Dinheiro(E.Dinheiro);
+            ui.Texto(dinheiro, 76, 58, IsoGui.Branco, PixelCanvas.LarguraTexto(dinheiro) * 5 <= 260 ? 5 : 4);
+            ui.Texto("+" + Dinheiro(E.ReceitaPorSegundo) + "/S", 40, 98, IsoGui.Verde, 2);
+
+            Meta(new Rect(460, 20, 520, 104));
+
+            // cargo e medidores
+            ui.Caixa(new Rect(1090, 20, 330, 104));
+            string cargo = E.CargoAtual.Nome.ToUpperInvariant();
+            ui.Texto(cargo, 1110, 34, Ouro, PixelCanvas.LarguraTexto(cargo) * 3 <= 290 ? 3 : 2);
+            ui.Texto(E.CargoAtual.Lugar.ToUpperInvariant(), 1110, 60, IsoGui.Muted, 2);
+            float x = 1110;
+            Medidor(ref x, 86, Raio, Energia, E.Sobrecarga, Numero(Mathf.Round((float)(E.ConsumoKw / Math.Max(0.001, E.CapacidadeKw) * 100))) + "%");
+            Medidor(ref x, 86, Termometro, Frio, E.Quente, Numero(Mathf.Round((float)E.Temperatura)) + "C");
+            if (E.NaSalaDeRacks) Medidor(ref x, 86, Rede, IsoGui.Roxo, E.LinkSaturado, Numero(Mathf.Round((float)(E.TrafegoMbps / Math.Max(0.001, E.BandaMbps) * 100))) + "%");
         }
 
-        void Recurso(int x, int largura, string nome, string valor, string extra, Color c)
+        void Medidor(ref float x, float y, string[] icone, Color cor, bool alerta, string texto)
         {
-            ui.Caixa(new Rect(x, 10, largura, 63));
-            ui.Ret(new Rect(x + 2, 12, 3, 59), c);
-            ui.Texto(nome, x + 13, 19, IsoGui.Muted, 1);
-            ui.Texto(valor, x + 13, 33, c, PixelCanvas.LarguraTexto(valor) * 3 > largura - 20 ? 2 : 3);
-            ui.Texto(extra, x + 13, 57, IsoGui.Muted, 1);
+            var c = alerta ? (Pisca ? Vermelho : IsoGui.Laranja) : cor;
+            Mapa(icone, x, y, c, 3);
+            ui.Texto(texto, x + 22, y + 3, alerta ? c : IsoGui.Branco, 2);
+            x += 100;
         }
 
-        // ---------------- Menu lateral ----------------
-
-        static readonly (string id, string rotulo)[] Menus =
+        /// <summary>A meta mais perto de ser cumprida; com tudo pronto, vira o botão da promoção (ou do IPO). Clicar abre a carreira.</summary>
+        void Meta(Rect r)
         {
-            ("Visao", "VISAO GERAL"), ("Compute", "COMPUTE"), ("Energia", "ENERGIA"), ("Refrigeracao", "REFRIGERACAO"),
-            ("Storage", "STORAGE"), ("Rede", "REDE"), ("NOC", "NOC"), ("Equipe", "EQUIPE"), ("Automacao", "AUTOMACAO"),
-            ("Campus", "CAMPUS"), ("Mundo", "MUNDO"), ("Melhorias", "MELHORIAS"), ("Carreira", "CARREIRA"), ("Prestigio", "PRESTIGIO"),
-        };
-
-        void Navegacao()
-        {
-            ui.Ret(new Rect(0, 86, 176, 814), IsoGui.Cor("101e32"));
-            ui.Texto("CENTRAL", 15, 104, IsoGui.Muted, 2);
-            for (int i = 0; i < Menus.Length; i++)
-            {
-                var (id, rotulo) = Menus[i];
-                bool travado = SalaIso.CargoDoSetor(id) > E.Cargo;
-                var r = new Rect(10, 124 + i * 38, 156, 33);
-                bool ativo = selecionado == id;
-                ui.Caixa(r, ativo ? IsoGui.Cor("165d81") : IsoGui.Painel, ativo ? IsoGui.Cyan : IsoGui.Borda);
-                ui.Icone(i, r.x + 10, r.y + 11, travado ? IsoGui.Borda : ativo ? IsoGui.Cyan : IsoGui.Muted);
-                ui.Texto(rotulo, r.x + 32, r.y + 14, travado ? IsoGui.Borda : ativo ? IsoGui.Branco : IsoGui.Muted, 2);
-                if (GUI.Button(r, GUIContent.none, GUIStyle.none)) Abrir(id);
-            }
-            // encolhe o jogo para a faixa acima da barra de tarefas (o ◇ da faixa traz de volta)
-            if (ui.Botao(new Rect(10, 786, 156, 88), "IR PARA A FAIXA", IsoGui.Cyan, true, 2)) faixa.FecharGerente();
-            ui.Texto("JOGAR TRABALHANDO", 88, 852, IsoGui.Muted, 1, true);
-        }
-
-        // ---------------- Coluna da direita ----------------
-
-        void Objetivos()
-        {
-            const int x = 1174, largura = 252;
-            ui.Caixa(new Rect(x, 94, largura, 242));
             var metas = E.CargoAtual.MetasParaPromocao;
-            ui.Texto(E.TemProximoCargo ? "PROMOCAO" : E.IpoFeito ? "CARREIRA" : "IPO", x + 17, 113, IsoGui.Branco, 3);
-            ui.Ret(new Rect(x + 12, 141, largura - 24, 2), IsoGui.Borda);
-            if (!E.TemProximoCargo && E.IpoFeito)
+            if (E.PodePromover || E.PodeFazerIpo)
             {
-                ui.Texto("EMPRESA NA BOLSA!", x + 17, 160, IsoGui.Cor("ffd65c"), 2);
-                ui.Texto("VOCE CHEGOU AO TOPO.", x + 17, 186, IsoGui.Muted, 2);
-                ui.Texto("VENDA EM PRESTIGIO.", x + 17, 204, IsoGui.Muted, 2);
-            }
-            else if (!E.TemProximoCargo)
-            {
-                ui.Texto("PARA O IPO (ABRIR O CAPITAL)", x + 17, 152, IsoGui.Cor("ffd65c"), 1);
-                for (int i = 0; i < metas.Length && i < 3; i++)
+                if (ui.Botao(r, E.PodePromover ? "SER PROMOVIDO!" : "ABRIR O CAPITAL!", Pisca ? Ouro : IsoGui.Laranja, Livre, 4))
                 {
-                    var m = metas[i];
-                    int y = 168 + i * 40;
-                    bool ok = E.Cumprida(m);
-                    ui.Texto(m.Texto.ToUpperInvariant(), x + 17, y, ok ? IsoGui.Verde : IsoGui.Branco, 2);
-                    ui.Barra(new Rect(x + 16, y + 16, 219, 12), E.Progresso(m) / m.Alvo, ok ? IsoGui.Verde : IsoGui.Cyan);
+                    if (E.PodePromover) faixa.Promover(); else faixa.FazerIpo();
                 }
-                if (ui.Botao(new Rect(x + 14, 290, 224, 34), E.PodeFazerIpo ? "ABRIR O CAPITAL!" : "CUMPRA AS METAS", IsoGui.Laranja, E.PodeFazerIpo))
-                    faixa.FazerIpo();
+                return;
+            }
+            ui.Caixa(r);
+            MetaDef proxima = metas.Where(m => !E.Cumprida(m)).OrderByDescending(m => E.Progresso(m) / m.Alvo).FirstOrDefault();
+            if (proxima == null)
+            {
+                ui.Texto(E.IpoFeito ? "EMPRESA NA BOLSA" : "CARREIRA", r.x + 20, r.y + 14, IsoGui.Muted, 2);
+                ui.Texto(E.IpoFeito ? "VOCE CHEGOU AO TOPO" : "CARGO MAXIMO POR ORA", r.x + 20, r.y + 40, Ouro, 3);
+                ui.Texto(E.IpoFeito ? "PRESTIGIO: VENDA E RECOMECE COM BONUS" : "", r.x + 20, r.y + 74, IsoGui.Muted, 2);
             }
             else
             {
-                ui.Texto("PARA " + Catalogo.Cargos[E.Cargo + 1].Nome.ToUpperInvariant(), x + 17, 152, IsoGui.Cyan, 1);
-                for (int i = 0; i < metas.Length && i < 3; i++)
-                {
-                    var m = metas[i];
-                    int y = 168 + i * 40;
-                    bool ok = E.Cumprida(m);
-                    ui.Texto(m.Texto.ToUpperInvariant(), x + 17, y, ok ? IsoGui.Verde : IsoGui.Branco, 2);
-                    ui.Barra(new Rect(x + 16, y + 16, 219, 12), E.Progresso(m) / m.Alvo, ok ? IsoGui.Verde : IsoGui.Cyan);
-                }
-                if (ui.Botao(new Rect(x + 14, 290, 224, 34), E.PodePromover ? "SER PROMOVIDO!" : "CUMPRA AS METAS", IsoGui.Laranja, E.PodePromover))
-                    faixa.Promover();
+                int feitas = metas.Count(m => E.Cumprida(m));
+                ui.Texto(E.TemProximoCargo ? "META PARA " + Catalogo.Cargos[E.Cargo + 1].Nome.ToUpperInvariant() : "META PARA O IPO", r.x + 20, r.y + 14, IsoGui.Muted, 2);
+                string fracao = feitas + "/" + metas.Length;
+                ui.Texto(fracao, r.xMax - 20 - PixelCanvas.LarguraTexto(fracao) * 2, r.y + 14, IsoGui.Cyan, 2);
+                ui.Texto(proxima.Texto.ToUpperInvariant(), r.x + 20, r.y + 36, IsoGui.Branco, 3);
+                ui.Barra(new Rect(r.x + 20, r.y + 64, r.width - 40, 22), E.Progresso(proxima) / proxima.Alvo, IsoGui.Cyan);
             }
+            if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) Abrir("Carreira");
+        }
 
-            ui.Caixa(new Rect(x, 348, largura, 184));
-            ui.Texto("ALERTAS", x + 17, 369, IsoGui.Branco, 3);
-            Alerta(x, 404, E.Sobrecarga, E.Sobrecarga ? "ENERGIA NO LIMITE" : "ENERGIA " + Numero(Mathf.Round((float)(E.ConsumoKw / E.CapacidadeKw * 100))) + "%");
-            Alerta(x, 432, E.Quente, E.Quente ? "SALA QUENTE" : "REFRIGERACAO OK");
-            Alerta(x, 460, E.LinkSaturado, E.LinkSaturado ? "LINK SATURADO" : "REDE " + Numero(Mathf.Round((float)(E.TrafegoMbps / E.BandaMbps * 100))) + "%");
+        // ---------------- Direita: o que pede atenção agora (ou a próxima compra) ----------------
+
+        void CartaoAtencao()
+        {
+            var r = new Rect(1140, 140, 280, 190);
             if (E.EmPico && !E.PicoFoiEscalado)
+                Alerta(r, E.NomeDoPico.ToUpperInvariant(), E.PicoViolado ? "SLA VIOLADO!" : "ESCALE EM " + Numero(Mathf.Max(0, Mathf.Ceil((float)(E.LimiteParaEscalar - E.SegundosDePico)))) + "S", "ESCALAR", Escalar);
+            else if (Incidentes > 1) Alerta(r, Incidentes + " INCIDENTES", "O NOC ESTA PISCANDO", "RESOLVER TUDO", Resolver);
+            else if (E.TemQuedaDeEnergia) Alerta(r, "QUEDA DE ENERGIA", "DC-0" + (E.DatacenterSemEnergia + 1) + " APAGADO", "RELIGAR", () => { faixa.Religar(); Notificar("Energia de volta no DC-0" + (E.DatacenterSemEnergia + 1) + "."); });
+            else if (E.TemPaneRegional) Alerta(r, "PANE REGIONAL", Catalogo.NomesRegioes[E.RegiaoEmPane].ToUpperInvariant(), "REDIRECIONAR", faixa.Redirecionar);
+            else if (E.DeployQuebrado) Alerta(r, "DEPLOY QUEBROU", "APPS FORA DO AR", "ROLLBACK", faixa.FazerRollback);
+            else if (E.DiscoQueimado) Alerta(r, "DISCO QUEIMOU", "NO STORAGE", "TROCAR DISCO", faixa.TrocarDisco);
+            else if (E.Travamentos.Count > 0) Alerta(r, "SERVIDOR TRAVOU", "O TECNICO VAI CONSERTAR", "REINICIAR", Resolver);
+            else if (E.TemChamado)
+                Alerta(r, "CHAMADO URGENTE", Cortar(E.TextoDoChamado.ToUpperInvariant(), 30), "ATENDER " + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "S", () => AtenderChamado(new Vector2(r.center.x, r.y)), Ouro);
+            else ProximaCompra(r);
+        }
+
+        void Alerta(Rect r, string titulo, string detalhe, string botao, Action acao, Color? cor = null)
+        {
+            var c = cor ?? (Pisca ? IsoGui.Laranja : IsoGui.Cor("ff8a3a"));
+            ui.Caixa(r, IsoGui.Cor("3a2410"), c);
+            ui.Texto("!", r.center.x, r.y + 14, c, 6, true);
+            ui.Texto(Cortar(titulo, 18), r.center.x, r.y + 60, c, 3, true);
+            ui.Texto(detalhe, r.center.x, r.y + 92, IsoGui.Branco, 2, true);
+            if (ui.Botao(new Rect(r.x + 20, r.y + 124, r.width - 40, 46), botao, c, Livre, 3)) acao();
+        }
+
+        void ProximaCompra(Rect r)
+        {
+            var def = E.MelhoriaMaisBarata();
+            if (def == null)
             {
-                if (ui.Botao(new Rect(x + 14, 488, 224, 28), "ESCALAR CLUSTER", IsoGui.Laranja)) Escalar();
+                ui.Caixa(r);
+                ui.Texto("TUDO COMPRADO", r.x + 20, r.y + 16, IsoGui.Muted, 2);
+                ui.Texto("NESTE CARGO", r.x + 20, r.y + 40, IsoGui.Branco, 3);
+                if (ui.Botao(new Rect(r.x + 20, r.y + 124, r.width - 40, 46), "VER METAS", IsoGui.Cyan, Livre, 3)) Abrir("Carreira");
+                return;
             }
-            else if (ui.Botao(new Rect(x + 14, 488, 224, 28), Incidentes > 0 ? "RESOLVER " + Incidentes + (Incidentes == 1 ? " INCIDENTE" : " INCIDENTES") : "TUDO FUNCIONANDO",
-                         Incidentes > 0 ? IsoGui.Laranja : IsoGui.Verde)) Resolver();
-
-            ui.Caixa(new Rect(x, 546, largura, 221));
-            ui.Texto("PRODUCAO", x + 17, 567, IsoGui.Branco, 3);
-            ui.Texto("RECEITA POR SEGUNDO", x + 17, 600, IsoGui.Muted, 2);
-            ui.Texto(Dinheiro(E.ReceitaPorSegundo), x + 17, 624, IsoGui.Verde, 4);
-            ui.Texto("BONUS DO STORAGE", x + 17, 661, IsoGui.Muted, 2);
-            ui.Texto("+" + Numero((E.FatorStorage - 1) * 100) + "%", x + 190, 661, IsoGui.Cyan, 2);
-            ui.Texto("INCIDENTES", x + 17, 689, IsoGui.Muted, 2);
-            ui.Texto(E.Estado.incidentesResolvidos.ToString(), x + 190, 689, IsoGui.Roxo, 2);
-            ui.Texto("OFFLINE " + Numero(E.TaxaOffline * 100) + "% ATE " + Numero(E.HorasMaximasOffline) + " H", x + 17, 728, IsoGui.Muted, 2);
-        }
-
-        void Alerta(int x, int y, bool alerta, string texto)
-        {
-            ui.Ret(new Rect(x + 17, y + 1, 8, 8), alerta ? IsoGui.Laranja : IsoGui.Verde);
-            ui.Texto(texto, x + 36, y, alerta ? IsoGui.Laranja : IsoGui.Muted, 2);
-        }
-
-        // ---------------- Rodapé ----------------
-
-        void Rodape()
-        {
-            ui.Ret(new Rect(177, 777, W - 177, 123), IsoGui.Cor("0c1729"));
-            ui.Ret(new Rect(177, 777, W - 177, 2), IsoGui.Borda);
-            string[] nomes = { "CONSTRUIR", "DEPLOY", "AUTOMATIZAR", "MELHORIAS", "CARREIRA" };
-            Color[] cores = { IsoGui.Cyan, IsoGui.Cor("5899ff"), IsoGui.Verde, IsoGui.Laranja, IsoGui.Roxo };
-            for (int i = 0; i < nomes.Length; i++)
+            bool pode = E.PodeComprar(def.Id);
+            ui.Caixa(r, pode ? IsoGui.Cor("173a2e") : IsoGui.Painel, pode ? IsoGui.Verde : IsoGui.Borda);
+            ui.Texto("PROXIMA COMPRA", r.x + 20, r.y + 16, IsoGui.Muted, 2);
+            string nome = NomeLongo(def.Id).ToUpperInvariant() + (def.NivelMaximo > 1 ? " " + (E.Nivel(def.Id) + 1) + "/" + def.NivelMaximo : "");
+            ui.Texto(nome, r.x + 20, r.y + 40, pode ? IsoGui.Branco : IsoGui.Muted, PixelCanvas.LarguraTexto(nome) * 3 <= r.width - 40 ? 3 : 2);
+            ui.Texto(Cortar(def.Efeito.ToUpperInvariant(), 29), r.x + 20, r.y + 68, IsoGui.Muted, 2);
+            ui.Texto(Dinheiro(E.Custo(def.Id)), r.x + 20, r.y + 92, pode ? IsoGui.Verde : IsoGui.Laranja, 3);
+            var botao = new Rect(r.x + 20, r.y + 124, r.width - 40, 46);
+            if (pode) { if (ui.Botao(botao, "COMPRAR", IsoGui.Verde, Livre, 3)) Comprar(def.Id); }
+            else
             {
-                bool ativo = i != 2 || E.AutomacoesLiberadas;
-                if (ui.Botao(new Rect(194 + i * 194, 790, 180, 52), nomes[i], cores[i], ativo, 3))
+                ui.Barra(botao, E.Dinheiro / Math.Max(1, E.Custo(def.Id)), IsoGui.Borda);
+                ui.Texto("JUNTANDO...", botao.center.x, botao.y + 18, IsoGui.Muted, 2, true);
+            }
+        }
+
+        // ---------------- Embaixo: os botões ----------------
+
+        void Barra()
+        {
+            bool deploy = E.HostsContainers > 0;
+            int n = deploy ? 4 : 3;
+            const float largura = 230, altura = 64, espaco = 18;
+            float x = W / 2 - (n * largura + (n - 1) * espaco) / 2, y = 812;
+            if (BotaoIcone(new Rect(x, y, largura, altura), "LOJA", IsoGui.Cyan, Sacola, 4, EmLoja)) Abrir(ultimaAbaLoja);
+            x += largura + espaco;
+            bool automacao = E.AutomacoesLiberadas;
+            var rAuto = new Rect(x, y, largura, altura);
+            if (BotaoIcone(rAuto, "AUTOMACAO", automacao ? IsoGui.Verde : IsoGui.Borda, automacao ? Engrenagem : Cadeado, 3, janela == "Automacao"))
+            {
+                if (automacao) Abrir("Automacao");
+                else Notificar("Automações chegam no cargo Analista de Infra.");
+            }
+            if (E.Escrevendo) ui.Barra(new Rect(rAuto.x + 10, rAuto.yMax - 14, rAuto.width - 20, 10), E.ProgressoEscrita, IsoGui.Roxo);
+            x += largura + espaco;
+            if (BotaoIcone(new Rect(x, y, largura, altura), "CARREIRA", IsoGui.Roxo, Subir, 4, janela == "Carreira" || janela == "Prestigio" || janela == "Vender")) Abrir("Carreira");
+            if (deploy)
+            {
+                x += largura + espaco;
+                if (BotaoIcone(new Rect(x, y, largura, altura), "DEPLOY", IsoGui.Cor("5899ff"), Foguete, 4, false)) Deploy();
+            }
+
+            // encolhe o jogo para a faixa acima da barra de tarefas (o ◇ da faixa traz de volta)
+            if (BotaoIcone(new Rect(20, 828, 190, 48), "FAIXA", IsoGui.Borda, IconeFaixa, 3, false)) faixa.FecharGerente();
+
+            // sala, campus e mundo (Arquiteto em diante), embaixo do cartão da direita
+            if (E.NoCampus)
+            {
+                var vistas = E.NoMundo ? new[] { SalaIso.Vista.Sala, SalaIso.Vista.Campus, SalaIso.Vista.Mundo } : new[] { SalaIso.Vista.Sala, SalaIso.Vista.Campus };
+                float larguraVista = (280 - (vistas.Length - 1) * 8f) / vistas.Length, vx = 1140;
+                foreach (var v in vistas)
                 {
-                    if (i == 0) Abrir("Compute");
-                    if (i == 1) Deploy();
-                    if (i == 2) Abrir("Automacao");
-                    if (i == 3) Abrir("Melhorias");
-                    if (i == 4) Abrir("Carreira");
+                    bool atual = VistaAtual == v;
+                    string nome = v == SalaIso.Vista.Sala ? "DC-01" : v == SalaIso.Vista.Campus ? "CAMPUS" : "MUNDO";
+                    if (ui.Botao(new Rect(vx, 344, larguraVista, 40), nome, atual ? IsoGui.Cyan : IsoGui.Borda, Livre)) vistaEscolhida = v;
+                    vx += larguraVista + 8;
                 }
             }
-
-            // meta mais próxima de ser cumprida
-            var metas = E.CargoAtual.MetasParaPromocao;
-            var proxima = metas.Where(m => !E.Cumprida(m)).OrderByDescending(m => E.Progresso(m) / m.Alvo).FirstOrDefault();
-            if (proxima != null)
-            {
-                ui.Texto("META: " + proxima.Texto.ToUpperInvariant(), 199, 862, IsoGui.Branco, 2);
-                ui.Barra(new Rect(609, 857, 233, 18), E.Progresso(proxima) / proxima.Alvo, IsoGui.Verde);
-                ui.Texto(E.TemProximoCargo ? "PREMIO: PROMOCAO" : "PREMIO: IPO", 858, 862, IsoGui.Laranja, 2);
-            }
-            else ui.Texto(E.PodePromover ? "TODAS AS METAS CUMPRIDAS: SEJA PROMOVIDO!" : E.PodeFazerIpo ? "TUDO PRONTO: ABRA O CAPITAL!" : E.IpoFeito ? "EMPRESA NA BOLSA!" : "CARGO MAXIMO POR ORA", 199, 862, IsoGui.Verde, 2);
-
-            ui.Caixa(new Rect(1174, 788, 252, 90));
-            ui.Texto(E.Escrevendo ? "ESCREVENDO SCRIPT" : "LABORATORIO", 1190, 804, IsoGui.Roxo, 2);
-            if (E.Escrevendo)
-            {
-                ui.Texto(E.AutomacaoEmEscrita.Nome.ToUpperInvariant(), 1190, 828, IsoGui.Branco, 2);
-                ui.Barra(new Rect(1190, 852, 218, 10), E.ProgressoEscrita, IsoGui.Roxo);
-            }
-            else ui.Texto(!E.AutomacoesLiberadas ? "LIBERA NO ANALISTA" : E.AutomacoesAtivas == Catalogo.Automacoes.Count ? "TUDO AUTOMATIZADO" : "PRONTO PARA O PROXIMO",
-                1190, 838, IsoGui.Muted, 2);
         }
+
+        bool EmLoja => Array.IndexOf(AbasDaLoja, janela) >= 0;
+
+        /// <summary>Botão grande com ícone (o IsoGui.Botao só tem texto).</summary>
+        bool BotaoIcone(Rect r, string titulo, Color cor, string[] icone, int escala, bool ativo)
+        {
+            bool sobre = r.Contains(Event.current.mousePosition);
+            ui.Caixa(r, Color.Lerp(cor, IsoGui.Painel, ativo || sobre ? 0.45f : 0.72f), cor);
+            ui.Ret(new Rect(r.x + 2, r.yMax - 6, r.width - 4, 4), new Color(0, 0, 0, .22f));
+            float largura = PixelCanvas.LarguraTexto(titulo) * escala + 15 + 12;
+            float x = r.center.x - largura / 2;
+            Mapa(icone, x, r.center.y - 8, IsoGui.Branco, 3);
+            ui.Texto(titulo, x + 27, r.center.y - escala * 2.5f - 1, IsoGui.Branco, escala);
+            bool clicou = GUI.Button(r, GUIContent.none, GUIStyle.none);
+            if (clicou) Sons.Tique();
+            return clicou;
+        }
+
+        /// <summary>Aviso curto embaixo da meta (a barra de notícias).</summary>
+        void Aviso(string texto)
+        {
+            texto = texto.ToUpperInvariant();
+            float largura = Mathf.Min(PixelCanvas.LarguraTexto(texto) * 2 + 48, 1080);
+            var r = new Rect(W / 2 - largura / 2, 138, largura, 36);
+            ui.Caixa(r, IsoGui.Cor("162c40"), IsoGui.Cyan);
+            ui.Texto(Cortar(texto, (int)((largura - 40) / 8)), r.center.x, r.y + 13, IsoGui.Branco, 2, true);
+        }
+
+        void Mapa(string[] linhas, float x, float y, Color cor, int escala)
+        {
+            for (int j = 0; j < linhas.Length; j++)
+                for (int i = 0; i < linhas[j].Length; i++)
+                    if (linhas[j][i] == '#') ui.Ret(new Rect(x + i * escala, y + j * escala, escala, escala), cor);
+        }
+
+        static string Cortar(string s, int maximo) => s.Length <= maximo ? s : s.Substring(0, Mathf.Max(1, maximo - 1)) + ".";
     }
 }

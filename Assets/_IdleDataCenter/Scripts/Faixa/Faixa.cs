@@ -97,6 +97,7 @@ namespace IdleDataCenter
                 if (arg == "-alternar-painel") InvokeRepeating(nameof(AlternarPainel), 5f, 4f); // abre e fecha sozinho (teste da janela)
                 if (arg == "-alternar-gerente") InvokeRepeating(nameof(AlternarGerente), 5f, 5f);   // entra e sai do modo gerente (teste da janela)
                 if (arg.StartsWith("-simular-largura=")) float.TryParse(arg.Substring(17), out larguraSimulada);   // teste de tela estreita
+                if (arg.StartsWith("-hora=") && float.TryParse(arg.Substring(6), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float hora)) gerente.DefinirHora(hora);   // teste: cidade ao fundo numa hora fixa
             }
             monitor.LarguraSimulada = larguraSimulada;
             Posicionar();

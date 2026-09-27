@@ -295,6 +295,19 @@ namespace IdleDataCenter.Simulacao
         public bool PodeComprar(string id) => !NoMaximo(id) && RequisitoOk(id) && Estado.dinheiro >= Custo(id)
                                            && !(id == Catalogo.Estagiario && Desafio(Catalogo.SemEstagiario));
 
+        /// <summary>A melhoria mais barata que já dá para comprar (inclui as que ficaram para trás nos cargos anteriores); null se não sobrou nada.</summary>
+        public MelhoriaDef MelhoriaMaisBarata()
+        {
+            MelhoriaDef melhor = null;
+            foreach (var m in Catalogo.Melhorias)
+            {
+                if (m.Cargo > Estado.cargo || NoMaximo(m.Id) || !RequisitoOk(m.Id)) continue;
+                if (m.Id == Catalogo.Estagiario && Desafio(Catalogo.SemEstagiario)) continue;
+                if (melhor == null || Custo(m.Id) < Custo(melhor.Id)) melhor = m;
+            }
+            return melhor;
+        }
+
         public bool Comprar(string id)
         {
             if (!PodeComprar(id)) return false;

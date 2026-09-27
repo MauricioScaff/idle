@@ -35,8 +35,12 @@ namespace IdleDataCenter.Gerente
             }
         }
 
-        /// <summary>O que cada setor vende (em ordem de cargo).</summary>
-        string[] ItensDoSetor(string setor)
+        /// <summary>O que cada setor vende: primeiro o que dá para comprar, depois o que falta juntar, o bloqueado e o completo no fim.</summary>
+        string[] ItensDoSetor(string setor) =>
+            ItensDoSetorNaOrdem(setor).OrderBy(id => E.NoMaximo(id) ? 3 : Catalogo.Buscar(id).Cargo > E.Cargo ? 2 : E.PodeComprar(id) ? 0 : 1).ToArray();
+
+        /// <summary>O que cada setor vende, em ordem de cargo.</summary>
+        string[] ItensDoSetorNaOrdem(string setor)
         {
             switch (setor)
             {
@@ -51,10 +55,7 @@ namespace IdleDataCenter.Gerente
                 case "Campus": return new[] { Catalogo.Datacenter, Catalogo.Fibra, Catalogo.Cdn, Catalogo.Gerador };
                 case "Mundo": return new[] { Catalogo.Regiao, Catalogo.CaboSubmarino, Catalogo.Renovavel, Catalogo.Gpu };
                 default:
-                    // "Melhorias": tudo o que já dá para comprar primeiro, depois o que falta liberar, e o completo no fim
-                    return Catalogo.Melhorias
-                        .OrderBy(m => E.NoMaximo(m.Id) ? 3 : m.Cargo > E.Cargo ? 2 : E.PodeComprar(m.Id) ? 0 : 1)
-                        .Select(m => m.Id).ToArray();
+                    return Catalogo.Melhorias.Select(m => m.Id).ToArray();   // "Melhorias" (aba TUDO): todos os setores
             }
         }
 
@@ -82,35 +83,59 @@ namespace IdleDataCenter.Gerente
             return "";
         }
 
+        /// <summary>As abas da LOJA: um setor por aba (as que o cargo ainda não tem ficam de fora) e "TUDO" no fim.</summary>
+        static readonly string[] AbasDaLoja = { "Compute", "Energia", "Refrigeracao", "Storage", "Rede", "NOC", "Equipe", "Campus", "Mundo", "Melhorias" };
+        static readonly string[] AbasDaCarreira = { "Carreira", "Prestigio" };
+        string ultimaAbaLoja = "Compute";
+
+        static string NomeDaAba(string id)
+        {
+            switch (id)
+            {
+                case "Refrigeracao": return "REFRIG.";
+                case "Melhorias": return "TUDO";
+                case "Prestigio": return "PRESTIGIO";
+                default: return id.ToUpperInvariant();
+            }
+        }
+
         void Loja()
         {
-            ui.Ret(areaCentral, new Color(.015f, .04f, .08f, .82f));
-            var modal = new Rect(210, 155, 928, 548);
-            bool automacao = janela == "Automacao";
-            ui.Caixa(modal, IsoGui.Fundo, automacao ? IsoGui.Roxo : IsoGui.Cyan);
-            string titulo = janela == "Vender" ? "VENDER A EMPRESA" : Menus.First(m => m.id == janela).rotulo;
-            ui.Texto(titulo, modal.x + 24, modal.y + 23, IsoGui.Branco, 4);
-            ui.Texto("DC-01 / " + Subtitulo(janela), modal.x + 24, modal.y + 57, IsoGui.Muted, 2);
-            if (ui.Botao(new Rect(modal.xMax - 57, modal.y + 15, 40, 32), "X", IsoGui.Borda)) { Abrir("Visao"); return; }
-            ui.Ret(new Rect(modal.x + 18, modal.y + 82, modal.width - 36, 2), IsoGui.Borda);
+            ui.Ret(new Rect(0, 0, W, H), new Color(.02f, .04f, .08f, .55f));
+            var modal = new Rect(240, 136, 960, 660);
+            bool automacao = janela == "Automacao", loja = EmLoja;
+            if (loja) ultimaAbaLoja = janela;
+            ui.Caixa(modal, IsoGui.Cor("14243a"), automacao ? IsoGui.Verde : loja ? IsoGui.Cyan : IsoGui.Roxo);
+            string titulo = janela == "Vender" ? "VENDER A EMPRESA" : automacao ? "AUTOMACAO" : loja ? "LOJA" : "CARREIRA";
+            ui.Texto(titulo, modal.x + 28, modal.y + 22, IsoGui.Branco, 5);
+            string saldo = Dinheiro(E.Dinheiro);
+            ui.Texto(saldo, modal.xMax - 76 - PixelCanvas.LarguraTexto(saldo) * 4, modal.y + 26, Ouro, 4);
+            if (ui.Botao(new Rect(modal.xMax - 58, modal.y + 18, 40, 40), "X", Vermelho)) { Abrir("Visao"); return; }
 
-            int cargoDoSetor = SalaIso.CargoDoSetor(janela);
-            if (cargoDoSetor > E.Cargo)
+            // abas (a loja por setor, a carreira com o prestígio)
+            var abas = loja ? AbasDaLoja.Where(a => a == "Melhorias" || SalaIso.CargoDoSetor(a) <= E.Cargo).ToArray()
+                     : !automacao && janela != "Vender" ? AbasDaCarreira : new string[0];
+            float ax = modal.x + 28;
+            foreach (var aba in abas)
             {
-                ui.Texto("SETOR AINDA NAO CONSTRUIDO", modal.center.x, modal.y + 220, IsoGui.Laranja, 4, true);
-                ui.Texto("A SALA CRESCE ATE ELE NO CARGO " + Catalogo.Cargos[cargoDoSetor].Nome.ToUpperInvariant(), modal.center.x, modal.y + 270, IsoGui.Muted, 2, true);
-                return;
+                string nome = NomeDaAba(aba);
+                float largura = PixelCanvas.LarguraTexto(nome) * 2 + 32;
+                if (ui.Botao(new Rect(ax, modal.y + 76, largura, 38), nome, janela == aba ? IsoGui.Cyan : IsoGui.Borda, true)) Abrir(aba);
+                ax += largura + 8;
             }
-            if (janela == "Carreira") { Carreira(modal); return; }
-            if (janela == "Prestigio") { TelaPrestigio(modal); return; }
-            if (janela == "Vender") { TelaVender(modal); return; }
-            if (janela == "NOC") NocAcoes(modal);
+            if (abas.Length == 0) ui.Texto(Subtitulo(janela), modal.x + 28, modal.y + 80, IsoGui.Muted, 2);
+            var conteudo = new Rect(modal.x, modal.y + 34, modal.width, modal.height - 34);   // o que antes começava logo abaixo do título
+
+            if (janela == "Carreira") { Carreira(conteudo); return; }
+            if (janela == "Prestigio") { TelaPrestigio(conteudo); return; }
+            if (janela == "Vender") { TelaVender(conteudo); return; }
+            if (janela == "NOC") NocAcoes(conteudo);
 
             int quantidade = automacao ? Catalogo.Automacoes.Count : ItensDoSetor(janela).Length;
             string[] itens = automacao ? null : ItensDoSetor(janela);
             var automacoes = automacao
                 ? Catalogo.Automacoes.OrderBy(a => E.TemAutomacao(a.Id) ? 2 : E.Cargo < a.Cargo ? 1 : 0).ToArray() : null;
-            int porPagina = 6, primeiraLinha = janela == "NOC" ? 1 : 0;
+            int primeiraLinha = janela == "NOC" ? 1 : 0, porPagina = 6 - primeiraLinha * 3;
             int paginas = Mathf.Max(1, (quantidade + porPagina - 1) / porPagina);
             pagina = Mathf.Clamp(pagina, 0, paginas - 1);
             for (int k = 0; k < porPagina; k++)
@@ -118,51 +143,61 @@ namespace IdleDataCenter.Gerente
                 int indice = pagina * porPagina + k;
                 if (indice >= quantidade) break;
                 int linha = k / 3 + primeiraLinha;
-                if (linha > 1) break;
-                var r = new Rect(modal.x + 20 + k % 3 * 298, modal.y + 101 + linha * 190, 284, 175);
+                var r = new Rect(modal.x + 28 + k % 3 * 306, modal.y + 130 + linha * 222, 294, 210);
                 if (automacao) CardAutomacao(r, automacoes[indice]);
                 else CardMelhoria(r, itens[indice]);
             }
             if (paginas > 1)
             {
-                if (ui.Botao(new Rect(modal.x + 20, modal.yMax - 48, 120, 30), "< ANTERIOR", IsoGui.Borda, pagina > 0)) pagina--;
-                ui.Texto((pagina + 1) + " / " + paginas, modal.center.x, modal.yMax - 37, IsoGui.Muted, 2, true);
-                if (ui.Botao(new Rect(modal.xMax - 140, modal.yMax - 48, 120, 30), "PROXIMA >", IsoGui.Cyan, pagina + 1 < paginas)) pagina++;
+                if (ui.Botao(new Rect(modal.x + 28, modal.yMax - 56, 150, 38), "< ANTERIOR", IsoGui.Borda, pagina > 0)) pagina--;
+                ui.Texto((pagina + 1) + " / " + paginas, modal.center.x, modal.yMax - 43, IsoGui.Muted, 2, true);
+                if (ui.Botao(new Rect(modal.xMax - 178, modal.yMax - 56, 150, 38), "PROXIMA >", IsoGui.Cyan, pagina + 1 < paginas)) pagina++;
             }
-            else ui.Texto("AS COMPRAS VALEM NA HORA, TAMBEM NA FAIXA  /  ESC FECHA", modal.center.x, modal.yMax - 28, IsoGui.Muted, 2, true);
+            else ui.Texto(loja ? "AS COMPRAS VALEM NA HORA, TAMBEM NA FAIXA  /  ESC FECHA" : "ESC FECHA", modal.center.x, modal.yMax - 36, IsoGui.Muted, 2, true);
+        }
+
+        /// <summary>Texto em até duas linhas, quebrando nos espaços.</summary>
+        void TextoQuebrado(string s, float x, float y, int maximo, Color cor, int escala = 2)
+        {
+            if (s.Length <= maximo) { ui.Texto(s, x, y, cor, escala); return; }
+            int corte = s.LastIndexOf(' ', maximo);
+            if (corte <= 0) corte = maximo;
+            ui.Texto(s.Substring(0, corte), x, y, cor, escala);
+            ui.Texto(Cortar(s.Substring(corte).Trim(), maximo), x, y + escala * 5 + 6, cor, escala);
         }
 
         void CardMelhoria(Rect r, string id)
         {
             var def = Catalogo.Buscar(id);
             bool maximo = E.NoMaximo(id), cedo = def.Cargo > E.Cargo, req = E.RequisitoOk(id);
-            ui.Caixa(r, cedo ? IsoGui.Cor("121e30") : IsoGui.Painel, maximo ? IsoGui.Verde : IsoGui.Borda);
-            ui.Texto(NomeLongo(id).ToUpperInvariant(), r.x + 12, r.y + 15, cedo ? IsoGui.Muted : IsoGui.Branco, 2);
-            ui.Texto(cedo ? "LIBERA NO CARGO " + Catalogo.Cargos[def.Cargo].Nome.ToUpperInvariant()
-                     : !req ? "PRECISA: " + NomeLongo(def.Requisito).ToUpperInvariant()
-                     : "NIVEL " + E.Nivel(id) + " / " + def.NivelMaximo, r.x + 12, r.y + 39, cedo ? IsoGui.Laranja : IsoGui.Cyan, 1);
-            ui.Texto(def.Efeito.ToUpperInvariant(), r.x + 12, r.y + 62, IsoGui.Muted, 2);
-            if (maximo) ui.Texto("COMPLETO", r.x + 12, r.y + 104, IsoGui.Verde, 2);
-            else if (!cedo) ui.Texto(Dinheiro(E.Custo(id)), r.x + 12, r.y + 100, E.PodeComprar(id) ? IsoGui.Verde : IsoGui.Laranja, 3);
+            ui.Caixa(r, cedo ? IsoGui.Cor("121e30") : IsoGui.Painel, maximo ? IsoGui.Cor("2f6a4a") : E.PodeComprar(id) ? IsoGui.Cyan : IsoGui.Borda);
+            string nome = NomeLongo(id).ToUpperInvariant();
+            ui.Texto(nome, r.x + 16, r.y + 16, cedo ? IsoGui.Muted : IsoGui.Branco, PixelCanvas.LarguraTexto(nome) * 3 <= r.width - 32 ? 3 : 2);
+            if (!cedo && req && def.NivelMaximo > 1) ui.Texto(E.Nivel(id) + "/" + def.NivelMaximo, r.x + 16, r.y + 44, IsoGui.Cyan, 2);
+            else ui.Texto(cedo ? "LIBERA NO " + Catalogo.Cargos[def.Cargo].Nome.ToUpperInvariant() : !req ? "PRECISA: " + NomeLongo(def.Requisito).ToUpperInvariant() : "",
+                r.x + 16, r.y + 44, IsoGui.Laranja, 2);
+            TextoQuebrado(def.Efeito.ToUpperInvariant(), r.x + 16, r.y + 70, 33, IsoGui.Muted);
+            if (!maximo && !cedo) ui.Texto(Dinheiro(E.Custo(id)), r.x + 16, r.y + 118, E.PodeComprar(id) ? IsoGui.Verde : IsoGui.Laranja, 3);
             string texto = maximo ? "COMPLETO" : cedo ? "BLOQUEADO" : !req ? "FALTA REQUISITO" : E.PodeComprar(id) ? "COMPRAR" : "SEM DINHEIRO";
-            if (ui.Botao(new Rect(r.x + 10, r.yMax - 37, r.width - 20, 28), texto, IsoGui.Cyan, PodeComprarAqui(id))) Comprar(id);
+            if (ui.Botao(new Rect(r.x + 14, r.yMax - 50, r.width - 28, 38), texto, IsoGui.Verde, PodeComprarAqui(id), 3)) Comprar(id);
         }
 
         void CardAutomacao(Rect r, AutomacaoDef a)
         {
             bool pronta = E.TemAutomacao(a.Id), escrevendo = E.Estado.escrevendo == a.Id, cedo = a.Cargo > E.Cargo;
             ui.Caixa(r, cedo ? IsoGui.Cor("121e30") : IsoGui.Painel, pronta ? IsoGui.Verde : escrevendo ? IsoGui.Roxo : IsoGui.Borda);
-            ui.Texto(a.Nome.ToUpperInvariant(), r.x + 12, r.y + 15, cedo ? IsoGui.Muted : IsoGui.Branco, 2);
-            string linha2 = cedo ? "LIBERA NO CARGO " + Catalogo.Cargos[a.Cargo].Nome.ToUpperInvariant()
-                          : Math.Ceiling(a.Segundos / 60) + " MIN PARA ESCREVER" + (!E.RequisitoAutomacaoOk(a) ? " / PRECISA " + NomeLongo(a.Requisito).ToUpperInvariant() : "");
-            ui.Texto(linha2, r.x + 12, r.y + 39, cedo ? IsoGui.Laranja : IsoGui.Roxo, 1);
-            ui.Texto(a.Descricao.ToUpperInvariant(), r.x + 12, r.y + 62, IsoGui.Muted, 1);
-            if (escrevendo) ui.Barra(new Rect(r.x + 12, r.y + 100, r.width - 24, 14), E.ProgressoEscrita, IsoGui.Roxo);
-            else if (!cedo) ui.Texto(pronta ? "ATIVA" : Dinheiro(a.Custo), r.x + 12, r.y + 100, pronta ? IsoGui.Verde : IsoGui.Roxo, pronta ? 2 : 3);
+            string nome = a.Nome.ToUpperInvariant();
+            ui.Texto(nome, r.x + 16, r.y + 16, cedo ? IsoGui.Muted : IsoGui.Branco, PixelCanvas.LarguraTexto(nome) * 3 <= r.width - 32 ? 3 : 2);
+            string linha2 = cedo ? "LIBERA NO " + Catalogo.Cargos[a.Cargo].Nome.ToUpperInvariant()
+                          : Math.Ceiling(a.Segundos / 60) + " MIN" + (!E.RequisitoAutomacaoOk(a) ? " / PRECISA " + NomeLongo(a.Requisito).ToUpperInvariant() : " PARA ESCREVER");
+            ui.Texto(Cortar(linha2, 33), r.x + 16, r.y + 44, cedo ? IsoGui.Laranja : IsoGui.Roxo, 2);
+            TextoQuebrado(a.Descricao.ToUpperInvariant(), r.x + 16, r.y + 70, 33, IsoGui.Muted);
+            if (escrevendo) ui.Barra(new Rect(r.x + 16, r.y + 120, r.width - 32, 18), E.ProgressoEscrita, IsoGui.Roxo);
+            else if (!cedo) ui.Texto(pronta ? "ATIVA" : Dinheiro(a.Custo), r.x + 16, r.y + 118, pronta ? IsoGui.Verde : IsoGui.Roxo, 3);
             string texto = pronta ? "ATIVA" : escrevendo ? "ESCREVENDO " + Numero(Math.Floor(E.ProgressoEscrita * 100)) + "%"
                 : cedo ? "BLOQUEADA" : E.Escrevendo ? "TECNICO OCUPADO" : !E.RequisitoAutomacaoOk(a) ? "FALTA REQUISITO"
                 : E.Dinheiro < a.Custo ? "SEM DINHEIRO" : "ESCREVER";
-            if (ui.Botao(new Rect(r.x + 10, r.yMax - 37, r.width - 20, 28), texto, IsoGui.Roxo, E.PodeEscrever(a.Id))) Escrever(a);
+            if (ui.Botao(new Rect(r.x + 14, r.yMax - 50, r.width - 28, 38), texto, IsoGui.Verde, E.PodeEscrever(a.Id), 3)) Escrever(a);
         }
 
         /// <summary>Topo da tela do NOC: incidentes e pico de tráfego, com os botões de ação.</summary>
@@ -211,6 +246,11 @@ namespace IdleDataCenter.Gerente
                 ui.Texto(prog, modal.xMax - 40 - PixelCanvas.LarguraTexto(prog) * 2, y + 4, IsoGui.Muted, 2);
                 ui.Barra(new Rect(modal.x + 29, y + 26, modal.width - 62, 16), E.Progresso(m) / m.Alvo, ok ? IsoGui.Verde : IsoGui.Cyan);
             }
+            // números da empresa (antes ficavam na coluna da direita)
+            float ye = modal.yMax - 128;
+            ui.Texto("RECEITA +" + Dinheiro(E.ReceitaPorSegundo) + "/S   /   BONUS DO STORAGE +" + Numero((E.FatorStorage - 1) * 100) + "%   /   "
+                + E.Estado.incidentesResolvidos + " INCIDENTES RESOLVIDOS", modal.x + 29, ye, IsoGui.Muted, 2);
+            ui.Texto("COM O JOGO FECHADO: " + Numero(E.TaxaOffline * 100) + "% DA RECEITA, ATE " + Numero(E.HorasMaximasOffline) + " H", modal.x + 29, ye + 22, IsoGui.Muted, 2);
             bool pode = ipo ? E.PodeFazerIpo : E.PodePromover;
             if (ui.Botao(new Rect(modal.center.x - 160, modal.yMax - 70, 320, 44), pode ? (ipo ? "ABRIR O CAPITAL!" : "SER PROMOVIDO!") : "CUMPRA AS METAS", IsoGui.Laranja, pode, 3))
             {

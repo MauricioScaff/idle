@@ -15,11 +15,11 @@ namespace IdleDataCenter.Gerente
         static readonly string[] Dicas =
         {
             "BEM-VINDO! CLIQUE NUM SERVIDOR PARA GANHAR DINHEIRO.",
-            "COMPRE O SSD: ELE DOBRA A RECEITA DAS TORRES. ESTA EM MELHORIAS.",
+            "COMPRE O SSD: ELE DOBRA A RECEITA DAS TORRES. ESTA NA LOJA.",
             "HORA DO CAFE: CLIQUE NA CANECA DA MESA. A RECEITA DOBRA POR 30 S.",
             "CONSTRUA MAIS UM SERVIDOR NO MARCADOR LARANJA DA SALA.",
-            "AS METAS DA PROMOCAO FICAM A DIREITA. CUMPRA AS TRES PARA VIRAR SYSADMIN.",
-            "VAI TRABALHAR? \"IR PARA A FAIXA\" DEIXA O JOGO DISCRETO ACIMA DA BARRA DE TAREFAS.",
+            "A META DA PROMOCAO FICA NO TOPO. CUMPRA AS TRES PARA VIRAR SYSADMIN.",
+            "VAI TRABALHAR? O BOTAO FAIXA DEIXA O JOGO DISCRETO ACIMA DA BARRA DE TAREFAS.",
         };
 
         void IniciarPrimeiraHora()
@@ -58,33 +58,34 @@ namespace IdleDataCenter.Gerente
             }
         }
 
-        /// <summary>Caixa da dica no topo da sala, com uma seta pulando sobre o que deve ser clicado.</summary>
-        void Tutorial()
+        /// <summary>Caixa da dica embaixo da meta, com uma seta pulando sobre o que deve ser clicado. Retorna se está aparecendo.</summary>
+        bool Tutorial()
         {
             AvancarDicas();
-            if (E.TutorialConcluido || !Livre) return;
+            if (E.TutorialConcluido || !Livre) return false;
             int passo = E.PassoTutorial;
 
-            var caixa = new Rect(areaCentral.x + 16, areaCentral.y + 30, areaCentral.width - 32, 44);
+            var caixa = new Rect(230, 138, 890, 52);
             ui.Caixa(caixa, IsoGui.Cor("1d2a14"), IsoGui.Cor("ffd65c"));
-            ui.Texto("DICA " + (passo + 1) + "/" + Catalogo.PassosTutorial, caixa.x + 12, caixa.y + 8, IsoGui.Cor("ffd65c"), 1);
-            ui.Texto(Dicas[passo], caixa.x + 12, caixa.y + 22, IsoGui.Branco, 2);
+            ui.Texto("DICA " + (passo + 1) + "/" + Catalogo.PassosTutorial, caixa.x + 14, caixa.y + 8, Ouro, 2);
+            ui.Texto(Dicas[passo], caixa.x + 14, caixa.y + 28, IsoGui.Branco, 2);
             bool informativa = passo >= 4;
-            if (informativa && ui.Botao(new Rect(caixa.xMax - 92, caixa.y + 8, 80, 28), "OK", IsoGui.Verde)) E.AvancarTutorial(passo + 1);
-            if (!informativa && ui.Botao(new Rect(caixa.xMax - 92, caixa.y + 8, 80, 28), "PULAR", IsoGui.Borda)) E.AvancarTutorial(Catalogo.PassosTutorial);
+            if (informativa && ui.Botao(new Rect(caixa.xMax - 96, caixa.y + 10, 84, 32), "OK", IsoGui.Verde)) E.AvancarTutorial(passo + 1);
+            if (!informativa && ui.Botao(new Rect(caixa.xMax - 96, caixa.y + 10, 84, 32), "PULAR", IsoGui.Borda)) E.AvancarTutorial(Catalogo.PassosTutorial);
 
             // alvo da seta
             Vector2? alvo = null;
             switch (passo)
             {
                 case 0: alvo = TopoDoAlvo("servidor:0"); break;
-                case 1: alvo = new Vector2(194 + 3 * 194 + 90, 790); break;
+                case 1: alvo = new Vector2(W / 2 - (E.HostsContainers > 0 ? 2 : 1.5f) * 230 - (E.HostsContainers > 0 ? 27 : 18) + 115, 812); break;   // LOJA
                 case 2: alvo = TopoDoAlvo("cafe"); break;
                 case 3: if (salaIso.Marcador.HasValue) alvo = NaTela(salaIso.Marcador.Value) + new Vector2(0, 10); break;
-                case 4: alvo = new Vector2(1174 + 126, 96); break;
-                case 5: alvo = new Vector2(88, 786); break;
+                case 4: alvo = new Vector2(W / 2 + 200, 56); break;     // meta no topo
+                case 5: alvo = new Vector2(115, 828); break;      // botão FAIXA
             }
             if (alvo.HasValue) Seta(alvo.Value);
+            return true;
         }
 
         Vector2? TopoDoAlvo(string tipo)
@@ -113,11 +114,11 @@ namespace IdleDataCenter.Gerente
             string[] cores = { "ffd65c", "5cff8a", "5cc8ff", "ff8cc6", "b48cff", "ffa53c" };
             for (int i = 0; i < 90; i++)
             {
-                float x = areaCentral.x + ((i * 97) % 100) / 100f * areaCentral.width;
-                float y = areaCentral.y + ((idade * (60 + (i * 37) % 80)) + (i * 53) % 200) % areaCentral.height;
+                float x = ((i * 97) % 100) / 100f * W;
+                float y = ((idade * (90 + (i * 37) % 120)) + (i * 53) % 300) % H;
                 ui.Ret(new Rect(x + Mathf.Sin(idade * 3 + i) * 6, y, 4, 4), IsoGui.Cor(cores[i % cores.Length]));
             }
-            var r = new Rect(areaCentral.center.x - 300, areaCentral.center.y - 60, 600, 120);
+            var r = new Rect(W / 2 - 320, 400, 640, 130);
             ui.Caixa(r, IsoGui.Cor("2a1f10"), IsoGui.Cor("ffd65c"));
             ui.Texto(festaTitulo, r.center.x, r.y + 22, IsoGui.Cor("ffd65c"), 6, true);
             ui.Texto(festaCargo, r.center.x, r.y + 64, IsoGui.Branco, 3, true);
