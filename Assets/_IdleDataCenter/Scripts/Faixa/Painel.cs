@@ -426,7 +426,7 @@ namespace IdleDataCenter
                 string rotulo = max ? "Máximo" : !req ? "Precisa: " + Catalogo.Buscar(m.Requisito).Nome : "Comprar";
                 var def = m;
                 Botao(new RectInt(462, y + 10, 84, 24), rotulo, "#1b1a2e", "#6fd36f",
-                    () => faixa.Loja.TentarComprar(def), !max && economia.PodeComprar(m.Id));
+                    () => faixa.TentarComprar(def), !max && economia.PodeComprar(m.Id));
             }
         }
 

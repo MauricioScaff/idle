@@ -52,6 +52,20 @@ namespace IdleDataCenter.Gerente
         public Vector2Int? Expansao { get; private set; }         // centro da próxima expansão (canvas)
         public Vector2Int? Chamado { get; private set; }          // onde flutua o chamado urgente (canvas)
 
+        /// <summary>Falso esconde o contorno tracejado da próxima expansão (a faixa não mostra).</summary>
+        public bool MostrarExpansao = true;
+
+        /// <summary>Retângulo da sala atual (paredes, piso e laje) na tela, em pixels com origem em cima à esquerda.</summary>
+        public RectInt AreaDaSala
+        {
+            get
+            {
+                if (dSala == null) return new RectInt(0, 0, Largura, Altura);
+                int esquerda = dSala.P(0, D).x, direita = dSala.P(W, 0).x, topo = dSala.P(0, 0).y - AlturaParede, baixo = dSala.P(W, D).y + 6;
+                return new RectInt(esquerda, topo, direita - esquerda, baixo - topo);
+            }
+        }
+
         string ultimaCompra;
         float ultimaCompraEm = -10;
 
@@ -101,8 +115,8 @@ namespace IdleDataCenter.Gerente
             estagiario = new Quadro[4];
             for (int i = 0; i < 4; i++)
             {
-                tecnico[i] = Q(Tecnico.TexturaDoCargo("tecnico_andar_" + i, "tecnico", E.Cargo));
-                estagiario[i] = Q(Tecnico.TexturaDoCargo("estagiario_andar_" + i, "estagiario", E.Cargo));
+                tecnico[i] = Q(Uniformes.TexturaDoCargo("tecnico_andar_" + i, "tecnico", E.Cargo));
+                estagiario[i] = Q(Uniformes.TexturaDoCargo("estagiario_andar_" + i, "estagiario", E.Cargo));
             }
             engenheiro = new Quadro[4];
             for (int i = 0; i < 4; i++) engenheiro[i] = Q(IsoSprites.Engenheiro(i));
@@ -130,7 +144,7 @@ namespace IdleDataCenter.Gerente
             tela.Limpar(new Color32(0, 0, 0, 0));
 
             PisoEParedes();
-            ContornoDaExpansao();
+            if (MostrarExpansao) ContornoDaExpansao();
             MontarObjetos();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
             foreach (var (_, desenhar) in fila) desenhar();
