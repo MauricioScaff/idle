@@ -14,7 +14,7 @@ namespace IdleDataCenter.Gerente
     /// Desenha numa PixelCanvas (a textura é ampliada por um fator inteiro no modo gerente) e devolve
     /// onde ficam as coisas clicáveis, as placas dos setores e o marcador de construção.
     /// </summary>
-    public class SalaIso
+    public partial class SalaIso
     {
         // tamanho da sala (em quadrados) por cargo
         static readonly Vector2Int[] Tamanhos = { new Vector2Int(6, 5), new Vector2Int(9, 7), new Vector2Int(12, 9), new Vector2Int(14, 10), new Vector2Int(16, 11) };
@@ -29,6 +29,7 @@ namespace IdleDataCenter.Gerente
                 case "Energia": case "Refrigeracao": return 1;
                 case "Storage": case "Rede": case "Automacao": return 2;
                 case "NOC": return 3;
+                case "Campus": return 5;
                 default: return -1;
             }
         }
@@ -37,8 +38,8 @@ namespace IdleDataCenter.Gerente
         public struct Placa { public string Setor, Nome; public Vector2Int Pos; public Color Cor; }
 
         readonly Economia E;
-        PixelCanvas tela;
-        IsoDesenho d;
+        PixelCanvas tela, telaSala;
+        IsoDesenho d, dSala;
         int cargoMontado = -1, W, D;
         public Texture2D Textura => tela?.Textura;
         public int Largura => tela.Largura;
@@ -76,8 +77,8 @@ namespace IdleDataCenter.Gerente
             W = tam.x; D = tam.y;
             // a tela cabe a próxima sala (para o contorno da expansão), com margem para as placas
             int largura = (prox.x + prox.y) * IsoDesenho.TW / 2 + 40, altura = (prox.x + prox.y) * IsoDesenho.TH / 2 + AlturaParede + 44;
-            tela = new PixelCanvas(largura, altura);
-            d = new IsoDesenho(tela) { Ox = 20 + prox.y * IsoDesenho.TW / 2, Oy = AlturaParede + 30 };
+            telaSala = new PixelCanvas(largura, altura);
+            dSala = new IsoDesenho(telaSala) { Ox = 20 + prox.y * IsoDesenho.TW / 2, Oy = AlturaParede + 30 };
             if (cargoDosPersonagens != E.Cargo) CarregarPersonagens();
         }
 
@@ -108,12 +109,20 @@ namespace IdleDataCenter.Gerente
 
         // ---------------- Desenho ----------------
 
-        public void Desenhar(float tempo)
+        /// <param name="campus">No Arquiteto: true mostra o quarteirão com os prédios; false, a sala de dentro do DC-01.</param>
+        public void Desenhar(float tempo, bool campus = false)
         {
             t = tempo;
-            if (cargoMontado != E.Cargo || tela == null) Montar();
             Alvos.Clear(); Placas.Clear(); fila.Clear();
             Marcador = null; Expansao = null; Chamado = null;
+            if (campus)
+            {
+                if (cargoDosPersonagens != E.Cargo) CarregarPersonagens();
+                DesenharCampus();
+                return;
+            }
+            if (cargoMontado != E.Cargo || telaSala == null) Montar();
+            tela = telaSala; d = dSala;
             tela.Limpar(new Color32(0, 0, 0, 0));
 
             PisoEParedes();

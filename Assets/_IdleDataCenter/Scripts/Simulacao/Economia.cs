@@ -45,6 +45,10 @@ namespace IdleDataCenter.Simulacao
         public event Action<string> ChamadoApareceu;
         /// <summary>Chamado atendido (bônus) ou perdido (0).</summary>
         public event Action<double> ChamadoEncerrado;
+        /// <summary>Queda de energia num datacenter extra (índice 1..3, como DC-02..DC-04).</summary>
+        public event Action<int> QuedaDeEnergia;
+        /// <summary>O datacenter voltou (true se foi sozinho: técnico, gerador ou failover).</summary>
+        public event Action<int, bool> EnergiaVoltou;
 
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
@@ -88,6 +92,19 @@ namespace IdleDataCenter.Simulacao
         public bool PicoViolado => Estado.picoViolado;
         public double SegundosDePico => Estado.picoDecorrido;
         public double SegundosAteProximoPico => Estado.proximoPico;
+        public int DatacentersExtras => Nivel(Catalogo.Datacenter);
+        public int TotalDatacenters => 1 + DatacentersExtras;
+        public bool NoCampus => Estado.cargo >= 5;
+        /// <summary>Datacenters extras ligados por fibra ao DC-01 (cada link vale +20%).</summary>
+        public int DatacentersInterligados => Math.Min(Nivel(Catalogo.Fibra), DatacentersExtras);
+        /// <summary>Qual DC está sem energia (1..3), ou 0 se nenhum.</summary>
+        public int DatacenterSemEnergia => Estado.quedaDc;
+        public bool TemQuedaDeEnergia => Estado.quedaDc > 0;
+        public double SegundosSemEnergia => Estado.quedaSegundos;
+        public double TempoReligar =>
+            TemAutomacao(Catalogo.Failover) ? Catalogo.TempoFailover
+            : Nivel(Catalogo.Gerador) > 0 ? Catalogo.TempoGerador
+            : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
         /// <summary>Até quando dá para escalar sem violar o SLA (segundos desde o começo do pico).</summary>
         public double LimiteParaEscalar => Catalogo.TempoParaEscalar + (TemBalanceador ? Catalogo.TempoExtraBalanceador : 0);
 
@@ -145,8 +162,10 @@ namespace IdleDataCenter.Simulacao
         public double TrafegoMbps => Torres * Catalogo.TrafegoTorre + ServidoresRack * Catalogo.TrafegoServidor1U
                                    + RacksCheios * Catalogo.TrafegoRackCheio + HostsContainers * Catalogo.TrafegoHostContainers + NosKubernetes * Catalogo.TrafegoNoKubernetes;
         public double BandaMbps => Catalogo.BandaBase + Nivel(Catalogo.Link) * Catalogo.BandaPorLink + Nivel(Catalogo.Link10G) * Catalogo.BandaLink10G;
-        public bool LinkSaturado => TrafegoMbps > BandaMbps + 1e-9;
-        public double FatorBanda => LinkSaturado ? BandaMbps / TrafegoMbps : 1;
+        /// <summary>A CDN entrega parte do conteúdo de fora: sobra banda no link do DC-01.</summary>
+        double FatorTrafegoCdn => Math.Max(0.1, 1 - Nivel(Catalogo.Cdn) * Catalogo.ReducaoTrafegoCdn);
+        public bool LinkSaturado => TrafegoMbps * FatorTrafegoCdn > BandaMbps + 1e-9;
+        public double FatorBanda => LinkSaturado ? BandaMbps / (TrafegoMbps * FatorTrafegoCdn) : 1;
 
         /// <summary>Storage vende banco de dados gerenciado; com um disco queimado o RAID fica degradado e esse bônus some.</summary>
         public double FatorStorage => DiscoQueimado ? 1 : 1 + NivelStorage * Catalogo.BonusStorage;
@@ -155,6 +174,21 @@ namespace IdleDataCenter.Simulacao
         public double FatorGeral => FatorEnergia * FatorTemperatura * FatorBanda * FatorStorage
                                    * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
                                    * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1);
+
+        /// <summary>Tudo o que vale para a empresa inteira (todos os datacenters): café, observabilidade, fibra, CDN, balanceamento global.</summary>
+        public double FatorEmpresa => (CafeAtivo ? Catalogo.MultiplicadorCafe : 1)
+            * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
+            * (1 + DatacentersInterligados * Catalogo.BonusFibra)
+            * (1 + Nivel(Catalogo.Cdn) * Catalogo.BonusCdn)
+            * (TemAutomacao(Catalogo.BalanceamentoGlobal) ? 1.15 : 1);
+
+        /// <summary>No campus, a fibra, a CDN e o balanceamento global também turbinam o DC-01.</summary>
+        double FatorCampus => (1 + DatacentersInterligados * Catalogo.BonusFibra) * (1 + Nivel(Catalogo.Cdn) * Catalogo.BonusCdn)
+                            * (TemAutomacao(Catalogo.BalanceamentoGlobal) ? 1.15 : 1);
+
+        /// <summary>Receita dos datacenters novos (o que estiver sem energia não rende).</summary>
+        public double ReceitaDatacenters =>
+            (DatacentersExtras - (TemQuedaDeEnergia ? 1 : 0)) * Catalogo.ReceitaDatacenter * FatorEmpresa;
 
         /// <summary>Hypervisor: cada servidor físico vira várias VMs vendidas como VPS.</summary>
         public double FatorVirtualizacao => 1 + NivelHypervisor * Catalogo.BonusVirtualizacao;
@@ -189,7 +223,7 @@ namespace IdleDataCenter.Simulacao
             {
                 double soma = 0;
                 for (int i = 0; i < TotalServidores; i++) soma += ReceitaDoServidor(i);
-                return soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes;
+                return (soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes) * FatorCampus + ReceitaDatacenters;
             }
         }
 
@@ -254,6 +288,7 @@ namespace IdleDataCenter.Simulacao
             AvancarEscrita(segundos);
             AvancarPico(segundos);
             AvancarCafeEChamados(segundos);
+            AvancarQuedaDeEnergia(segundos);
 
             // Novas travadas: cada servidor tem uma chance por segundo (maior com calor, menor com monitoramento)
             double mult = (Quente ? Catalogo.MultiplicadorQuente : 1) / (TemAutomacao(Catalogo.Monitoramento) ? Catalogo.FatorMtbfMonitoramento : 1)
@@ -367,6 +402,39 @@ namespace IdleDataCenter.Simulacao
             if (Estado.travamentos.RemoveAll(t => t.servidor == servidor) == 0) return;
             Estado.incidentesResolvidos++;
             Voltou?.Invoke(servidor, porTecnico);
+        }
+
+        // ---------------- Queda de energia (Arquiteto) ----------------
+
+        void AvancarQuedaDeEnergia(double segundos)
+        {
+            if (TemQuedaDeEnergia)
+            {
+                Estado.quedaSegundos += segundos;
+                if (Estado.quedaSegundos >= TempoReligar) Religar(sozinho: true);
+                return;
+            }
+            if (DatacentersExtras > 0 && sorteio.NextDouble() < segundos * DatacentersExtras / Catalogo.MtbfQuedaDeEnergia)
+                DerrubarEnergia(1 + sorteio.Next(DatacentersExtras));
+        }
+
+        public void DerrubarEnergia(int dc)
+        {
+            if (TemQuedaDeEnergia || dc < 1 || dc > DatacentersExtras) return;
+            Estado.quedaDc = dc;
+            Estado.quedaSegundos = 0;
+            QuedaDeEnergia?.Invoke(dc);
+        }
+
+        /// <summary>Religa o datacenter que caiu (clique do jogador ou sozinho).</summary>
+        public void Religar(bool sozinho = false)
+        {
+            if (!TemQuedaDeEnergia) return;
+            int dc = Estado.quedaDc;
+            Estado.quedaDc = -1;
+            Estado.quedaSegundos = 0;
+            Estado.incidentesResolvidos++;
+            EnergiaVoltou?.Invoke(dc, sozinho);
         }
 
         // ---------------- Café e chamados urgentes ----------------
@@ -550,6 +618,7 @@ namespace IdleDataCenter.Simulacao
                 case TipoMeta.AutomacoesAtivas: return AutomacoesAtivas;
                 case TipoMeta.HostsContainers: return HostsContainers;
                 case TipoMeta.PicosSobrevividos: return Estado.picosSobrevividos;
+                case TipoMeta.Datacenters: return TotalDatacenters;
                 default: return Estado.incidentesResolvidos;
             }
         }
@@ -625,6 +694,7 @@ namespace IdleDataCenter.Simulacao
                 if (DeployQuebrado) { FazerRollback(porTecnico: true); ConsertadosFora++; }
                 // pico em andamento quando o jogo fechou: acaba sem contar nem multar
                 if (EmPico) { Estado.picoNome = ""; Estado.picoDecorrido = 0; Estado.picoEscalado = Estado.picoViolado = false; }
+                if (TemQuedaDeEnergia) { Religar(sozinho: true); ConsertadosFora++; }
             }
             if (fora >= Catalogo.SegundosMinimosOffline) AvancarEscrita(fora); // o script continua sendo escrito
             double ganho = CalcularGanhoOffline(fora);

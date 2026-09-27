@@ -47,6 +47,10 @@ namespace IdleDataCenter.Simulacao
         public string chamadoTexto = "";
         public int chamadosAtendidos;
 
+        // Arquiteto: queda de energia num datacenter (índice do DC extra, -1 = nenhuma)
+        public int quedaDc = -1;
+        public double quedaSegundos;
+
         // Tutorial do modo gerente: passo atual (Catalogo.PassosTutorial = concluído)
         public int tutorial;
     }

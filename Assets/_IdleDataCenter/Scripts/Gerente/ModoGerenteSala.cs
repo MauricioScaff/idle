@@ -11,6 +11,8 @@ namespace IdleDataCenter.Gerente
         float proximoQuadroSala;
         Rect retSala;
         int zoomSala = 2;
+        bool verCampus = true;   // no Arquiteto: campus (true) ou a sala de dentro do DC-01 (false)
+        bool MostrandoCampus => E.NoCampus && verCampus;
 
         /// <summary>Textos "+R$" que sobem de onde se clicou.</summary>
         readonly List<(string texto, Vector2 pos, float nasceu, Color cor)> flutuantes = new List<(string, Vector2, float, Color)>();
@@ -26,7 +28,8 @@ namespace IdleDataCenter.Gerente
                 case 1: return E.TemRack ? Catalogo.Servidor1U : Catalogo.Rack;
                 case 2: return Catalogo.RackCheio;
                 case 3: return Catalogo.Containers;
-                default: return Catalogo.NoKubernetes;
+                case 4: return Catalogo.NoKubernetes;
+                default: return MostrandoCampus ? Catalogo.Datacenter : Catalogo.NoKubernetes;
             }
         }
 
@@ -36,7 +39,7 @@ namespace IdleDataCenter.Gerente
             if (salaIso == null) salaIso = new SalaIso(E);
             if (Time.unscaledTime < proximoQuadroSala) return;
             proximoQuadroSala = Time.unscaledTime + 1f / 12f;
-            salaIso.Desenhar(Time.unscaledTime);
+            salaIso.Desenhar(Time.unscaledTime, MostrandoCampus);
         }
 
         Vector2 NaTela(Vector2Int p) => new Vector2(retSala.x + p.x * zoomSala, retSala.y + p.y * zoomSala);
@@ -54,7 +57,10 @@ namespace IdleDataCenter.Gerente
             GUI.DrawTexture(retSala, salaIso.Textura, ScaleMode.StretchToFill);
 
             ui.Ret(new Rect(areaCentral.x, areaCentral.y, areaCentral.width, 23), new Color(.04f, .1f, .18f, .9f));
-            ui.Texto("DC-01  /  " + E.CargoAtual.Lugar.ToUpperInvariant(), areaCentral.x + 12, areaCentral.y + 7, IsoGui.Cyan);
+            ui.Texto(MostrandoCampus ? "CAMPUS  /  " + E.TotalDatacenters + (E.TotalDatacenters == 1 ? " DATACENTER" : " DATACENTERS") : "DC-01  /  " + (E.NoCampus ? "SALA DE RACKS" : E.CargoAtual.Lugar.ToUpperInvariant()),
+                areaCentral.x + 12, areaCentral.y + 7, IsoGui.Cyan);
+            if (E.NoCampus && ui.Botao(new Rect(areaCentral.x + 300, areaCentral.y + 1, 230, 21), verCampus ? "ENTRAR NO DC-01" : "VER O CAMPUS", IsoGui.Cyan, Livre, 2))
+                verCampus = !verCampus;
             const string dica = "CLIQUE NOS EQUIPAMENTOS E NAS PLACAS";
             ui.Texto(dica, areaCentral.xMax - 12 - PixelCanvas.LarguraTexto(dica) * 2, areaCentral.y + 7, IsoGui.Muted);
 
@@ -75,7 +81,7 @@ namespace IdleDataCenter.Gerente
             foreach (var p in salaIso.Placas)
             {
                 var pos = NaTela(p.Pos);
-                bool alerta = (p.Setor == "Storage" && E.DiscoQueimado) || (p.Setor == "NOC" && Incidentes > 0)
+                bool alerta = (p.Setor == "Campus" && E.TemQuedaDeEnergia) || (p.Setor == "Storage" && E.DiscoQueimado) || (p.Setor == "NOC" && Incidentes > 0)
                               || (p.Setor == "Energia" && E.Sobrecarga) || (p.Setor == "Refrigeracao" && E.Quente) || (p.Setor == "Rede" && E.LinkSaturado);
                 var cor = alerta && Mathf.FloorToInt(Time.unscaledTime * 3) % 2 == 0 ? IsoGui.Laranja : p.Cor;
                 int largura = PixelCanvas.LarguraTexto(p.Nome) * 2 + 22;
@@ -158,6 +164,12 @@ namespace IdleDataCenter.Gerente
             else if (tipo == "k8s" && E.EmPico && !E.PicoFoiEscalado) { Escalar(); Flutuar("ESCALADO", pos, IsoGui.Cyan); return; }
             else if (tipo == "noc") { Abrir("NOC"); return; }
             else if (tipo == "cafe") { TomarCafe(pos); return; }
+            else if (tipo.StartsWith("dc:"))
+            {
+                int dc = int.Parse(tipo.Substring(3));
+                if (dc == 0) { verCampus = false; Notificar("Dentro do DC-01. \"Ver o campus\" volta para o quarteirão."); return; }
+                if (E.DatacenterSemEnergia == dc) { faixa.Religar(); Flutuar("ENERGIA DE VOLTA", pos, IsoGui.Verde); return; }
+            }
             else if (tipo == "chamado") { AtenderChamado(pos); return; }
 
             double valor = E.ClicarEquipamento();
@@ -198,7 +210,7 @@ namespace IdleDataCenter.Gerente
         {
             ("Visao", "VISAO GERAL"), ("Compute", "COMPUTE"), ("Energia", "ENERGIA"), ("Refrigeracao", "REFRIGERACAO"),
             ("Storage", "STORAGE"), ("Rede", "REDE"), ("NOC", "NOC"), ("Equipe", "EQUIPE"), ("Automacao", "AUTOMACAO"),
-            ("Melhorias", "MELHORIAS"), ("Carreira", "CARREIRA"),
+            ("Campus", "CAMPUS"), ("Melhorias", "MELHORIAS"), ("Carreira", "CARREIRA"),
         };
 
         void Navegacao()
@@ -209,7 +221,7 @@ namespace IdleDataCenter.Gerente
             {
                 var (id, rotulo) = Menus[i];
                 bool travado = SalaIso.CargoDoSetor(id) > E.Cargo;
-                var r = new Rect(10, 130 + i * 44, 156, 38);
+                var r = new Rect(10, 128 + i * 42, 156, 36);
                 bool ativo = selecionado == id;
                 ui.Caixa(r, ativo ? IsoGui.Cor("165d81") : IsoGui.Painel, ativo ? IsoGui.Cyan : IsoGui.Borda);
                 ui.Icone(i, r.x + 10, r.y + 11, travado ? IsoGui.Borda : ativo ? IsoGui.Cyan : IsoGui.Muted);

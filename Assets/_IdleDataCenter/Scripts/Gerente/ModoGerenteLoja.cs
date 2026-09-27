@@ -23,6 +23,9 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.NoKubernetes: return "Nó Kubernetes";
                 case Catalogo.Balanceador: return "Balanceador";
                 case Catalogo.Observabilidade: return "Observabilidade";
+                case Catalogo.Datacenter: return "Novo datacenter";
+                case Catalogo.Fibra: return "Fibra entre DCs";
+                case Catalogo.Gerador: return "Gerador diesel";
                 case Catalogo.ArCondicionado: return "Ar-condicionado";
                 default: return Catalogo.Buscar(id).Nome;
             }
@@ -41,6 +44,7 @@ namespace IdleDataCenter.Gerente
                 case "Rede": return new[] { Catalogo.Link, Catalogo.Link10G };
                 case "NOC": return new[] { Catalogo.Observabilidade };
                 case "Equipe": return new[] { Catalogo.Estagiario };
+                case "Campus": return new[] { Catalogo.Datacenter, Catalogo.Fibra, Catalogo.Cdn, Catalogo.Gerador };
                 default:
                     // "Melhorias": tudo o que já dá para comprar primeiro, depois o que falta liberar, e o completo no fim
                     return Catalogo.Melhorias
@@ -61,6 +65,7 @@ namespace IdleDataCenter.Gerente
             "Automacao", "O TECNICO ESCREVE UM SCRIPT POR VEZ",
             "Melhorias", "TUDO O QUE DA PARA COMPRAR, DE TODOS OS SETORES",
             "Carreira", "METAS PARA A PROXIMA PROMOCAO",
+            "Campus", "PREDIOS NOVOS, FIBRA ENTRE ELES, CDN E GERADORES",
         };
 
         static string Subtitulo(string janela)
@@ -160,6 +165,7 @@ namespace IdleDataCenter.Gerente
             foreach (var t in E.Travamentos.Take(3)) { ui.Texto("SERVIDOR TRAVADO / VOLTA EM " + Numero(Math.Ceiling(E.TempoConserto - t.segundos)) + "S", r.x + 16, y, IsoGui.Laranja, 2); y += 20; }
             if (E.DiscoQueimado) { ui.Texto("DISCO QUEIMADO NO STORAGE", r.x + 16, y, IsoGui.Laranja, 2); y += 20; }
             if (E.DeployQuebrado) { ui.Texto("DEPLOY QUEBRADO / APPS FORA", r.x + 16, y, IsoGui.Laranja, 2); y += 20; }
+            if (E.TemQuedaDeEnergia) { ui.Texto("QUEDA DE ENERGIA NO DC-0" + (E.DatacenterSemEnergia + 1), r.x + 16, y, IsoGui.Laranja, 2); y += 20; }
             if (Incidentes == 0) ui.Texto("NENHUM. " + E.Estado.incidentesResolvidos + " RESOLVIDOS ATE HOJE.", r.x + 16, y, IsoGui.Verde, 2);
             if (ui.Botao(new Rect(r.xMax - 250, r.y + 16, 234, 34), "RESOLVER TUDO", IsoGui.Laranja, Incidentes > 0)) Resolver();
 

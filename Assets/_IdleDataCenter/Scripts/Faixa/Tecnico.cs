@@ -21,6 +21,7 @@ namespace IdleDataCenter
         const float MatizAnalista = 0.63f, BrilhoAnalista = 0.55f;  // polo azul-marinho
         const float MatizDevOps = 0.77f, BrilhoDevOps = 0.85f;      // moletom roxo
         const float MatizSre = 0.03f, BrilhoSre = 0.9f;             // moletom laranja de plantão
+        const float MatizArquiteto = 0.97f, BrilhoArquiteto = 0.5f;  // blazer vinho
 
         static readonly Dictionary<string, Quadros> cache = new Dictionary<string, Quadros>();
 
@@ -50,7 +51,8 @@ namespace IdleDataCenter
             if (cargo == 1) return ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
             if (cargo == 2) return ArteGerada.TrocarCorDaRoupa(t, MatizAnalista, brilho: BrilhoAnalista);
             if (cargo == 3) return ArteGerada.TrocarCorDaRoupa(t, MatizDevOps, brilho: BrilhoDevOps);
-            if (cargo >= 4) return ArteGerada.TrocarCorDaRoupa(t, MatizSre, brilho: BrilhoSre);
+            if (cargo == 4) return ArteGerada.TrocarCorDaRoupa(t, MatizSre, brilho: BrilhoSre);
+            if (cargo >= 5) return ArteGerada.TrocarCorDaRoupa(t, MatizArquiteto, brilho: BrilhoArquiteto);
             return t;
         }
 

@@ -31,7 +31,7 @@ namespace IdleDataCenter.Simulacao
         public double Segundos;     // tempo para escrever
     }
 
-    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos }
+    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos, Datacenters }
 
     public class MetaDef
     {
@@ -72,6 +72,10 @@ namespace IdleDataCenter.Simulacao
         public const string NoKubernetes = "k8s";        // cargo 5 (SRE)
         public const string Balanceador = "balanceador";
         public const string Observabilidade = "observabilidade";
+        public const string Datacenter = "datacenter";      // cargo 6 (Arquiteto)
+        public const string Fibra = "fibra";
+        public const string Cdn = "cdn";
+        public const string Gerador = "gerador";
 
         // --- Receita ---
         public const double ReceitaBaseServidor = 1;   // servidor torre sem melhorias (R$/s)
@@ -88,6 +92,10 @@ namespace IdleDataCenter.Simulacao
         public const double ReceitaNoKubernetes = 400;  // Kubernetes gerenciado, por nó
         public const double BonusBalanceador = 0.25;    // K8s +25%
         public const double BonusObservabilidade = 0.15; // SLA premium: receita +15% por nível
+        public const double ReceitaDatacenter = 5000;   // cada datacenter novo (tem energia, refrigeração e link próprios)
+        public const double BonusFibra = 0.2;           // rede global: +20% por datacenter interligado
+        public const double BonusCdn = 0.3;             // CDN: +30% por nível
+        public const double ReducaoTrafegoCdn = 0.3;    // e 30% menos tráfego no link do DC-01 por nível
 
         /// <summary>Clique no servidor vale isto + ValorCliqueReceita × receita por segundo.</summary>
         public const double ValorCliqueBase = 2;
@@ -165,6 +173,10 @@ namespace IdleDataCenter.Simulacao
         public const double FatorPipeline = 4;           // testes no pipeline: 4x menos deploys quebrados
         public const double DescontoIac = 0.15;          // infra como código: melhorias 15% mais baratas
 
+        // --- Queda de energia nos datacenters (Arquiteto) ---
+        public const double MtbfQuedaDeEnergia = 1500;   // por datacenter extra
+        public const double TempoGerador = 5, TempoFailover = 2;
+
         // --- Picos de tráfego (SRE) ---
         public const double PrimeiroPico = 600;          // segundos depois de virar SRE
         public const double IntervaloPicoMin = 900, IntervaloPicoMax = 1500;
@@ -228,7 +240,17 @@ namespace IdleDataCenter.Simulacao
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 40000000, Texto = "Faturar R$ 40M" },
                 },
             },
-            new CargoDef { Nome = "SRE", Lugar = "Data center pequeno", MetasParaPromocao = new MetaDef[0] },
+            new CargoDef
+            {
+                Nome = "SRE", Lugar = "Data center pequeno",
+                MetasParaPromocao = new[]
+                {
+                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 5, Texto = "Superar 5 picos" },
+                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 10, Texto = "10 automações ativas" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 250000000, Texto = "Faturar R$ 250M" },
+                },
+            },
+            new CargoDef { Nome = "Arquiteto", Lugar = "Campus de datacenters", MetasParaPromocao = new MetaDef[0] },
         };
 
         public static readonly IReadOnlyList<MelhoriaDef> Melhorias = new[]
@@ -256,6 +278,11 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = NoKubernetes, Nome = "Nó K8s", Efeito = "+400/s, 0.8 kW, 150 Mb", Cargo = 4, NivelMaximo = 6, CustoBase = 4000000, FatorCusto = 1.6 },
             new MelhoriaDef { Id = Balanceador, Nome = "Balanceador", Efeito = "K8s +25%, +10 s p/ escalar", Cargo = 4, Requisito = NoKubernetes, NivelMaximo = 1, CustoBase = 6000000, FatorCusto = 1 },
             new MelhoriaDef { Id = Observabilidade, Nome = "Observab.", Efeito = "Observabilidade: +15% (SLA)", Cargo = 4, NivelMaximo = 3, CustoBase = 5000000, FatorCusto = 2.5 },
+
+            new MelhoriaDef { Id = Datacenter, Nome = "Datacenter", Efeito = "Novo prédio: +5K/s", Cargo = 5, NivelMaximo = 3, CustoBase = 50000000, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = Fibra, Nome = "Fibra", Efeito = "Liga um DC: receita +20%", Cargo = 5, Requisito = Datacenter, NivelMaximo = 3, CustoBase = 30000000, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = Cdn, Nome = "CDN", Efeito = "+30% e -30% de tráfego", Cargo = 5, NivelMaximo = 3, CustoBase = 40000000, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = Gerador, Nome = "Gerador", Efeito = "Queda de luz: volta em 5 s", Cargo = 5, Requisito = Datacenter, NivelMaximo = 1, CustoBase = 20000000, FatorCusto = 1 },
         };
 
         // --- Ids das automações ---
@@ -270,6 +297,8 @@ namespace IdleDataCenter.Simulacao
         public const string Autoscaling = "autoscaling";
         public const string Chaos = "chaos";
         public const string Runbooks = "runbooks";
+        public const string Failover = "failover";
+        public const string BalanceamentoGlobal = "global";
 
         public static readonly IReadOnlyList<AutomacaoDef> Automacoes = new[]
         {
@@ -284,6 +313,8 @@ namespace IdleDataCenter.Simulacao
             new AutomacaoDef { Id = Autoscaling, Nome = "Autoscaling", Descricao = "Escala o cluster sozinho nos picos", Cargo = 4, Requisito = NoKubernetes, Custo = 8000000, Segundos = 900 },
             new AutomacaoDef { Id = Chaos, Nome = "Chaos engineering", Descricao = "Falhas testadas antes: metade dos incidentes", Cargo = 4, Custo = 6000000, Segundos = 720 },
             new AutomacaoDef { Id = Runbooks, Nome = "Runbooks automáticos", Descricao = "Todo conserto automático em 3 s", Cargo = 4, Custo = 10000000, Segundos = 1080 },
+            new AutomacaoDef { Id = Failover, Nome = "Failover entre DCs", Descricao = "Queda de energia volta em 2 s", Cargo = 5, Requisito = Datacenter, Custo = 60000000, Segundos = 1200 },
+            new AutomacaoDef { Id = BalanceamentoGlobal, Nome = "Balanceamento global", Descricao = "Tráfego no DC certo: receita +15%", Cargo = 5, Requisito = Fibra, Custo = 90000000, Segundos = 1500 },
         };
 
         public static AutomacaoDef BuscarAutomacao(string id)

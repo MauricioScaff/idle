@@ -25,7 +25,7 @@ namespace IdleDataCenter.Gerente
         void IniciarPrimeiraHora()
         {
             E.Comprou += id => salaIso?.Comprou(id, Time.unscaledTime);
-            E.Promoveu += c => { festaDesde = Time.unscaledTime; festaCargo = E.CargoAtual.Nome.ToUpperInvariant(); };
+            E.Promoveu += c => { verCampus = true; festaDesde = Time.unscaledTime; festaCargo = E.CargoAtual.Nome.ToUpperInvariant(); };
             E.ChamadoApareceu += texto => Notificar("Chamado urgente: " + texto + "! Clique no papel sobre a mesa.", 8);
             E.ChamadoEncerrado += bonus => { if (bonus <= 0) Notificar("O chamado foi embora sem resposta."); };
         }

@@ -463,7 +463,7 @@ namespace IdleDataCenter.Testes
             e.Estado.automacoes.Add(Catalogo.RollbackAutomatico);
             Assert.IsTrue(e.Promover());
             Assert.AreEqual("SRE", e.CargoAtual.Nome);
-            Assert.IsFalse(e.TemProximoCargo, "SRE é o último cargo por enquanto");
+            Assert.IsFalse(e.PodePromover, "o SRE tem metas próprias");
         }
 
         [Test]
@@ -553,6 +553,76 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual(Catalogo.TempoRunbook, e.TempoConserto, 1e-9);
             Assert.AreEqual(Catalogo.TempoRunbook, e.TempoTrocaDisco, 1e-9);
             Assert.AreEqual(Catalogo.TempoRunbook, e.TempoRollback, 1e-9);
+        }
+
+        // ---------- Arquiteto ----------
+
+        static Economia NoCampus(double dinheiro = 0, double sorteio = 0.9999)
+        {
+            var e = Nova(dinheiro, sorteio);
+            e.Estado.cargo = 5;
+            return e;
+        }
+
+        [Test]
+        public void SreViraArquiteto()
+        {
+            var e = NoSre();
+            e.Estado.picosSobrevividos = 5;
+            e.Estado.totalGanho = 250000000;
+            e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.Monitoramento, Catalogo.CronFaturamento, Catalogo.Plantao,
+                                                 Catalogo.Pipeline, Catalogo.RollbackAutomatico, Catalogo.InfraComoCodigo, Catalogo.Autoscaling });
+            Assert.IsFalse(e.PodePromover, "faltam automações");
+            e.Estado.automacoes.Add(Catalogo.Chaos);
+            Assert.IsTrue(e.Promover());
+            Assert.AreEqual("Arquiteto", e.CargoAtual.Nome);
+            Assert.IsFalse(e.TemProximoCargo, "Arquiteto é o último cargo por enquanto");
+        }
+
+        [Test]
+        public void DatacenterNovoRendeComFibraECdn()
+        {
+            var e = NoCampus();
+            DefinirNivel(e, Catalogo.Datacenter, 1);
+            Assert.AreEqual(1 + Catalogo.ReceitaDatacenter, e.ReceitaPorSegundo, 1e-6);
+            DefinirNivel(e, Catalogo.Fibra, 1);
+            Assert.AreEqual((1 + Catalogo.ReceitaDatacenter) * 1.2, e.ReceitaPorSegundo, 1e-6);
+            DefinirNivel(e, Catalogo.Cdn, 1);
+            Assert.AreEqual((1 + Catalogo.ReceitaDatacenter) * 1.2 * 1.3, e.ReceitaPorSegundo, 1e-6);
+        }
+
+        [Test]
+        public void FibraSoContaParaDatacentersQueExistem()
+        {
+            var e = NoCampus();
+            DefinirNivel(e, Catalogo.Datacenter, 1);
+            DefinirNivel(e, Catalogo.Fibra, 3);
+            Assert.AreEqual(1, e.DatacentersInterligados);
+        }
+
+        [Test]
+        public void QuedaDeEnergiaDerrubaUmDatacenterEGeradorReligaRapido()
+        {
+            var e = NoCampus();
+            DefinirNivel(e, Catalogo.Datacenter, 2);
+            e.DerrubarEnergia(2);
+            Assert.IsTrue(e.TemQuedaDeEnergia);
+            Assert.AreEqual(1 + Catalogo.ReceitaDatacenter, e.ReceitaPorSegundo, 1e-6, "um dos dois DCs parado");
+            e.Avancar(Catalogo.TempoGerador);
+            Assert.IsTrue(e.TemQuedaDeEnergia, "sem gerador o técnico leva 30 s");
+            DefinirNivel(e, Catalogo.Gerador, 1);
+            e.Avancar(0.01);
+            Assert.IsFalse(e.TemQuedaDeEnergia);
+        }
+
+        [Test]
+        public void CdnAliviaOLinkDoDc01()
+        {
+            var e = NoCampus();
+            DefinirNivel(e, Catalogo.RackCheio, 2);   // 10 + 320 Mbps no link de 200
+            Assert.IsTrue(e.LinkSaturado);
+            DefinirNivel(e, Catalogo.Cdn, 2);          // 40% do tráfego: 132 Mbps
+            Assert.IsFalse(e.LinkSaturado);
         }
 
         // ---------- Automações ----------

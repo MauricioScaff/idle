@@ -54,6 +54,8 @@ namespace IdleDataCenter
             economia.PicoTerminou += AoTerminarPico;
             economia.ChamadoApareceu += AoAparecerChamado;
             economia.ChamadoEncerrado += AoEncerrarChamado;
+            economia.QuedaDeEnergia += dc => { Loja.MostrarAviso("Queda de energia no DC-0" + (dc + 1) + "!", 3f, Vermelho); Sons.Alerta(); };
+            economia.EnergiaVoltou += (dc, sozinho) => { Loja.MostrarAviso("DC-0" + (dc + 1) + " religado", 2f, VerdeClaro); Sons.Conserto(); };
             // quem já passou do começo não precisa do tutorial
             if (!economia.TutorialConcluido && (economia.Cargo > 0 || economia.Estado.totalGanho > 2000))
                 economia.AvancarTutorial(Catalogo.PassosTutorial);
@@ -260,6 +262,9 @@ namespace IdleDataCenter
         }
 
         float PosicaoDoChamado => cenario.PosicaoMesa - 4;
+
+        /// <summary>Religa o datacenter que ficou sem energia (painel, modo gerente).</summary>
+        public void Religar() => economia.Religar();
 
         /// <summary>Rollback pelo painel.</summary>
         public void FazerRollback() => economia.FazerRollback(porTecnico: false);

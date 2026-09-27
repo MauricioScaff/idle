@@ -29,6 +29,7 @@ namespace IdleDataCenter
             [2] = new[] { "A salinha vira sala de racks,", "com energia e ar de precisão.", "Racks cheios, storage e backup.", "A banda do link passa a importar." },
             [3] = new[] { "A sala escurece: vira", "sala virtualizada.", "Hypervisor, containers e CI.", "Deploys às vezes quebram." },
             [4] = new[] { "Data center pequeno com", "cluster Kubernetes e NOC.", "Picos de tráfego: escale", "a tempo ou pague multa de SLA." },
+            [5] = new[] { "A sala vira o prédio DC-01", "num campus com vários", "datacenters, fibra e CDN.", "Cuidado com quedas de energia." },
         };
 
         Faixa faixa;
@@ -292,6 +293,16 @@ namespace IdleDataCenter
                 Botao(new RectInt(x + 70, y, 57, 14), "Reiniciar", "#fdf6e3", "#7a2a3a", () => faixa.Reiniciar(idx));
             }
             int linha = Math.Min(3, lista.Count);
+            if (economia.TemQuedaDeEnergia && linha < 3)
+            {
+                int y = 121 + linha * 16;
+                linha++;
+                bool piscar = Mathf.FloorToInt(t * 3) % 2 == 0;
+                R(x + 5, y + 2, 3, 3, piscar ? "#ffd65c" : "#5a4a1a");
+                T("DC-0" + (economia.DatacenterSemEnergia + 1) + " sem luz", x + 11, y + 1, "#fdf6e3", false);
+                T($"{economia.TempoReligar - economia.SegundosSemEnergia:0}s", x + 11, y + 8, "#ff7a8a", false);
+                Botao(new RectInt(x + 70, y, 57, 14), "Religar", "#1b1a2e", "#ffd65c", faixa.Religar);
+            }
             if (economia.EmPico)
             {
                 // o pico vem primeiro: é o único incidente que dá prêmio se for atendido a tempo
