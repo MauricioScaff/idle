@@ -38,6 +38,7 @@ Assets/_IdleDataCenter/
   Scripts/Janela/     janela transparente acima da barra de tarefas (Win32)
   Scripts/Visual/     pixel art, paleta, fonte de pixel e a "tela de desenho" do painel
   Scripts/Faixa/      cenário, técnico, servidores, loja, painel e cliques
+  Scripts/Gerente/    modo gerente: vista isométrica em tela cheia (ilustração em Resources/Isometrico)
   Testes/             testes da economia e do ritmo (Window > General > Test Runner)
   Editor/             menu "Idle Data Center" (configurar projeto, gerar build)
 ```
