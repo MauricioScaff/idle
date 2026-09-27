@@ -11,7 +11,19 @@ namespace IdleDataCenter.Ferramentas
     {
         void OnPreprocessTexture()
         {
-            if (!assetPath.Replace('\\', '/').Contains("/_IdleDataCenter/Resources/Arte/")) return;
+            string caminho = assetPath.Replace('\\', '/');
+            if (caminho.Contains("/_IdleDataCenter/Resources/Isometrico/"))
+            {
+                // modo gerente: a ilustração é lida pixel a pixel para escurecer os setores bloqueados
+                var iso = (TextureImporter)assetImporter;
+                iso.isReadable = true;
+                iso.mipmapEnabled = false;
+                iso.textureCompression = TextureImporterCompression.Uncompressed;
+                iso.npotScale = TextureImporterNPOTScale.None;
+                iso.wrapMode = TextureWrapMode.Clamp;
+                return;
+            }
+            if (!caminho.Contains("/_IdleDataCenter/Resources/Arte/")) return;
             var importador = (TextureImporter)assetImporter;
             importador.textureType = TextureImporterType.Default;
             importador.isReadable = true;

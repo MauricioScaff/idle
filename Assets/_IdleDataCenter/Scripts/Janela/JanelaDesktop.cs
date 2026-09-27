@@ -94,7 +94,9 @@ namespace IdleDataCenter
         {
             SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(WS_POPUP | (visivel ? WS_VISIBLE : 0)));
             SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW | (clicavel ? 0 : WS_EX_TRANSPARENT)));
-            SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
+            // na faixa, preto puro vira transparente; no modo gerente a janela é opaca (a ilustração tem preto)
+            if (ModoGerente) SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+            else SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
             var margens = new MARGINS { cxLeftWidth = -1 };
             DwmExtendFrameIntoClientArea(hwnd, ref margens);
         }
@@ -176,6 +178,18 @@ namespace IdleDataCenter
         /// Liga ou desliga o "clique atravessando". Chamar todo quadro: true quando o cursor
         /// está sobre algo do jogo, false quando está sobre área vazia.
         /// </summary>
+        /// <summary>Janela ocupando a área de trabalho inteira, opaca (o modo gerente isométrico).</summary>
+        public bool ModoGerente { get; private set; }
+
+        public void DefinirModoGerente(bool sim)
+        {
+            ModoGerente = sim;
+            DefinirAlturaVirtual(sim ? AlturaVirtualMaxima : AlturaVirtual);
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+            if (Ativa) AplicarEstilo();
+#endif
+        }
+
         public void DefinirClicavel(bool sim)
         {
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
@@ -309,7 +323,7 @@ namespace IdleDataCenter
         const int GWL_STYLE = -16, GWL_EXSTYLE = -20;
         const long WS_POPUP = 0x80000000L, WS_VISIBLE = 0x10000000L, WS_CAPTION = 0x00C00000L;
         const long WS_EX_LAYERED = 0x80000L, WS_EX_TRANSPARENT = 0x20L, WS_EX_TOOLWINDOW = 0x80L;
-        const uint LWA_COLORKEY = 0x1;
+        const uint LWA_COLORKEY = 0x1, LWA_ALPHA = 0x2;
         const uint SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20, SWP_SHOWWINDOW = 0x40;
         const uint SPI_GETWORKAREA = 0x30;
         const int SW_HIDE = 0, SW_SHOWNA = 8;

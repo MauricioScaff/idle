@@ -1,4 +1,5 @@
 using System;
+using IdleDataCenter.Gerente;
 using IdleDataCenter.Simulacao;
 using UnityEngine;
 
@@ -24,6 +25,7 @@ namespace IdleDataCenter
         Cenario cenario;
         Painel painel;
         ResumoOffline resumo;
+        ModoGerente gerente;
         PixelTexto textoDinheiro, textoReceita, textoAmbiente;
         BotaoTexto botaoMeta;
         SpriteRenderer setaDica;
@@ -68,6 +70,8 @@ namespace IdleDataCenter
             painel.Iniciar(this, economia, new Vector2(CenarioX, JanelaDesktop.AlturaVirtual + Painel.Espaco));
             resumo = new GameObject("ResumoOffline").AddComponent<ResumoOffline>();
             resumo.Iniciar(this, economia);
+            gerente = new GameObject("ModoGerente").AddComponent<ModoGerente>();
+            gerente.Iniciar(this, economia);
             Posicionar();
 
             if (ganhoOffline > 0)
@@ -89,6 +93,8 @@ namespace IdleDataCenter
                 if (arg == "-incidente") economia.Travar(0);
                 if (arg == "-promover") economia.Promover(); // só se as metas estiverem cumpridas
                 if (arg == "-alternar-painel") InvokeRepeating(nameof(AlternarPainel), 5f, 4f); // abre e fecha sozinho (teste da janela)
+                if (arg == "-gerente") AbrirGerente();   // abre direto no modo gerente (teste)
+                if (arg == "-alternar-gerente") InvokeRepeating(nameof(AlternarGerente), 5f, 5f);   // entra e sai do modo gerente (teste da janela)
             }
         }
 
@@ -115,6 +121,7 @@ namespace IdleDataCenter
             textoReceita = PixelTexto.Criar(raiz, new Vector2(40, LinhaHud), VerdeClaro, 10, true);
             textoAmbiente = PixelTexto.Criar(raiz, new Vector2(80, LinhaHud), Laranja, 10, true);
             botaoMeta = BotaoTexto.Criar(raiz, new Vector2(100, LinhaHud), Azul, AoClicarMeta);
+            BotaoIcone.Criar(raiz, Arte.Gerente, new Vector2(cenario.Largura - 32, LinhaHud - 1), AbrirGerente);
             BotaoIcone.Criar(raiz, Arte.Ocultar, new Vector2(cenario.Largura - 24, LinhaHud - 1), Ocultar);
             BotaoIcone.Criar(raiz, Arte.AbrirPainel, new Vector2(cenario.Largura - 16, LinhaHud - 1), AlternarPainel);
             BotaoIcone.Criar(raiz, Arte.Fechar, new Vector2(cenario.Largura - 8, LinhaHud - 1), Application.Quit);
@@ -355,6 +362,7 @@ namespace IdleDataCenter
         /// <summary>A janela cresce para cima o bastante para o painel ou o aviso de volta (o que estiver aberto).</summary>
         void AtualizarAlturaJanela()
         {
+            if (gerente != null && gerente.Aberto) return;   // o modo gerente ocupa a tela toda
             int extra = painel.Aberto ? Painel.Altura : resumo.Aberto ? ResumoOffline.Altura : 0;
             janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual + (extra > 0 ? Painel.Espaco + Mathf.CeilToInt(extra * EscalaRelativaDoPainel) + 2 : 0));
         }
@@ -386,6 +394,29 @@ namespace IdleDataCenter
             else AbrirPainel();
         }
 
+        // ---------------- Modo gerente (vista isométrica) ----------------
+
+        /// <summary>Troca a faixa pela vista isométrica do data center, na tela toda. Esc volta.</summary>
+        public void AbrirGerente()
+        {
+            if (gerente.Aberto) return;
+            if (painel.Aberto) painel.Fechar();
+            resumo.Fechar();
+            gerente.Abrir();
+            janela.DefinirModoGerente(true);
+            Sons.Tique();
+        }
+
+        void AlternarGerente() { if (gerente.Aberto) FecharGerente(); else AbrirGerente(); }
+
+        public void FecharGerente()
+        {
+            if (!gerente.Aberto) return;
+            gerente.Fechar();
+            janela.DefinirModoGerente(false);
+            AtualizarAlturaJanela();
+        }
+
         // ---------------- Esconder ----------------
 
         float ocultarEm = -1;
@@ -406,7 +437,8 @@ namespace IdleDataCenter
             AtualizarCamera();
             PixelTexto.EscalaTexto = EscalaRelativaDoPainel; // texto da faixa na mesma escala do painel
             Posicionar();
-            ProcessarCursor();
+            if (gerente.Aberto) janela.DefinirClicavel(true);   // no modo gerente a janela inteira recebe cliques (OnGUI)
+            else ProcessarCursor();
 
             economia.Avancar(Time.deltaTime);
             cenario.AtualizarIncidentes();
@@ -485,7 +517,7 @@ namespace IdleDataCenter
             }
             else meta = "";
             botaoMeta.Definir(meta, cor);
-            botaoMeta.transform.localPosition = new Vector3(cenario.Largura - 38 - PixelTexto.LarguraAmpliada(meta), LinhaHud, 0); // longe do alerta da primeira torre
+            botaoMeta.transform.localPosition = new Vector3(cenario.Largura - 46 - PixelTexto.LarguraAmpliada(meta), LinhaHud, 0); // longe do alerta da primeira torre
         }
 
         /// <summary>
