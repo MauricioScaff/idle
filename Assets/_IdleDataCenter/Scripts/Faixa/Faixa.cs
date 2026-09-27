@@ -23,6 +23,7 @@ namespace IdleDataCenter
         JanelaDesktop janela;
         Cenario cenario;
         Painel painel;
+        ResumoOffline resumo;
         PixelTexto textoDinheiro, textoReceita, textoAmbiente;
         BotaoTexto botaoMeta;
         SpriteRenderer setaDica;
@@ -51,14 +52,20 @@ namespace IdleDataCenter
             janela = gameObject.AddComponent<JanelaDesktop>();
             PixelTexto.EscalaTexto = EscalaRelativaDoPainel;
 
+            Sons.Iniciar();
+
             MontarTudo();
             painel = new GameObject("Painel").AddComponent<Painel>();
             painel.Iniciar(this, economia, new Vector2(CenarioX, JanelaDesktop.AlturaVirtual + Painel.Espaco));
+            resumo = new GameObject("ResumoOffline").AddComponent<ResumoOffline>();
+            resumo.Iniciar(this, economia);
+            Posicionar();
 
             if (ganhoOffline > 0)
             {
-                Loja.MostrarAviso("Voltou! +R$ " + Formatar(ganhoOffline), 8f);
                 Ganho(ganhoOffline, cenario.PrimeiraTorre.Topo + new Vector2(-8, 3));
+                resumo.Mostrar();
+                AtualizarAlturaJanela();
             }
             proximoSalvamento = Time.time + IntervaloSalvamento;
 
@@ -143,8 +150,13 @@ namespace IdleDataCenter
             {
                 Faiscas(topo, 3);
                 Loja.MostrarAviso("Reiniciado!", 1.2f, VerdeClaro);
+                Sons.Conserto();
             }
-            else Ganho(valor, topo + new Vector2(-4, 1));
+            else
+            {
+                Ganho(valor, topo + new Vector2(-4, 1));
+                Sons.Moeda();
+            }
             setaDica.enabled = false;
         }
 
@@ -180,16 +192,22 @@ namespace IdleDataCenter
             if (id == Catalogo.Rack || id == Catalogo.Servidor1U) Faiscas(cenario.TopoDoServidor(economia.TotalServidores - 1), 4);
             cenario.PularTudo();
             cenario.Tecnico.Comemorar();
+            Sons.Compra();
             Salvamento.Salvar(economia.Estado);
         }
 
-        void AoTravar(int servidor) => Loja.MostrarAviso("Servidor travou!", 2f, Vermelho);
+        void AoTravar(int servidor)
+        {
+            Loja.MostrarAviso("Servidor travou!", 2f, Vermelho);
+            Sons.Alerta();
+        }
 
         void AoVoltar(int servidor, bool peloTecnico)
         {
             if (!peloTecnico) return;
             Loja.MostrarAviso("Técnico consertou", 1.5f, VerdeClaro);
             cenario.Tecnico.Comemorar();
+            Sons.Conserto();
         }
 
         void AoPromover(int cargo)
@@ -201,6 +219,7 @@ namespace IdleDataCenter
                 Efeito(cenario.transform, i % 3 == 0 ? Arte.Coracao : Arte.Faisca,
                     new Vector2(UnityEngine.Random.Range(10, cenario.Largura - 10), UnityEngine.Random.Range(8, 32)), 1.2f, 6f);
             cenario.Tecnico.Comemorar();
+            Sons.Promocao();
             Salvamento.Salvar(economia.Estado);
         }
 
@@ -209,10 +228,20 @@ namespace IdleDataCenter
         /// <summary>O painel usa uma escala maior que a faixa (texto legível); na tela, cada pixel dele vale EscalaPainel pixels.</summary>
         float EscalaRelativaDoPainel => janela.EscalaPainel / (float)janela.Escala;
 
+        /// <summary>A janela cresce para cima o bastante para o painel ou o aviso de volta (o que estiver aberto).</summary>
+        void AtualizarAlturaJanela()
+        {
+            int extra = painel.Aberto ? Painel.Altura : resumo.Aberto ? ResumoOffline.Altura : 0;
+            janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual + (extra > 0 ? Painel.Espaco + Mathf.CeilToInt(extra * EscalaRelativaDoPainel) + 2 : 0));
+        }
+
+        public void AoFecharResumo() => AtualizarAlturaJanela();
+
         void AbrirPainel()
         {
+            resumo.Fechar();
             painel.Abrir();
-            janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual + Painel.Espaco + Mathf.CeilToInt(Painel.Altura * EscalaRelativaDoPainel) + 2);
+            AtualizarAlturaJanela();
         }
 
         void AbrirCarreira()
@@ -224,7 +253,7 @@ namespace IdleDataCenter
         void FecharPainel()
         {
             painel.Fechar();
-            janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual);
+            AtualizarAlturaJanela();
         }
 
         void AlternarPainel()
@@ -251,8 +280,8 @@ namespace IdleDataCenter
         {
             if (ocultarEm > 0 && Time.time >= ocultarEm) { ocultarEm = -1; janela.AlternarOculta(); }
             AtualizarCamera();
-            painel.transform.localScale = Vector3.one * EscalaRelativaDoPainel;
             PixelTexto.EscalaTexto = EscalaRelativaDoPainel; // texto da faixa na mesma escala do painel
+            Posicionar();
             ProcessarCursor();
 
             economia.Avancar(Time.deltaTime);
@@ -267,6 +296,24 @@ namespace IdleDataCenter
                 proximoSalvamento = Time.time + IntervaloSalvamento;
                 Salvamento.Salvar(economia.Estado);
             }
+        }
+
+        /// <summary>
+        /// Encosta cenário + loja (e o painel) na esquerda ou na direita da tela, conforme os Ajustes.
+        /// Tudo em coordenadas inteiras, para a pixel art continuar nítida.
+        /// </summary>
+        void Posicionar()
+        {
+            float s = EscalaRelativaDoPainel;
+            float larguraTela = Screen.width / (float)janela.Escala;
+            float faixaTotal = cenario.Largura + 4 + Loja.Largura;
+            float x = Ajustes.Direita ? Mathf.Floor(larguraTela - faixaTotal - CenarioX) : CenarioX;
+            cenario.transform.position = new Vector3(x, 0, 0);
+            Loja.transform.position = new Vector3(x + cenario.Largura + 4, 0, 0);
+            float y = JanelaDesktop.AlturaVirtual + Painel.Espaco;
+            painel.transform.localScale = resumo.transform.localScale = Vector3.one * s;
+            painel.transform.position = new Vector3(Ajustes.Direita ? Mathf.Floor(larguraTela - Painel.Largura * s - CenarioX) : CenarioX, y, 0);
+            resumo.transform.position = new Vector3(Ajustes.Direita ? Mathf.Floor(larguraTela - ResumoOffline.Largura * s - CenarioX) : CenarioX, y, 0);
         }
 
         void AtualizarHud()
@@ -342,6 +389,7 @@ namespace IdleDataCenter
                 sobCursor = escolhido;
             }
             if (escolhido is Painel p) p.DefinirCursor(mundo);
+            if (escolhido is ResumoOffline r) r.DefinirCursor(mundo);
 
             if (painel.Aberto && Input.GetKeyDown(KeyCode.Escape)) FecharPainel();
             if (!Input.GetMouseButtonDown(0)) return;
@@ -354,8 +402,9 @@ namespace IdleDataCenter
             if (escolhido is Painel painelClicado)
             {
                 painelClicado.ClicarEm(mundo);
-                if (!painel.Aberto) janela.DefinirAlturaVirtual(JanelaDesktop.AlturaVirtual); // fechou pelo "x"
+                if (!painel.Aberto) AtualizarAlturaJanela(); // fechou pelo "x"
             }
+            else if (escolhido is ResumoOffline resumoClicado) resumoClicado.ClicarEm(mundo);
             else escolhido.Clicar();
         }
 

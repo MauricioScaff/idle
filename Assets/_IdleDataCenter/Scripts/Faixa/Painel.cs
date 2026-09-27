@@ -16,7 +16,7 @@ namespace IdleDataCenter
         public const int Largura = 560, Altura = 236, Espaco = 4;
         const float Fps = 12f;
 
-        enum Aba { VisaoGeral, Melhorias, Carreira }
+        enum Aba { VisaoGeral, Melhorias, Carreira, Ajustes }
 
         static readonly string[] Escada =
         {
@@ -69,10 +69,10 @@ namespace IdleDataCenter
         public void Abrir() => Mostrar(true);
         public void AbrirCarreira() { aba = Aba.Carreira; Mostrar(true); }
 
-        /// <summary>Abre numa aba pelo nome ("visao", "melhorias" ou "carreira"); usado nos testes.</summary>
+        /// <summary>Abre numa aba pelo nome ("visao", "melhorias", "carreira" ou "ajustes"); usado nos testes.</summary>
         public void AbrirAba(string nome)
         {
-            aba = nome == "melhorias" ? Aba.Melhorias : nome == "carreira" ? Aba.Carreira : Aba.VisaoGeral;
+            aba = nome == "melhorias" ? Aba.Melhorias : nome == "carreira" ? Aba.Carreira : nome == "ajustes" ? Aba.Ajustes : Aba.VisaoGeral;
             Mostrar(true);
         }
         public void Fechar() => Mostrar(false);
@@ -92,7 +92,7 @@ namespace IdleDataCenter
         {
             var p = ParaLocal(mundo);
             for (int i = botoes.Count - 1; i >= 0; i--)
-                if (botoes[i].area.Contains(p)) { botoes[i].acao(); proximoDesenho = 0; return; }
+                if (botoes[i].area.Contains(p)) { Sons.Tique(); botoes[i].acao(); proximoDesenho = 0; return; }
         }
 
         public void Clicar() { }
@@ -131,6 +131,7 @@ namespace IdleDataCenter
                     break;
                 case Aba.Melhorias: AbaMelhorias(); break;
                 case Aba.Carreira: AbaCarreira(); break;
+                case Aba.Ajustes: AbaAjustes(); break;
             }
             tela.Aplicar();
         }
@@ -216,12 +217,12 @@ namespace IdleDataCenter
             var itens = new (string nome, Aba? aba)[]
             {
                 ("Visão geral", Aba.VisaoGeral), ("Melhorias", Aba.Melhorias), ("Carreira", Aba.Carreira),
-                ("Automação", null), ("Pesquisa", null), ("Conquistas", null),
+                ("Ajustes", Aba.Ajustes), ("Automação", null), ("Pesquisa", null),
             };
             string[][] icones =
             {
                 new[] { ".#.", "###", "#.#" }, new[] { ".#.", "###", ".#." }, new[] { "###", ".#.", ".#." },
-                new[] { "#.#", ".#.", "#.#" }, new[] { ".#.", ".#.", "###" }, new[] { "###", "#.#", ".#." },
+                new[] { "#.#", ".#.", "#.#" }, new[] { "#.#", ".#.", "#.#" }, new[] { ".#.", ".#.", "###" },
             };
             for (int i = 0; i < itens.Length; i++)
             {
@@ -350,6 +351,33 @@ namespace IdleDataCenter
             }
         }
 
+        // ---------------- Aba: Ajustes ----------------
+
+        void AbaAjustes()
+        {
+            Caixa(76, 20, 480, 212, "Ajustes");
+            int n = Mathf.Max(1, JanelaDesktop.QuantidadeMonitores);
+            var linhas = new (string rotulo, string valor, Action acao, bool ativo)[]
+            {
+                ("Som", Ajustes.Som ? "Ligado" : "Desligado", () => Ajustes.Som = !Ajustes.Som, true),
+                ("Volume", Ajustes.NomesVolume[Ajustes.Volume], () => Ajustes.Volume = (Ajustes.Volume + 1) % Ajustes.NomesVolume.Length, Ajustes.Som),
+                ("Zumbido de ventoinha", Ajustes.Zumbido ? "Ligado" : "Desligado", () => Ajustes.Zumbido = !Ajustes.Zumbido, Ajustes.Som),
+                ("Monitor", $"{(Ajustes.Monitor % n) + 1} de {n}", () => Ajustes.Monitor = (Ajustes.Monitor + 1) % n, n > 1),
+                ("Lado da tela", Ajustes.Direita ? "Direita" : "Esquerda", () => Ajustes.Direita = !Ajustes.Direita, true),
+                ("Esconder em tela cheia", Ajustes.EsconderEmTelaCheia ? "Sim" : "Não", () => Ajustes.EsconderEmTelaCheia = !Ajustes.EsconderEmTelaCheia, true),
+            };
+            for (int i = 0; i < linhas.Length; i++)
+            {
+                var (rotulo, valor, acao, ativo) = linhas[i];
+                int y = 36 + i * 26;
+                R(80, y - 4, 472, 22, i % 2 == 0 ? "#232747" : "#20233d");
+                T(rotulo, 90, y + 3, ativo ? "#fdf6e3" : "#6c7099", true, 1);
+                Botao(new RectInt(420, y - 2, 124, 18), valor, "#1b1a2e", "#a9c7ff", acao, ativo);
+            }
+            T("Esconder e mostrar a faixa: " + JanelaDesktop.Atalho, 90, 200, "#7d82ad", false);
+            T("O jogo continua rendendo com a faixa escondida.", 90, 210, "#4d5170", false);
+        }
+
         // ---------------- Aba: Carreira ----------------
 
         void AbaCarreira()
@@ -436,6 +464,7 @@ namespace IdleDataCenter
             var t = ArteGerada.Textura(cfg.Arte);
             cenaW = t.width; cenaH = t.height;
             cenaPx = ArteGerada.PixelsDeCimaParaBaixo(t);
+            PreencherBordaEscura();
             int tx0 = cenaW, ty0 = cenaH, tx1 = -1, ty1 = -1, peleY = cenaH, peleX = 0, peleN = 0;
             for (int y = 0; y < cenaH; y++)
             for (int x = 0; x < cenaW; x++)
@@ -465,6 +494,29 @@ namespace IdleDataCenter
             cabecaDev = new Vector2Int(peleN > 0 ? peleX / peleN : cenaW / 2, Mathf.Max(2, peleY - 22));
             gato = new Vector2Int(Mathf.RoundToInt(cenaW * 0.9f), 12);
             cenaTemGato = cfg.TemGato;
+        }
+
+        /// <summary>
+        /// Algumas cenas geradas vêm com uma faixa quase preta na borda direita. Ela é coberta com o espelho
+        /// das colunas logo ao lado (onde costumam estar os racks), para não sobrar um vão escuro no painel.
+        /// </summary>
+        void PreencherBordaEscura()
+        {
+            int faixa = 0;
+            for (int x = cenaW - 1; x > cenaW / 2; x--)
+            {
+                long soma = 0;
+                for (int y = 0; y < cenaH; y++) { var c = cenaPx[y * cenaW + x]; soma += c.r + c.g + c.b; }
+                if (soma / (cenaH * 3) > 16) break;
+                faixa++;
+            }
+            if (faixa == 0 || faixa > cenaW / 4) return;
+            int borda = cenaW - faixa;
+            for (int x = borda; x < cenaW; x++)
+            {
+                int origem = 2 * borda - 1 - x;
+                for (int y = 0; y < cenaH; y++) cenaPx[y * cenaW + x] = cenaPx[y * cenaW + origem];
+            }
         }
 
         static int Sorteio(int a, int b) => Mathf.Abs(a * 7919 + b * 104729) % 11;

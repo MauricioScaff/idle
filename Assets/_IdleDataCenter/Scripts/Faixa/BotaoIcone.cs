@@ -28,7 +28,11 @@ namespace IdleDataCenter
             return b;
         }
 
-        public void Clicar() => acao?.Invoke();
+        public void Clicar()
+        {
+            Sons.Tique();
+            acao?.Invoke();
+        }
 
         // A cor do renderizador multiplica a do sprite: cinza = apagado, branco = cor original acesa
         public void DefinirDestaque(bool ligado) => sr.color = ligado ? Color.white : new Color(0.7f, 0.7f, 0.7f);

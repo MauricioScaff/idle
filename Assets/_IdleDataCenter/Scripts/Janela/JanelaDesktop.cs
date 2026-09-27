@@ -142,6 +142,7 @@ namespace IdleDataCenter
             DwmExtendFrameIntoClientArea(hwnd, ref margens);
             Posicionar();
             Ativa = true;
+            Ajustes.Mudou += () => proximaChecagem = 0; // monitor ou tela cheia mudou: reavalia já
 #else
             yield break;
 #endif
@@ -163,6 +164,9 @@ namespace IdleDataCenter
 
         /// <summary>O jogador escondeu a faixa (botão ou Ctrl+Alt+D). O jogo continua rodando e rendendo.</summary>
         public bool OcultaPeloJogador { get; private set; }
+
+        /// <summary>Quantos monitores o Windows informou na última checagem.</summary>
+        public static int QuantidadeMonitores { get; private set; } = 1;
 
         /// <summary>Atalho global para esconder e mostrar a faixa.</summary>
         public const string Atalho = "Ctrl+Alt+D";
@@ -200,7 +204,7 @@ namespace IdleDataCenter
             proximaChecagem = Time.unscaledTime + 2f;
 
             // Some quando outro programa está em tela cheia (jogo, vídeo, apresentação)
-            escondida = SHQueryUserNotificationState(out int estado) == 0 && (estado == 2 || estado == 3 || estado == 4);
+            escondida = Ajustes.EsconderEmTelaCheia && SHQueryUserNotificationState(out int estado) == 0 && (estado == 2 || estado == 3 || estado == 4);
             AplicarVisibilidade();
             if (!visivel) return;
 
@@ -223,11 +227,31 @@ namespace IdleDataCenter
                 SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
         }
 
+        /// <summary>Área útil (sem a barra de tarefas) do monitor escolhido nos Ajustes; o principal é o 0.</summary>
         static RECT AreaDeTrabalho()
         {
-            var r = new RECT();
-            SystemParametersInfo(SPI_GETWORKAREA, 0, ref r, 0);
-            return r;
+            monitores.Clear();
+            EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, AnotarMonitor, IntPtr.Zero);
+            if (monitores.Count == 0)
+            {
+                var r = new RECT();
+                SystemParametersInfo(SPI_GETWORKAREA, 0, ref r, 0);
+                return r;
+            }
+            // principal primeiro, depois da esquerda para a direita
+            monitores.Sort((a, b) => a.primario != b.primario ? (a.primario ? -1 : 1) : a.area.Left.CompareTo(b.area.Left));
+            QuantidadeMonitores = monitores.Count;
+            return monitores[((Ajustes.Monitor % monitores.Count) + monitores.Count) % monitores.Count].area;
+        }
+
+        static readonly System.Collections.Generic.List<(RECT area, bool primario)> monitores = new System.Collections.Generic.List<(RECT, bool)>();
+
+        [AOT.MonoPInvokeCallback(typeof(MonitorEnumProc))]
+        static bool AnotarMonitor(IntPtr monitor, IntPtr hdc, IntPtr retangulo, IntPtr dados)
+        {
+            var info = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
+            if (GetMonitorInfo(monitor, ref info)) monitores.Add((info.rcWork, (info.dwFlags & 1) != 0));
+            return true;
         }
 
         static IntPtr janelaEncontrada;
@@ -286,6 +310,12 @@ namespace IdleDataCenter
         [DllImport("user32.dll")] static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint corChave, byte alfa, uint flags);
         [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hWnd, int comando);
         [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT p);
+        delegate bool MonitorEnumProc(IntPtr monitor, IntPtr hdc, IntPtr retangulo, IntPtr dados);
+        [DllImport("user32.dll")] static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr recorte, MonitorEnumProc cb, IntPtr dados);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct MONITORINFO { public int cbSize; public RECT rcMonitor, rcWork; public uint dwFlags; }
         [DllImport("user32.dll")] static extern short GetAsyncKeyState(int tecla);
         const int VK_CONTROL = 0x11, VK_MENU = 0x12, VK_D = 0x44;
         [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(POINT p);

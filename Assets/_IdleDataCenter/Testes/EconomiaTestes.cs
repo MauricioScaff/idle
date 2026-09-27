@@ -263,6 +263,9 @@ namespace IdleDataCenter.Testes
             double ganho = e.AplicarOffline(1000 + 3600);
             Assert.IsFalse(e.Travado(0));
             Assert.AreEqual(1800, ganho, 1e-9);
+            Assert.AreEqual(1, e.ConsertadosFora);
+            Assert.AreEqual(3600, e.SegundosFora, 1e-9);
+            Assert.IsFalse(e.PassouDoLimite);
         }
     }
 }

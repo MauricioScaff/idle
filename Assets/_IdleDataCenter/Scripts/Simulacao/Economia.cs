@@ -226,6 +226,13 @@ namespace IdleDataCenter.Simulacao
             return ReceitaPorSegundo * segundos * Catalogo.TaxaOffline;
         }
 
+        /// <summary>Resumo da última volta: quanto tempo ficou fora (s), quanto rendeu e quantos servidores o técnico consertou.</summary>
+        public double SegundosFora { get; private set; }
+        public double GanhoFora { get; private set; }
+        public int ConsertadosFora { get; private set; }
+        /// <summary>Ficou fora mais que o limite de horas (o que passou disso não rendeu).</summary>
+        public bool PassouDoLimite => SegundosFora > Catalogo.HorasMaximasOffline * 3600;
+
         /// <summary>
         /// Aplica o progresso offline desde o último save. Enquanto você estava fora, o técnico
         /// consertou o que tinha travado. Retorna o valor ganho.
@@ -234,8 +241,15 @@ namespace IdleDataCenter.Simulacao
         {
             if (Estado.ultimoSalvamentoUnix <= 0) return 0; // primeiro jogo
             double fora = agoraUnix - Estado.ultimoSalvamentoUnix;
-            if (fora >= Catalogo.SegundosMinimosOffline) Estado.travamentos.Clear();
+            SegundosFora = fora;
+            if (fora >= Catalogo.SegundosMinimosOffline)
+            {
+                ConsertadosFora = Estado.travamentos.Count;
+                Estado.incidentesResolvidos += ConsertadosFora;
+                Estado.travamentos.Clear();
+            }
             double ganho = CalcularGanhoOffline(fora);
+            GanhoFora = ganho;
             Ganhar(ganho);
             return ganho;
         }

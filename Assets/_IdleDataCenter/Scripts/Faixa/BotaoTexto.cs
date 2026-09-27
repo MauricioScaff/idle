@@ -37,7 +37,11 @@ namespace IdleDataCenter
 
         public float Largura => PixelTexto.Largura(texto.Texto ?? "");
 
-        public void Clicar() => acao?.Invoke();
+        public void Clicar()
+        {
+            Sons.Tique();
+            acao?.Invoke();
+        }
 
         public void DefinirDestaque(bool ligado)
         {
