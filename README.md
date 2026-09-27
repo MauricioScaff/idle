@@ -8,24 +8,27 @@ Jogo idle para Windows que vive numa faixa acima da barra de tarefas. Você come
 ## O que já dá pra jogar
 
 - **Faixa:** o cômodo do técnico (armário, depois salinha) e a loja de melhorias, sempre acima da barra de tarefas.
-- **Painel:** clique no ícone ▲ da faixa (ou em "Meta x/3"). Abas Visão geral, Melhorias e Carreira. Fecha com Esc, com o "x" ou clicando fora.
+- **Painel:** clique no ícone ▲ da faixa (ou em "Meta x/3"). Abas Visão geral, Melhorias, Carreira e Ajustes. Fecha com Esc, com o "x" ou clicando fora.
 - **Incidentes:** servidores travam de vez em quando. O técnico corre e conserta em 30 s, ou você clica no servidor e reinicia na hora. Contratando o **estagiário** (loja do Técnico), o conserto cai para 15 s e ele corre junto.
 - **Carreira:** Técnico de TI → Sysadmin. A promoção pede 3 servidores, R$ 20K faturados e 8 incidentes resolvidos.
 - **Sysadmin:** rack 42U com servidores 1U, energia (no-break) e temperatura (ar-condicionado).
 - **Esconder:** a setinha "v" na faixa, ou **Ctrl+Alt+D** de qualquer lugar (o mesmo atalho traz de volta). Escondido, o jogo continua rendendo.
-- Save automático e ganho offline (50% da receita, até 12 h).
+- Save automático e ganho offline (50% da receita, até 12 h). Ao abrir o jogo, o aviso "Enquanto você estava fora" mostra o tempo, quanto rendeu e o que o técnico consertou.
+- **Sons:** moeda, compra, alerta de servidor travado, conserto e promoção, todos sintetizados em código. Volume baixo por padrão.
+- **Ajustes** (aba do painel): som, volume, zumbido de ventoinha ao fundo, em qual monitor a faixa fica, lado da tela (esquerda/direita) e esconder ou não durante tela cheia. Ficam no PlayerPrefs, separados do save.
 
 ## Como rodar
 
 - **No editor:** abra a cena `Assets/_IdleDataCenter/Scenes/Faixa` e aperte Play. No editor a janela não fica transparente.
 - **Na faixa de verdade:** menu **Idle Data Center → Gerar build de Windows** e abra `Builds/IdleDataCenter.exe`.
-- **Opções de teste** (linha de comando do build): `-painel=visao|melhorias|carreira` abre o painel numa aba; `-incidente` trava o primeiro servidor.
+- **Opções de teste** (linha de comando do build): `-painel=visao|melhorias|carreira|ajustes` abre o painel numa aba; `-incidente` trava o primeiro servidor.
 - **Zerar o progresso:** apague `%USERPROFILE%\AppData\LocalLow\DefaultCompany\Idle Data Center\save.json`.
 
 ## Estrutura
 
 ```
 Assets/_IdleDataCenter/
+  Scripts/Core/       ajustes do jogador e sons
   Scripts/Simulacao/  regras do jogo em C# puro: economia, incidentes, energia, carreira, save
   Scripts/Janela/     janela transparente acima da barra de tarefas (Win32)
   Scripts/Visual/     pixel art, paleta, fonte de pixel e a "tela de desenho" do painel
