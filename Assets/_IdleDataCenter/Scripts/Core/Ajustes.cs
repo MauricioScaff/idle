@@ -58,6 +58,13 @@ namespace IdleDataCenter
             set => Gravar("telaCheia", value ? 1 : 0);
         }
 
+        /// <summary>Em que modo o jogo abre: o último usado (padrão: modo gerente, a vista isométrica). Não dispara Mudou.</summary>
+        public static bool AbrirNoGerente
+        {
+            get => PlayerPrefs.GetInt("abrirNoGerente", 1) == 1;
+            set { PlayerPrefs.SetInt("abrirNoGerente", value ? 1 : 0); PlayerPrefs.Save(); }
+        }
+
         static void Gravar(string chave, int valor)
         {
             PlayerPrefs.SetInt(chave, valor);

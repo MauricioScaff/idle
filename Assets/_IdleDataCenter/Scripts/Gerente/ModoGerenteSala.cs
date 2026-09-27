@@ -176,7 +176,7 @@ namespace IdleDataCenter.Gerente
             ui.Icone(0, 20, 19, IsoGui.Cyan, 5);
             ui.Texto("IDLE DATA CENTER", 65, 17, IsoGui.Branco, 3);
             ui.Texto("/ MODO GERENTE", 65, 43, IsoGui.Cyan, 2);
-            ui.Texto("ESC VOLTA PARA A FAIXA", 22, 66, IsoGui.Muted, 1);
+            ui.Texto("O SEU DATA CENTER", 22, 66, IsoGui.Muted, 1);
             Recurso(275, 184, "DINHEIRO", Dinheiro(E.Dinheiro), "+" + Dinheiro(E.ReceitaPorSegundo) + "/S", IsoGui.Verde);
             Recurso(469, 174, "ENERGIA", Numero(E.ConsumoKw) + " KW", "DE " + Numero(E.CapacidadeKw) + " KW", E.Sobrecarga ? IsoGui.Laranja : IsoGui.Laranja);
             Recurso(653, 174, "TEMPERATURA", Numero(Mathf.Round((float)E.Temperatura)) + " C", E.Quente ? "QUENTE: RENDE MENOS" : "ESTAVEL", E.Quente ? IsoGui.Laranja : IsoGui.Cyan);
@@ -219,8 +219,9 @@ namespace IdleDataCenter.Gerente
                 ui.Texto(rotulo, r.x + 32, r.y + 14, travado ? IsoGui.Borda : ativo ? IsoGui.Branco : IsoGui.Muted, 2);
                 if (GUI.Button(r, GUIContent.none, GUIStyle.none)) Abrir(id);
             }
-            if (ui.Botao(new Rect(10, 786, 156, 88), "VOLTAR", IsoGui.Cyan, true, 3)) faixa.FecharGerente();
-            ui.Texto("PARA A FAIXA", 88, 850, IsoGui.Muted, 1, true);
+            // encolhe o jogo para a faixa acima da barra de tarefas (o ◇ da faixa traz de volta)
+            if (ui.Botao(new Rect(10, 786, 156, 88), "IR PARA A FAIXA", IsoGui.Cyan, true, 2)) faixa.FecharGerente();
+            ui.Texto("JOGAR TRABALHANDO", 88, 852, IsoGui.Muted, 1, true);
         }
 
         // ---------------- Coluna da direita ----------------

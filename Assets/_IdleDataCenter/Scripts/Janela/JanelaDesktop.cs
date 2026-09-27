@@ -94,11 +94,30 @@ namespace IdleDataCenter
         {
             SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(WS_POPUP | (visivel ? WS_VISIBLE : 0)));
             SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_LAYERED | WS_EX_TOOLWINDOW | (clicavel ? 0 : WS_EX_TRANSPARENT)));
-            // na faixa, preto puro vira transparente; no modo gerente a janela é opaca (a ilustração tem preto)
-            if (ModoGerente) SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
-            else SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
+            SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
             var margens = new MARGINS { cxLeftWidth = -1 };
             DwmExtendFrameIntoClientArea(hwnd, ref margens);
+        }
+
+        /// <summary>
+        /// Janela normal do Windows para o modo gerente: com barra de título, na barra de tarefas, redimensionável
+        /// e sem "sempre por cima". Abre centralizada ocupando 90% da área útil do monitor.
+        /// </summary>
+        void EntrarJanelaNormal()
+        {
+            ultimaArea = AreaDeTrabalho();
+            int areaW = ultimaArea.Largura, areaH = ultimaArea.Bottom - ultimaArea.Top;
+            int w = Mathf.Min(1700, areaW * 9 / 10), h = Mathf.Min(1060, areaH * 9 / 10);
+            SetWindowLongPtr(hwnd, GWL_STYLE, new IntPtr(WS_OVERLAPPEDWINDOW | WS_VISIBLE));
+            SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(WS_EX_APPWINDOW));
+            var semVidro = new MARGINS();
+            DwmExtendFrameIntoClientArea(hwnd, ref semVidro);
+            SetWindowPos(hwnd, HWND_NOTOPMOST, ultimaArea.Left + (areaW - w) / 2, ultimaArea.Top + (areaH - h) / 2, w, h,
+                SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+            ShowWindow(hwnd, SW_SHOW);
+            SetForegroundWindow(hwnd);
+            visivel = true;
+            Application.targetFrameRate = 30;
         }
 #endif
 
@@ -157,6 +176,14 @@ namespace IdleDataCenter
                 yield break;
             }
 
+            if (ModoGerente)
+            {
+                EntrarJanelaNormal();
+                Ativa = true;
+                Ajustes.Mudou += () => proximaChecagem = 0;
+                yield break;
+            }
+
             ultimaArea = AreaDeTrabalho();
             AlturaVirtualAtual = Mathf.Clamp(AlturaVirtualAtual, AlturaVirtual, (ultimaArea.Bottom - ultimaArea.Top) / Escala);
             Screen.SetResolution(ultimaArea.Largura, AlturaFisica(), FullScreenMode.Windowed);
@@ -178,22 +205,30 @@ namespace IdleDataCenter
         /// Liga ou desliga o "clique atravessando". Chamar todo quadro: true quando o cursor
         /// está sobre algo do jogo, false quando está sobre área vazia.
         /// </summary>
-        /// <summary>Janela ocupando a área de trabalho inteira, opaca (o modo gerente isométrico).</summary>
+        /// <summary>Modo gerente: janela normal do Windows com a vista isométrica (em vez da faixa transparente).</summary>
         public bool ModoGerente { get; private set; }
 
         public void DefinirModoGerente(bool sim)
         {
+            if (sim == ModoGerente) return;
             ModoGerente = sim;
-            DefinirAlturaVirtual(sim ? AlturaVirtualMaxima : AlturaVirtual);
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
-            if (Ativa) AplicarEstilo();
+            if (!Ativa) return;   // o Start ainda vai montar a janela no modo certo
+            if (sim) { EntrarJanelaNormal(); return; }
+            // de volta à faixa: estilo transparente, sempre por cima, colada na barra de tarefas
+            if (IsIconic(hwnd)) ShowWindow(hwnd, SW_RESTORE);   // minimizada, a janela ignoraria o novo tamanho
+            clicavel = true;
+            AlturaVirtualAtual = AlturaVirtual;
+            ultimaArea = AreaDeTrabalho();
+            AplicarEstilo();
+            Redimensionar();
 #endif
         }
 
         public void DefinirClicavel(bool sim)
         {
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
-            if (!Ativa || sim == clicavel) return;
+            if (!Ativa || ModoGerente || sim == clicavel) return;
             clicavel = sim;
             long ex = WS_EX_LAYERED | WS_EX_TOOLWINDOW | (sim ? 0 : WS_EX_TRANSPARENT);
             SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(ex));
@@ -231,7 +266,7 @@ namespace IdleDataCenter
 
         void Update()
         {
-            if (!Ativa) return;
+            if (!Ativa || ModoGerente) return;   // a janela normal é do Windows: nada de reposicionar nem esconder
 
             // Ctrl+Alt+D, lido direto do Windows para funcionar mesmo sem foco (só essas três teclas são consultadas)
             bool atalho = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 && (GetAsyncKeyState(VK_MENU) & 0x8000) != 0 && (GetAsyncKeyState(VK_D) & 0x8000) != 0;
@@ -321,13 +356,15 @@ namespace IdleDataCenter
         // --- Win32 ---
 
         const int GWL_STYLE = -16, GWL_EXSTYLE = -20;
-        const long WS_POPUP = 0x80000000L, WS_VISIBLE = 0x10000000L, WS_CAPTION = 0x00C00000L;
+        const long WS_POPUP = 0x80000000L, WS_VISIBLE = 0x10000000L, WS_CAPTION = 0x00C00000L, WS_OVERLAPPEDWINDOW = 0x00CF0000L;
+        const long WS_EX_APPWINDOW = 0x40000L;
         const long WS_EX_LAYERED = 0x80000L, WS_EX_TRANSPARENT = 0x20L, WS_EX_TOOLWINDOW = 0x80L;
         const uint LWA_COLORKEY = 0x1, LWA_ALPHA = 0x2;
         const uint SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20, SWP_SHOWWINDOW = 0x40;
         const uint SPI_GETWORKAREA = 0x30;
-        const int SW_HIDE = 0, SW_SHOWNA = 8;
+        const int SW_HIDE = 0, SW_SHOW = 5, SW_SHOWNA = 8, SW_RESTORE = 9;
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
 
         [StructLayout(LayoutKind.Sequential)]
         struct MARGINS { public int cxLeftWidth, cxRightWidth, cyTopHeight, cyBottomHeight; }
@@ -353,6 +390,8 @@ namespace IdleDataCenter
         [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hWnd, IntPtr depoisDe, int x, int y, int cx, int cy, uint flags);
         [DllImport("user32.dll")] static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint corChave, byte alfa, uint flags);
         [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hWnd, int comando);
+        [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr hWnd);
+        [DllImport("user32.dll")] static extern bool IsIconic(IntPtr hWnd);
         [DllImport("user32.dll")] static extern bool GetCursorPos(out POINT p);
         delegate bool MonitorEnumProc(IntPtr monitor, IntPtr hdc, IntPtr retangulo, IntPtr dados);
         [DllImport("user32.dll")] static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr recorte, MonitorEnumProc cb, IntPtr dados);

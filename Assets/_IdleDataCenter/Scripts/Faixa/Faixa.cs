@@ -93,9 +93,17 @@ namespace IdleDataCenter
                 if (arg == "-incidente") economia.Travar(0);
                 if (arg == "-promover") economia.Promover(); // só se as metas estiverem cumpridas
                 if (arg == "-alternar-painel") InvokeRepeating(nameof(AlternarPainel), 5f, 4f); // abre e fecha sozinho (teste da janela)
-                if (arg == "-gerente") AbrirGerente();   // abre direto no modo gerente (teste)
                 if (arg == "-alternar-gerente") InvokeRepeating(nameof(AlternarGerente), 5f, 5f);   // entra e sai do modo gerente (teste da janela)
             }
+
+            // O jogo abre no modo em que foi fechado (na primeira vez, no modo gerente).
+            // Testes: -gerente e -faixa forçam um modo sem mexer na preferência do jogador; -painel abre na faixa.
+            var args = Environment.GetCommandLineArgs();
+            bool forcaFaixa = Array.Exists(args, a => a == "-faixa" || a.StartsWith("-painel"));
+            bool forcaGerente = Array.Exists(args, a => a == "-gerente");
+            if (forcaGerente || (!forcaFaixa && Ajustes.AbrirNoGerente)) AbrirGerente(lembrar: false);
+            if (gerente.Aberto && ganhoOffline > 0)
+                gerente.Avisar("Enquanto você estava fora: +R$ " + Formatar(ganhoOffline) + " (" + (economia.TaxaOffline * 100).ToString("0") + "% da receita)", 12);
         }
 
         /// <summary>Monta (ou remonta, na promoção) o cenário do cargo atual, o HUD e a loja.</summary>
@@ -396,10 +404,14 @@ namespace IdleDataCenter
 
         // ---------------- Modo gerente (vista isométrica) ----------------
 
-        /// <summary>Troca a faixa pela vista isométrica do data center, na tela toda. Esc volta.</summary>
-        public void AbrirGerente()
+        /// <summary>Troca a faixa pela vista isométrica do data center, numa janela normal. O botão "Ir para a faixa" volta.</summary>
+        public void AbrirGerente() => AbrirGerente(lembrar: true);
+
+        /// <param name="lembrar">Guarda como o modo em que o jogo abre da próxima vez (só em ações do jogador).</param>
+        void AbrirGerente(bool lembrar)
         {
             if (gerente.Aberto) return;
+            if (lembrar) Ajustes.AbrirNoGerente = true;
             if (painel.Aberto) painel.Fechar();
             resumo.Fechar();
             gerente.Abrir();
@@ -407,11 +419,14 @@ namespace IdleDataCenter
             Sons.Tique();
         }
 
-        void AlternarGerente() { if (gerente.Aberto) FecharGerente(); else AbrirGerente(); }
+        void AlternarGerente() { if (gerente.Aberto) FecharGerente(lembrar: false); else AbrirGerente(lembrar: false); }
 
-        public void FecharGerente()
+        public void FecharGerente() => FecharGerente(lembrar: true);
+
+        void FecharGerente(bool lembrar)
         {
             if (!gerente.Aberto) return;
+            if (lembrar) Ajustes.AbrirNoGerente = false;
             gerente.Fechar();
             janela.DefinirModoGerente(false);
             AtualizarAlturaJanela();

@@ -9,7 +9,7 @@ namespace IdleDataCenter.Gerente
     /// em vista isométrica (ilustração e interface vindas do protótipo feito no Codex). Usa a mesma Economia
     /// da faixa, então dinheiro, compras, automações e promoções são os mesmos nos dois modos.
     /// Os setores ainda não liberados pelo cargo aparecem escurecidos, com a placa "libera no ...".
-    /// Esc (ou "Voltar à faixa") fecha.
+    /// É o modo principal do jogo; "Ir para a faixa" encolhe tudo para a faixa discreta acima da barra de tarefas.
     /// </summary>
     public partial class ModoGerente : MonoBehaviour
     {
@@ -65,7 +65,7 @@ namespace IdleDataCenter.Gerente
             Aberto = true;
             janela = "";
             selecionado = "Visao";
-            Notificar("Data center de " + E.CargoAtual.Nome + ". Esc volta para a faixa.", 6);
+            Notificar("Data center de " + E.CargoAtual.Nome + ". \"Ir para a faixa\" deixa o jogo discreto enquanto você trabalha.", 7);
         }
 
         public void Fechar() => Aberto = false;
@@ -73,11 +73,7 @@ namespace IdleDataCenter.Gerente
         void Update()
         {
             if (!Aberto) return;
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                if (!string.IsNullOrEmpty(janela)) Abrir("Visao");
-                else faixa.FecharGerente();
-            }
+            if (Input.GetKeyDown(KeyCode.Escape) && !string.IsNullOrEmpty(janela)) Abrir("Visao");   // Esc fecha a janela aberta
             flashCompra = Mathf.Max(0, flashCompra - Time.unscaledDeltaTime);
         }
 
@@ -90,6 +86,9 @@ namespace IdleDataCenter.Gerente
         }
 
         void Notificar(string texto, float segundos = 5) { aviso = texto; avisoAte = Time.unscaledTime + segundos; }
+
+        /// <summary>Aviso vindo de fora (por exemplo, o resumo de quando o jogo estava fechado).</summary>
+        public void Avisar(string texto, float segundos) => Notificar(texto, segundos);
 
         void Abrir(string secao)
         {
