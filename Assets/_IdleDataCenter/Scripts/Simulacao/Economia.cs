@@ -23,6 +23,10 @@ namespace IdleDataCenter.Simulacao
         public event Action<int, bool> Voltou;
         /// <summary>Promoção para um novo cargo (índice do cargo novo).</summary>
         public event Action<int> Promoveu;
+        /// <summary>Um disco do storage queimou.</summary>
+        public event Action DiscoQueimou;
+        /// <summary>O disco foi trocado: (restaurou do backup?, quanto se perdeu em reembolsos, foi o técnico sozinho?).</summary>
+        public event Action<bool, double, bool> DiscoTrocado;
 
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
@@ -45,6 +49,15 @@ namespace IdleDataCenter.Simulacao
         public int Ventoinhas => Nivel(Catalogo.Ventoinha);
         public bool TemRack => Nivel(Catalogo.Rack) > 0;
         public bool TemEstagiario => Nivel(Catalogo.Estagiario) > 0;
+        public int RacksCheios => Nivel(Catalogo.RackCheio);
+        public int NivelStorage => Nivel(Catalogo.Storage);
+        public bool TemBackup => Nivel(Catalogo.Backup) > 0;
+        public bool NaSalaDeRacks => Estado.cargo >= 2;
+        public bool DiscoQueimado => Estado.discoQueimado;
+        public double SegundosDiscoQueimado => Estado.discoSegundos;
+
+        /// <summary>Quantos servidores existem de verdade (os racks cheios contam cada servidor).</summary>
+        public int ContagemServidores => TotalServidores + RacksCheios * Catalogo.ServidoresPorRackCheio;
 
         /// <summary>Quanto tempo o técnico leva para consertar sozinho (com estagiário, metade).</summary>
         public double TempoConserto => TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
@@ -55,19 +68,35 @@ namespace IdleDataCenter.Simulacao
             * (1 + Ventoinhas * Catalogo.BonusVentoinha);
 
         // Energia
-        public double ConsumoKw => Torres * Catalogo.ConsumoServidorTorre + ServidoresRack * Catalogo.ConsumoServidor1U;
-        public double CapacidadeKw => Catalogo.CapacidadeBaseKw + Nivel(Catalogo.NoBreak) * Catalogo.CapacidadePorNoBreak;
+        public double ConsumoKw => Torres * Catalogo.ConsumoServidorTorre + ServidoresRack * Catalogo.ConsumoServidor1U
+                                 + RacksCheios * Catalogo.ConsumoRackCheio + NivelStorage * Catalogo.ConsumoStorage;
+        public double CapacidadeKw => Catalogo.CapacidadeBaseKw + Nivel(Catalogo.NoBreak) * Catalogo.CapacidadePorNoBreak
+                                    + (NaSalaDeRacks ? Catalogo.CapacidadeSalaDeRacksKw : 0);
         public bool Sobrecarga => ConsumoKw > CapacidadeKw + 1e-9;
         /// <summary>Com sobrecarga, a receita cai na proporção da energia que falta.</summary>
         public double FatorEnergia => Sobrecarga ? CapacidadeKw / ConsumoKw : 1;
 
         // Temperatura
         public double Temperatura =>
-            Catalogo.TemperaturaAmbiente + ConsumoKw * Catalogo.GrausPorKw
-            - Nivel(Catalogo.ArCondicionado) * Catalogo.GrausPorArCondicionado;
+            Catalogo.TemperaturaAmbiente + ConsumoKw * Catalogo.GrausPorKw * (NaSalaDeRacks ? Catalogo.FatorCalorSalaDeRacks : 1)
+            - Nivel(Catalogo.ArCondicionado) * Catalogo.GrausPorArCondicionado
+            - (NaSalaDeRacks ? Catalogo.GrausArDePrecisao : 0);
         public bool Quente => Temperatura > Catalogo.TemperaturaQuente;
         public double FatorTemperatura =>
             Temperatura > Catalogo.TemperaturaCritica ? 0.3 : Quente ? 0.6 : 1;
+
+        // Banda: com o link saturado, todo mundo fica lento e a receita cai na proporção
+        public double TrafegoMbps => Torres * Catalogo.TrafegoTorre + ServidoresRack * Catalogo.TrafegoServidor1U
+                                   + RacksCheios * Catalogo.TrafegoRackCheio;
+        public double BandaMbps => Catalogo.BandaBase + Nivel(Catalogo.Link) * Catalogo.BandaPorLink;
+        public bool LinkSaturado => TrafegoMbps > BandaMbps + 1e-9;
+        public double FatorBanda => LinkSaturado ? BandaMbps / TrafegoMbps : 1;
+
+        /// <summary>Storage vende banco de dados gerenciado; com um disco queimado o RAID fica degradado e esse bônus some.</summary>
+        public double FatorStorage => DiscoQueimado ? 1 : 1 + NivelStorage * Catalogo.BonusStorage;
+
+        /// <summary>Tudo que multiplica a receita de todos os servidores.</summary>
+        public double FatorGeral => FatorEnergia * FatorTemperatura * FatorBanda * FatorStorage;
 
         public bool Travado(int servidor) => Estado.travamentos.Exists(t => t.servidor == servidor);
         public IReadOnlyList<Travamento> Travamentos => Estado.travamentos;
@@ -76,7 +105,9 @@ namespace IdleDataCenter.Simulacao
         public double ReceitaBruta(int servidor) => EhTorre(servidor) ? ReceitaTorre : Catalogo.ReceitaServidor1U;
 
         public double ReceitaDoServidor(int servidor) =>
-            Travado(servidor) ? 0 : ReceitaBruta(servidor) * FatorEnergia * FatorTemperatura;
+            Travado(servidor) ? 0 : ReceitaBruta(servidor) * FatorGeral;
+
+        public double ReceitaDosRacksCheios => RacksCheios * Catalogo.ReceitaRackCheio * FatorGeral;
 
         public double ReceitaPorSegundo
         {
@@ -84,7 +115,7 @@ namespace IdleDataCenter.Simulacao
             {
                 double soma = 0;
                 for (int i = 0; i < TotalServidores; i++) soma += ReceitaDoServidor(i);
-                return soma;
+                return soma + ReceitaDosRacksCheios;
             }
         }
 
@@ -152,6 +183,15 @@ namespace IdleDataCenter.Simulacao
                 double mtbf = EhTorre(s) ? Catalogo.MtbfServidorTorre : Catalogo.MtbfServidor1U;
                 if (sorteio.NextDouble() < segundos * mult / mtbf) Travar(s);
             }
+
+            // Storage: um disco queimado de cada vez; o técnico troca sozinho no mesmo tempo de um conserto
+            if (DiscoQueimado)
+            {
+                Estado.discoSegundos += segundos;
+                if (Estado.discoSegundos >= TempoConserto) TrocarDisco(porTecnico: true);
+            }
+            else if (NivelStorage > 0 && sorteio.NextDouble() < segundos * mult * NivelStorage / Catalogo.MtbfDisco)
+                QueimarDisco();
         }
 
         /// <summary>Clique no servidor. Se estiver travado, reinicia; senão rende um bônus. Retorna o valor ganho.</summary>
@@ -168,11 +208,49 @@ namespace IdleDataCenter.Simulacao
             return valor;
         }
 
+        /// <summary>Clique num equipamento que não trava (rack cheio, storage saudável): rende como um clique no servidor.</summary>
+        public double ClicarEquipamento()
+        {
+            Estado.jaClicouNoServidor = true;
+            double valor = ValorClique;
+            Ganhar(valor);
+            return valor;
+        }
+
         public void Travar(int servidor)
         {
             if (servidor < 0 || servidor >= TotalServidores || Travado(servidor)) return;
             Estado.travamentos.Add(new Travamento { servidor = servidor });
             Travou?.Invoke(servidor);
+        }
+
+        public void QueimarDisco()
+        {
+            if (NivelStorage == 0 || DiscoQueimado) return;
+            Estado.discoQueimado = true;
+            Estado.discoSegundos = 0;
+            DiscoQueimou?.Invoke();
+        }
+
+        /// <summary>
+        /// Troca o disco queimado. Com backup, os dados voltam (conta como backup restaurado);
+        /// sem backup, os clientes são reembolsados. Retorna o valor perdido.
+        /// </summary>
+        public double TrocarDisco(bool porTecnico)
+        {
+            if (!DiscoQueimado) return 0;
+            Estado.discoQueimado = false;
+            Estado.discoSegundos = 0;
+            Estado.incidentesResolvidos++;
+            double perda = 0;
+            if (TemBackup) Estado.backupsRestaurados++;
+            else
+            {
+                perda = Math.Min(Estado.dinheiro, ReceitaPorSegundo * Catalogo.SegundosPerdidosSemBackup);
+                Estado.dinheiro -= perda;
+            }
+            DiscoTrocado?.Invoke(TemBackup, perda, porTecnico);
+            return perda;
         }
 
         void Resolver(int servidor, bool porTecnico)
@@ -190,6 +268,8 @@ namespace IdleDataCenter.Simulacao
             {
                 case TipoMeta.Servidores: return TotalServidores;
                 case TipoMeta.TotalGanho: return Estado.totalGanho;
+                case TipoMeta.ServidoresRack: return ServidoresRack;
+                case TipoMeta.BackupsRestaurados: return Estado.backupsRestaurados;
                 default: return Estado.incidentesResolvidos;
             }
         }
@@ -247,6 +327,7 @@ namespace IdleDataCenter.Simulacao
                 ConsertadosFora = Estado.travamentos.Count;
                 Estado.incidentesResolvidos += ConsertadosFora;
                 Estado.travamentos.Clear();
+                if (DiscoQueimado) { TrocarDisco(porTecnico: true); ConsertadosFora++; }
             }
             double ganho = CalcularGanhoOffline(fora);
             GanhoFora = ganho;

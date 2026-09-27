@@ -108,6 +108,44 @@ namespace IdleDataCenter
             return Finalizar(tex, px, Vector2.zero);
         }
 
+        /// <summary>
+        /// Sala de racks do Analista de Infra: paredes de painel cinza-azulado, piso técnico elevado
+        /// (placas com algumas perfuradas, por onde sobe o ar frio) e uma calha de cabos com fibra laranja no teto.
+        /// </summary>
+        public static Sprite SalaDeRacks(int w, int h, int alturaPiso)
+        {
+            var tex = NovaTextura(w, h);
+            var px = new Color32[w * h];
+            Color32 parede = Hex("4a5680"), parede2 = Hex("46517a"), junta = Hex("3c4670"), faixa = Hex("56638f");
+            Color32 placa = Hex("9aa3b8"), placaLinha = Hex("6c7389"), furo = Hex("7a8198");
+            Color32 calha = Hex("2e3350"), calhaBorda = Hex("5a6184"), fibra = Hex("ff9f43"), fibra2 = Hex("5cc8ff");
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                Color32 c;
+                if (y < alturaPiso)
+                {
+                    // placas de 12 px; uma em cada três é perfurada
+                    bool perfurada = (x / 12) % 3 == 1;
+                    c = x % 12 == 0 || y == alturaPiso - 1 ? placaLinha : perfurada && x % 2 == 0 && y % 2 == 1 ? furo : placa;
+                }
+                else if (y == alturaPiso) c = Rodape;
+                else if (y >= h - 15 && y <= h - 11)
+                {
+                    // calha de cabos logo acima dos racks (o topo da parede fica livre para o HUD)
+                    int yy = h - 11 - y;
+                    c = yy == 0 || yy == 4 ? calhaBorda : yy == 2 && (x / 3) % 5 != 0 ? fibra : yy == 3 && (x / 5) % 4 == 0 ? fibra2 : calha;
+                }
+                else if (x % 16 == 0) c = junta;
+                else if (y == alturaPiso + 14) c = faixa;
+                else c = (x / 16) % 2 == 0 ? parede : parede2;
+                if (x == 0 || x == w - 1 || y == h - 1) c = CorContorno;
+                px[y * w + x] = c;
+            }
+            Carimbar(px, w, Arte.Quadrinho, 80, 34);
+            return Finalizar(tex, px, Vector2.zero);
+        }
+
         /// <summary>Painel de interface: fundo escuro, borda e uma faixa de título no topo.</summary>
         public static Sprite Painel(int w, int h)
         {

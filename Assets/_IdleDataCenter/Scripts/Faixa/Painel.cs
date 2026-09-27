@@ -26,6 +26,7 @@ namespace IdleDataCenter
         static readonly Dictionary<int, string[]> Novidades = new Dictionary<int, string[]>
         {
             [1] = new[] { "O armário vira uma salinha.", "Rack 42U com servidores 1U.", "Energia e temperatura", "passam a importar." },
+            [2] = new[] { "A salinha vira sala de racks,", "com energia e ar de precisão.", "Racks cheios, storage e backup.", "A banda do link passa a importar." },
         };
 
         Faixa faixa;
@@ -188,9 +189,11 @@ namespace IdleDataCenter
             {
                 ("R$ " + F(economia.Dinheiro), "+" + F(economia.ReceitaPorSegundo) + "/s", "#ffd65c"),
                 ($"{economia.ConsumoKw:0.0}/{economia.CapacidadeKw:0.0} kW", "Energia", economia.Sobrecarga ? "#ff3b4e" : "#ffbf3f"),
-                (economia.TotalServidores.ToString(), "Servidores", "#5cc8ff"),
+                (economia.ContagemServidores.ToString(), "Servidores", "#5cc8ff"),
                 ($"{economia.Temperatura:0} C", "Temp", economia.Quente ? "#ff3b4e" : "#ff9fae"),
             };
+            if (economia.NaSalaDeRacks)
+                chips.Add(($"{economia.TrafegoMbps:0}/{economia.BandaMbps:0} Mb", "Banda", economia.LinkSaturado ? "#ff3b4e" : "#b48cff"));
             int x = 90;
             foreach (var (valor, rotulo, cor) in chips)
             {
@@ -269,7 +272,7 @@ namespace IdleDataCenter
             // Incidentes
             Caixa(x, 108, 132, 62, "Incidentes");
             var lista = economia.Travamentos;
-            if (lista.Count == 0)
+            if (lista.Count == 0 && !economia.DiscoQueimado)
             {
                 T("Tudo funcionando", x + 5, 124, "#6fd36f", false);
                 T($"{economia.Estado.incidentesResolvidos} resolvidos", x + 5, 134, "#7d82ad", false);
@@ -284,6 +287,16 @@ namespace IdleDataCenter
                 int idx = s;
                 Botao(new RectInt(x + 70, y, 57, 14), "Reiniciar", "#fdf6e3", "#7a2a3a", () => faixa.Reiniciar(idx));
             }
+            if (economia.DiscoQueimado && lista.Count < 3)
+            {
+                int y = 121 + lista.Count * 16;
+                bool piscar = Mathf.FloorToInt(t * 3) % 2 == 0;
+                R(x + 5, y + 2, 3, 3, piscar ? "#b48cff" : "#3a2a5a");
+                T("Disco queimado", x + 11, y + 1, "#fdf6e3", false);
+                T(economia.TemBackup ? $"{economia.TempoConserto - economia.SegundosDiscoQueimado:0}s, com backup" : $"{economia.TempoConserto - economia.SegundosDiscoQueimado:0}s, SEM backup",
+                    x + 11, y + 8, economia.TemBackup ? "#7d82ad" : "#ff7a8a", false);
+                Botao(new RectInt(x + 70, y, 57, 14), "Trocar", "#fdf6e3", "#4a2a7a", faixa.TrocarDisco);
+            }
         }
 
         string NomeServidor(int s) => economia.EhTorre(s) ? $"Torre-{s + 1}" : $"1U-{s - economia.Torres + 1:00}";
@@ -292,7 +305,7 @@ namespace IdleDataCenter
         {
             // Servidores (travados primeiro)
             int total = economia.TotalServidores;
-            Caixa(76, y, 150, 58, $"Servidores ({total})");
+            Caixa(76, y, 150, 58, $"Servidores ({economia.ContagemServidores})");
             var ordem = Enumerable.Range(0, total).OrderBy(s => economia.Travado(s) ? 0 : 1).Take(3).ToList();
             for (int i = 0; i < ordem.Count; i++)
             {
@@ -303,9 +316,12 @@ namespace IdleDataCenter
                 string r = trav ? "Travado" : "+" + F(economia.ReceitaDoServidor(s)) + "/s";
                 T(r, 221 - L(r), yy, trav ? "#ff7a8a" : "#7d82ad", false);
             }
-            if (total > 3) T($"+{total - 3} outros", 88, y + 50, "#4d5170", false);
+            int outros = economia.ContagemServidores - ordem.Count;
+            if (outros > 0) T($"+{outros} outros", 88, y + 50, "#4d5170", false);
 
-            // Recursos: receita ao longo do tempo, energia e temperatura
+            // Recursos: receita ao longo do tempo, energia, temperatura e (na sala de racks) banda
+            bool banda = economia.NaSalaDeRacks;
+            int passo = banda ? 10 : 12;
             Caixa(230, y, 326, 58, "Recursos");
             T("Receita", 235, y + 14, "#a3a0bd", false);
             float max = Mathf.Max(1f, historico.Max());
@@ -314,12 +330,21 @@ namespace IdleDataCenter
                 float v = historico[(cabeca + 2 + i) % historico.Length] / max;
                 P(284 + i, y + 20 - Mathf.RoundToInt(v * 8), "#5cff8a");
             }
-            T("Energia", 235, y + 28, "#a3a0bd", false);
-            Barra(284, y + 29, 238, 4, (float)(economia.ConsumoKw / economia.CapacidadeKw), economia.Sobrecarga ? "#ff3b4e" : "#ffbf3f");
-            T($"{economia.ConsumoKw:0.0} kW", 524, y + 28, "#7d82ad", false);
-            T("Temp", 235, y + 40, "#a3a0bd", false);
-            Barra(284, y + 41, 238, 4, (float)((economia.Temperatura - 15) / 30), economia.Quente ? "#ff3b4e" : "#5aa9ff");
-            T($"{economia.Temperatura:0} C", 524, y + 40, "#7d82ad", false);
+            int yy2 = y + (banda ? 25 : 28);
+            T("Energia", 235, yy2, "#a3a0bd", false);
+            Barra(284, yy2 + 1, 238, 4, (float)(economia.ConsumoKw / economia.CapacidadeKw), economia.Sobrecarga ? "#ff3b4e" : "#ffbf3f");
+            T($"{economia.ConsumoKw:0.0} kW", 524, yy2, "#7d82ad", false);
+            yy2 += passo;
+            T("Temp", 235, yy2, "#a3a0bd", false);
+            Barra(284, yy2 + 1, 238, 4, (float)((economia.Temperatura - 15) / 30), economia.Quente ? "#ff3b4e" : "#5aa9ff");
+            T($"{economia.Temperatura:0} C", 524, yy2, "#7d82ad", false);
+            if (banda)
+            {
+                yy2 += passo;
+                T("Banda", 235, yy2, "#a3a0bd", false);
+                Barra(284, yy2 + 1, 238, 4, (float)(economia.TrafegoMbps / economia.BandaMbps), economia.LinkSaturado ? "#ff3b4e" : "#b48cff");
+                T($"{economia.TrafegoMbps:0} Mb", 524, yy2, "#7d82ad", false);
+            }
         }
 
         // ---------------- Aba: Melhorias ----------------
@@ -441,6 +466,7 @@ namespace IdleDataCenter
         {
             new ConfigCena { Arte = "cena_homelab", Terminal = new Rect(0, 0, 0.35f, 1), Leds = new Rect(0.72f, 0.25f, 0.28f, 0.75f), Luzes = new Rect(0.39f, 0, 0.30f, 0.47f), Pele = new Rect(0.33f, 0, 0.12f, 1), TemGato = true },
             new ConfigCena { Arte = "cena_sysadmin", Terminal = Rect.zero, Leds = new Rect(0.42f, 0.2f, 0.58f, 0.8f), Luzes = new Rect(0, 0, 0.15f, 0.6f), Pele = new Rect(0.36f, 0, 0.12f, 0.35f) },
+            new ConfigCena { Arte = "cena_infra", Terminal = Rect.zero, Leds = new Rect(0.33f, 0.1f, 0.67f, 0.8f), Luzes = new Rect(0, 0.4f, 0.17f, 0.3f), Pele = new Rect(0.18f, 0.1f, 0.14f, 0.35f) },
         };
 
         Color32[] cenaPx;
@@ -525,7 +551,7 @@ namespace IdleDataCenter
         {
             const int SW = 344, SH = 150;
             if (cenaPx == null || cenaCargo != economia.Cargo) CarregarCena(economia.Cargo);
-            bool alerta = economia.Travamentos.Count > 0;
+            bool alerta = economia.Travamentos.Count > 0 || economia.DiscoQueimado;
             tela.Recortar(x0, y0, SW, SH);
             tela.Imagem(cenaPx, cenaW, cenaH, x0, y0);
 

@@ -234,7 +234,117 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.Promover());
             Assert.AreEqual(1, e.Cargo);
             Assert.AreEqual(1, novoCargo);
-            Assert.IsFalse(e.PodePromover, "Sysadmin ainda não tem próximo cargo");
+            Assert.IsFalse(e.PodePromover, "o Sysadmin tem metas próprias");
+        }
+
+        [Test]
+        public void SysadminViraAnalistaComORackCheio()
+        {
+            var e = Nova();
+            e.Estado.cargo = 1;
+            DefinirNivel(e, Catalogo.Rack, 1);
+            DefinirNivel(e, Catalogo.Servidor1U, 4);
+            e.Estado.totalGanho = 600000;
+            e.Estado.incidentesResolvidos = 60;
+            Assert.IsFalse(e.PodePromover, "falta um 1U para encher o rack");
+            e.Estado.melhorias.Find(m => m.id == Catalogo.Servidor1U).nivel = 5;
+            Assert.IsTrue(e.Promover());
+            Assert.AreEqual("Analista de Infra", e.CargoAtual.Nome);
+            Assert.IsFalse(e.TemProximoCargo, "Analista é o último cargo por enquanto");
+        }
+
+        // ---------- Analista de Infra ----------
+
+        [Test]
+        public void SalaDeRacksTrazEnergiaERefrigeracao()
+        {
+            var e = Nova();
+            e.Estado.cargo = 1;
+            double kw = e.CapacidadeKw;
+            e.Estado.cargo = 2;
+            Assert.AreEqual(kw + Catalogo.CapacidadeSalaDeRacksKw, e.CapacidadeKw, 1e-9);
+            double esperada = Catalogo.TemperaturaAmbiente + e.ConsumoKw * Catalogo.GrausPorKw * Catalogo.FatorCalorSalaDeRacks - Catalogo.GrausArDePrecisao;
+            Assert.AreEqual(esperada, e.Temperatura, 1e-9);
+        }
+
+        [Test]
+        public void RackCheioRendeEContaOitoServidores()
+        {
+            var e = Nova();
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.RackCheio, 1);
+            Assert.AreEqual(1 + Catalogo.ServidoresPorRackCheio, e.ContagemServidores);
+            Assert.AreEqual(1, e.TotalServidores, "rack cheio não entra na lista de servidores que travam");
+            Assert.AreEqual(1 + Catalogo.ReceitaRackCheio, e.ReceitaPorSegundo, 1e-9);
+        }
+
+        [Test]
+        public void LinkSaturadoReduzAReceitaELinkDeFibraResolve()
+        {
+            var e = Nova();
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.RackCheio, 1);   // 10 + 160 = 170 Mbps, cabe nos 200
+            Assert.IsFalse(e.LinkSaturado);
+            e.Estado.melhorias.Find(m => m.id == Catalogo.RackCheio).nivel = 2; // 330 Mbps
+            Assert.IsTrue(e.LinkSaturado);
+            Assert.AreEqual(200.0 / 330.0, e.FatorBanda, 1e-9);
+            DefinirNivel(e, Catalogo.Link, 1);
+            Assert.IsFalse(e.LinkSaturado);
+            Assert.AreEqual(1, e.FatorBanda, 1e-9);
+        }
+
+        [Test]
+        public void StorageAumentaAReceitaEDiscoQueimadoTiraOBonus()
+        {
+            var e = Nova();
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.Storage, 2);
+            Assert.AreEqual(1.5, e.ReceitaPorSegundo, 1e-9);
+            e.QueimarDisco();
+            Assert.IsTrue(e.DiscoQueimado);
+            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+        }
+
+        [Test]
+        public void DiscoSemBackupCustaReembolso()
+        {
+            var e = Nova(1000);
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.Storage, 1);
+            e.QueimarDisco();
+            double perda = e.TrocarDisco(porTecnico: false);
+            Assert.AreEqual(Catalogo.SegundosPerdidosSemBackup * 1.25, perda, 1e-9);
+            Assert.AreEqual(1000 - perda, e.Dinheiro, 1e-9);
+            Assert.AreEqual(0, e.Estado.backupsRestaurados);
+            Assert.AreEqual(1, e.Estado.incidentesResolvidos);
+        }
+
+        [Test]
+        public void ComBackupOTecnicoRestauraSozinho()
+        {
+            var e = Nova(1000);
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.Storage, 1);
+            DefinirNivel(e, Catalogo.Backup, 1);
+            bool restaurou = false;
+            e.DiscoTrocado += (backup, perda, tecnico) => restaurou = backup && perda == 0 && tecnico;
+            e.QueimarDisco();
+            e.Avancar(Catalogo.TempoConsertoTecnico);
+            Assert.IsFalse(e.DiscoQueimado);
+            Assert.IsTrue(restaurou);
+            Assert.AreEqual(1, e.Estado.backupsRestaurados);
+        }
+
+        [Test]
+        public void SorteioQueimaDiscoSoComStorage()
+        {
+            var e = Nova(sorteio: 0);
+            e.Estado.cargo = 2;
+            e.Avancar(1);
+            Assert.IsFalse(e.DiscoQueimado, "sem storage não há disco");
+            DefinirNivel(e, Catalogo.Storage, 1);
+            e.Avancar(1);
+            Assert.IsTrue(e.DiscoQueimado);
         }
 
         // ---------- Offline ----------

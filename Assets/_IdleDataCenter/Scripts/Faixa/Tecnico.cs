@@ -7,7 +7,7 @@ namespace IdleDataCenter
     /// O personagem (arte do PixelLab). No dia a dia passeia, digita na mesa ou "confere" o servidor
     /// mais próximo. Quando algo trava, corre até lá e fica consertando (solta faíscas) até o servidor
     /// voltar: sozinho ele leva 30 s, e um clique seu no servidor resolve na hora.
-    /// Clicar nele dá um pulinho com coração. No cargo de Sysadmin a camiseta vira verde-água.
+    /// Clicar nele dá um pulinho com coração. No cargo de Sysadmin a camiseta vira verde-água; no de Analista, polo azul-marinho.
     /// </summary>
     public class Tecnico : MonoBehaviour, IClicavel
     {
@@ -18,6 +18,7 @@ namespace IdleDataCenter
         const float Velocidade = 16f;          // pixels por segundo
         const float VelocidadeCorrendo = 34f;
         const float MatizSysadmin = 0.46f;     // verde-água
+        const float MatizAnalista = 0.63f, BrilhoAnalista = 0.55f;  // polo azul-marinho
 
         static readonly Dictionary<string, Quadros> cache = new Dictionary<string, Quadros>();
 
@@ -46,7 +47,8 @@ namespace IdleDataCenter
             Sprite S(string sufixo)
             {
                 var t = ArteGerada.Textura(prefixo + sufixo);
-                if (cargo >= 1 && prefixo == "tecnico") t = ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
+                if (prefixo == "tecnico" && cargo == 1) t = ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
+                if (prefixo == "tecnico" && cargo >= 2) t = ArteGerada.TrocarCorDaRoupa(t, MatizAnalista, brilho: BrilhoAnalista);
                 return ArteGerada.Personagem(t, prefixo + sufixo + "#" + cargo);
             }
             return cache[chave] = new Quadros

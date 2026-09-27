@@ -8,6 +8,7 @@ namespace IdleDataCenter
     /// Rack (arte do PixelLab) com 5 unidades 1U. Os LEDs de cada unidade são achados na imagem e
     /// agrupados por altura; unidade comprada pisca, unidade vazia fica apagada, travada fica vermelha.
     /// Clicar no rack reinicia o primeiro 1U travado ou, se nenhum estiver, rende um clique normal.
+    /// Também serve de "rack cheio" do Analista (todas as unidades acesas, clique só rende).
     /// </summary>
     public class RackVisual : MonoBehaviour, IClicavel
     {
@@ -17,6 +18,7 @@ namespace IdleDataCenter
         class Unidade { public List<SpriteRenderer> leds = new List<SpriteRenderer>(); public bool ativa, travado; public float proximo; }
 
         Faixa faixa;
+        System.Action<Vector2> aoClicar;
         Destaque destaque;
         SpriteRenderer alerta;
         readonly List<Unidade> unidades = new List<Unidade>();
@@ -27,9 +29,10 @@ namespace IdleDataCenter
         public int Vagas => unidades.Count;
         public Vector2 Topo => posicaoBase + new Vector3(0f, altura, 0f);
 
-        public void Iniciar(Faixa faixa, Transform pai, Vector2 posicao)
+        public void Iniciar(Faixa faixa, Transform pai, Vector2 posicao, System.Action<Vector2> aoClicar = null)
         {
             this.faixa = faixa;
+            this.aoClicar = aoClicar ?? faixa.ClicarRack;
             transform.SetParent(pai, false);
             transform.localPosition = posicao;
             posicaoBase = posicao;
@@ -101,29 +104,37 @@ namespace IdleDataCenter
         public void Clicar()
         {
             Pular();
-            faixa.ClicarRack(Topo);
+            aoClicar(Topo);
         }
 
         public void DefinirDestaque(bool ligado) => destaque.Ligado = ligado;
     }
 
-    /// <summary>Equipamento de chão com LEDs que piscam (no-break e refrigeração). Pode ficar em alerta (vermelho).</summary>
-    public class EquipamentoVisual : MonoBehaviour
+    /// <summary>
+    /// Equipamento com LEDs que piscam (no-break, refrigeração, storage, backup, link). Pode ficar em alerta
+    /// (LEDs vermelhos e, se tiver ícone, um "!" em cima). Com uma ação definida, vira clicável.
+    /// </summary>
+    public class EquipamentoVisual : MonoBehaviour, IClicavel
     {
         static readonly Color Verde = PixelArt.Hex("5cff8a"), Vermelho = PixelArt.Hex("ff3b4e"), Escuro = PixelArt.Hex("1f3a2a");
 
         readonly List<SpriteRenderer> leds = new List<SpriteRenderer>();
         bool alerta, soprarAr;
+        SpriteRenderer sr, iconeAlerta;
+        Destaque destaque;
+        System.Action acao;
         float proximo, proximoAr;
 
         public float Altura { get; private set; }
+        public int Ordem => 3;
+        public Vector2 Topo => (Vector2)transform.localPosition + new Vector2(0, Altura);
 
         public void Iniciar(Transform pai, string arte, Vector2 posicao, bool soltaArFrio)
         {
             transform.SetParent(pai, false);
             transform.localPosition = posicao;
             soprarAr = soltaArFrio;
-            var sr = gameObject.AddComponent<SpriteRenderer>();
+            sr = gameObject.AddComponent<SpriteRenderer>();
             sr.sprite = ArteGerada.Objeto(arte);
             sr.sortingOrder = 3;
             Altura = sr.sprite.rect.height;
@@ -138,6 +149,19 @@ namespace IdleDataCenter
             }
         }
 
+        /// <summary>Torna o equipamento clicável (com destaque sob o cursor) e mostra um "!" quando em alerta.</summary>
+        public void TornarClicavel(System.Action aoClicar)
+        {
+            acao = aoClicar;
+            gameObject.AddComponent<BoxCollider2D>();
+            destaque = Destaque.Para(sr);
+            iconeAlerta = new GameObject("Alerta").AddComponent<SpriteRenderer>();
+            iconeAlerta.transform.SetParent(transform, false);
+            iconeAlerta.sprite = Arte.Alerta;
+            iconeAlerta.sortingOrder = 12;
+            iconeAlerta.enabled = false;
+        }
+
         public void DefinirAlerta(bool sim) => alerta = sim;
 
         void Update()
@@ -147,6 +171,11 @@ namespace IdleDataCenter
                 proximo = Time.time + (alerta ? 0.25f : Random.Range(0.3f, 1.2f));
                 bool piscar = Mathf.FloorToInt(Time.time / 0.25f) % 2 == 0;
                 foreach (var l in leds) l.color = alerta ? (piscar ? Vermelho : Escuro) : Random.value < 0.85f ? Verde : Escuro;
+            }
+            if (iconeAlerta != null)
+            {
+                iconeAlerta.enabled = alerta;
+                iconeAlerta.transform.localPosition = new Vector3(-2, Altura + 2 + (Mathf.FloorToInt(Time.time / 0.25f) % 2), 0);
             }
             // ar frio subindo da grade
             if (soprarAr && Time.time >= proximoAr)
@@ -161,5 +190,9 @@ namespace IdleDataCenter
                 Flutuante.Aplicar(p.gameObject, 1.2f, 6f);
             }
         }
+
+        public void Clicar() => acao?.Invoke();
+
+        public void DefinirDestaque(bool ligado) { if (destaque != null) destaque.Ligado = ligado; }
     }
 }

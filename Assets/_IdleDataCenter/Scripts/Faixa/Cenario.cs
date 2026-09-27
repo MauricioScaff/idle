@@ -6,8 +6,8 @@ using UnityEngine;
 namespace IdleDataCenter
 {
     /// <summary>
-    /// O cômodo onde o técnico trabalha, montado conforme o cargo:
-    /// armário (Técnico de TI) ou salinha com rack, no-break e refrigeração (Sysadmin).
+    /// O cômodo onde o técnico trabalha, montado conforme o cargo: armário (Técnico de TI), salinha com rack,
+    /// no-break e refrigeração (Sysadmin) ou sala de racks com storage, backup e link (Analista de Infra).
     /// Na promoção, o cenário inteiro é destruído e montado de novo.
     /// Coordenadas locais: x a partir da borda esquerda, y a partir de baixo (piso em y = AlturaPiso).
     /// </summary>
@@ -16,12 +16,32 @@ namespace IdleDataCenter
         public const int Altura = 60, AlturaPiso = 6;
         const float DistanciaServidor = 17f;   // do centro do técnico ao centro da torre
 
+        /// <summary>Onde fica cada coisa em cada cômodo (x do centro, no piso).</summary>
+        class Planta
+        {
+            public int Largura;
+            public float[] Torres;               // da direita para a esquerda (a primeira é a do começo do jogo)
+            public float Rack, NoBreak, Refrigeracao, Storage, Fita;
+            public float[] RacksCheios = new float[0];
+            public Vector2 Link;
+        }
+
+        static readonly Planta Armario = new Planta { Largura = 200, Torres = new float[] { 176, 152, 128 } };
+        static readonly Planta Salinha = new Planta { Largura = 290, Torres = new float[] { 170, 146, 122 }, Rack = 200, NoBreak = 226, Refrigeracao = 262 };
+        // Na sala de racks o storage e o backup ficam no caminho do técnico (ele troca disco na frente deles)
+        static readonly Planta SalaDeRacks = new Planta
+        {
+            Largura = 456, Torres = new float[] { 234, 210, 186 }, Rack = 262, RacksCheios = new float[] { 288, 314, 340, 366 },
+            NoBreak = 392, Refrigeracao = 428, Storage = 124, Fita = 150, Link = new Vector2(392, 26),
+        };
+
         Faixa faixa;
         Economia economia;
         readonly List<ServidorVelho> torres = new List<ServidorVelho>();
-        float[] posicoesTorres;
+        Planta planta;
         RackVisual rack;
-        EquipamentoVisual noBreak, refrigeracao;
+        readonly List<RackVisual> racksCheios = new List<RackVisual>();
+        EquipamentoVisual noBreak, refrigeracao, storage, fita, link;
         Tecnico estagiario;
 
         public int Largura { get; private set; }
@@ -41,12 +61,13 @@ namespace IdleDataCenter
             this.faixa = faixa;
             this.economia = economia;
             transform.position = posicao;
-            bool salinha = economia.Cargo >= 1;
-            Largura = salinha ? 290 : 200;
-            posicoesTorres = salinha ? new float[] { 170, 146, 122 } : new float[] { 176, 152, 128 };
+            planta = economia.Cargo >= 2 ? SalaDeRacks : economia.Cargo == 1 ? Salinha : Armario;
+            Largura = planta.Largura;
 
             var fundo = gameObject.AddComponent<SpriteRenderer>();
-            fundo.sprite = salinha ? PixelArt.Salinha(Largura, Altura, AlturaPiso) : PixelArt.Armario(Largura, Altura, AlturaPiso);
+            fundo.sprite = economia.Cargo >= 2 ? PixelArt.SalaDeRacks(Largura, Altura, AlturaPiso)
+                         : economia.Cargo == 1 ? PixelArt.Salinha(Largura, Altura, AlturaPiso)
+                         : PixelArt.Armario(Largura, Altura, AlturaPiso);
             gameObject.AddComponent<BoxCollider2D>(); // o cômodo inteiro "segura" o clique
 
             Decoracao("Planta", ArteGerada.Objeto("planta"), new Vector2(13, AlturaPiso), 2);
@@ -100,10 +121,10 @@ namespace IdleDataCenter
         public ServidorVelho AtualizarEquipamentos()
         {
             ServidorVelho nova = null;
-            while (torres.Count < economia.Torres && torres.Count < posicoesTorres.Length)
+            while (torres.Count < economia.Torres && torres.Count < planta.Torres.Length)
             {
                 nova = new GameObject("Torre").AddComponent<ServidorVelho>();
-                nova.Iniciar(faixa, transform, new Vector2(posicoesTorres[torres.Count], AlturaPiso), torres.Count);
+                nova.Iniciar(faixa, transform, new Vector2(planta.Torres[torres.Count], AlturaPiso), torres.Count);
                 torres.Add(nova);
             }
             foreach (var t in torres) t.AtualizarVisual(economia.TemSsd, economia.Ventoinhas);
@@ -111,19 +132,43 @@ namespace IdleDataCenter
             if (economia.TemRack && rack == null)
             {
                 rack = new GameObject("Rack").AddComponent<RackVisual>();
-                rack.Iniciar(faixa, transform, new Vector2(200, AlturaPiso));
+                rack.Iniciar(faixa, transform, new Vector2(planta.Rack, AlturaPiso));
             }
             rack?.DefinirQuantidade(economia.ServidoresRack);
 
             if (economia.Nivel(Catalogo.NoBreak) > 0 && noBreak == null)
             {
                 noBreak = new GameObject("NoBreak").AddComponent<EquipamentoVisual>();
-                noBreak.Iniciar(transform, "nobreak", new Vector2(226, AlturaPiso), false);
+                noBreak.Iniciar(transform, "nobreak", new Vector2(planta.NoBreak, AlturaPiso), false);
             }
             if (economia.Nivel(Catalogo.ArCondicionado) > 0 && refrigeracao == null)
             {
                 refrigeracao = new GameObject("Refrigeracao").AddComponent<EquipamentoVisual>();
-                refrigeracao.Iniciar(transform, "refrigeracao", new Vector2(262, AlturaPiso), true);
+                refrigeracao.Iniciar(transform, "refrigeracao", new Vector2(planta.Refrigeracao, AlturaPiso), true);
+            }
+            while (racksCheios.Count < economia.RacksCheios && racksCheios.Count < planta.RacksCheios.Length)
+            {
+                var r = new GameObject("RackCheio").AddComponent<RackVisual>();
+                r.Iniciar(faixa, transform, new Vector2(planta.RacksCheios[racksCheios.Count], AlturaPiso), faixa.ClicarEquipamento);
+                r.DefinirQuantidade(int.MaxValue);
+                racksCheios.Add(r);
+                if (Tecnico != null) faixa.Faiscas(r.Topo, 4);
+            }
+            if (economia.NivelStorage > 0 && storage == null)
+            {
+                storage = new GameObject("Storage").AddComponent<EquipamentoVisual>();
+                storage.Iniciar(transform, "storage", new Vector2(planta.Storage, AlturaPiso), false);
+                storage.TornarClicavel(() => faixa.ClicarStorage(storage.Topo));
+            }
+            if (economia.TemBackup && fita == null)
+            {
+                fita = new GameObject("Fita").AddComponent<EquipamentoVisual>();
+                fita.Iniciar(transform, "fita", new Vector2(planta.Fita, AlturaPiso), false);
+            }
+            if (economia.Nivel(Catalogo.Link) > 0 && link == null)
+            {
+                link = new GameObject("Link").AddComponent<EquipamentoVisual>();
+                link.Iniciar(transform, "link", planta.Link, false);
             }
             if (economia.TemEstagiario && estagiario == null && Tecnico != null)
             {
@@ -142,6 +187,7 @@ namespace IdleDataCenter
         {
             foreach (var t in torres) t.Pular();
             rack?.Pular();
+            foreach (var r in racksCheios) r.Pular();
         }
 
         /// <summary>Reflete os servidores travados (LEDs vermelhos e alertas), a sobrecarga e o calor.</summary>
@@ -151,6 +197,8 @@ namespace IdleDataCenter
             rack?.DefinirTravados(vaga => economia.Travado(economia.Torres + vaga));
             noBreak?.DefinirAlerta(economia.Sobrecarga);
             refrigeracao?.DefinirAlerta(economia.Quente);
+            storage?.DefinirAlerta(economia.DiscoQueimado);
+            link?.DefinirAlerta(economia.LinkSaturado);
         }
 
         /// <summary>Para onde o técnico deve correr: o servidor travado há mais tempo.</summary>
@@ -158,7 +206,14 @@ namespace IdleDataCenter
         {
             x = 0;
             var lista = economia.Travamentos;
-            if (lista.Count == 0) return false;
+            if (lista.Count == 0)
+            {
+                // disco queimado: ele troca o disco de frente para o storage
+                if (!economia.DiscoQueimado || storage == null) return false;
+                x = planta.Storage;
+                TopoDoIncidente = storage.Topo;
+                return true;
+            }
             int s = lista[0].servidor;
             if (economia.EhTorre(s) && s < torres.Count)
             {

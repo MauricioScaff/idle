@@ -10,8 +10,9 @@ Jogo idle para Windows que vive numa faixa acima da barra de tarefas. Você come
 - **Faixa:** o cômodo do técnico (armário, depois salinha) e a loja de melhorias, sempre acima da barra de tarefas.
 - **Painel:** clique no ícone ▲ da faixa (ou em "Meta x/3"). Abas Visão geral, Melhorias, Carreira e Ajustes. Fecha com Esc, com o "x" ou clicando fora.
 - **Incidentes:** servidores travam de vez em quando. O técnico corre e conserta em 30 s, ou você clica no servidor e reinicia na hora. Contratando o **estagiário** (loja do Técnico), o conserto cai para 15 s e ele corre junto.
-- **Carreira:** Técnico de TI → Sysadmin. A promoção pede 3 servidores, R$ 20K faturados e 8 incidentes resolvidos.
-- **Sysadmin:** rack 42U com servidores 1U, energia (no-break) e temperatura (ar-condicionado).
+- **Carreira:** Técnico de TI → Sysadmin → Analista de Infra. Cada promoção pede metas do cargo (servidores, faturamento, incidentes resolvidos).
+- **Sysadmin:** rack 42U com servidores 1U, energia (no-break) e temperatura (ar-condicionado). Para subir: encher o rack, faturar R$ 600K e resolver 60 incidentes.
+- **Analista de Infra:** sala de racks com energia e ar de precisão próprios. Racks cheios (8 servidores cada), storage RAID (receita +25% por nível), backup em fita e link de fibra. A **banda** vira o novo limite: com o link saturado a receita cai. Discos do storage queimam: com backup, o técnico restaura os dados; sem backup, os clientes são reembolsados. Clique no storage para trocar o disco na hora.
 - **Esconder:** a setinha "v" na faixa, ou **Ctrl+Alt+D** de qualquer lugar (o mesmo atalho traz de volta). Escondido, o jogo continua rendendo.
 - Save automático e ganho offline (50% da receita, até 12 h). Ao abrir o jogo, o aviso "Enquanto você estava fora" mostra o tempo, quanto rendeu e o que o técnico consertou.
 - **Sons:** moeda, compra, alerta de servidor travado, conserto e promoção, todos sintetizados em código. Volume baixo por padrão.
@@ -21,7 +22,7 @@ Jogo idle para Windows que vive numa faixa acima da barra de tarefas. Você come
 
 - **No editor:** abra a cena `Assets/_IdleDataCenter/Scenes/Faixa` e aperte Play. No editor a janela não fica transparente.
 - **Na faixa de verdade:** menu **Idle Data Center → Gerar build de Windows** e abra `Builds/IdleDataCenter.exe`.
-- **Opções de teste** (linha de comando do build): `-painel=visao|melhorias|carreira|ajustes` abre o painel numa aba; `-incidente` trava o primeiro servidor.
+- **Opções de teste** (linha de comando do build): `-painel=visao|melhorias|carreira|ajustes` abre o painel numa aba; `-incidente` trava o primeiro servidor; `-promover` promove (se as metas estiverem cumpridas).
 - **Zerar o progresso:** apague `%USERPROFILE%\AppData\LocalLow\DefaultCompany\Idle Data Center\save.json`.
 
 ## Estrutura
@@ -37,4 +38,4 @@ Assets/_IdleDataCenter/
   Editor/             menu "Idle Data Center" (configurar projeto, gerar build)
 ```
 
-Balanceamento: todos os números ficam em `Scripts/Simulacao/Catalogo.cs`. O teste `RitmoTestes` simula um jogador ocioso e confere se a promoção sai entre 10 e 90 minutos.
+Balanceamento: todos os números ficam em `Scripts/Simulacao/Catalogo.cs`. O teste `RitmoTestes` simula um jogador ocioso e confere o ritmo: Sysadmin entre 10 e 90 min, Analista entre 2 e 6 h (hoje: 39 min e cerca de 4 h).

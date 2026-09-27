@@ -41,6 +41,8 @@ namespace IdleDataCenter
             economia.Travou += AoTravar;
             economia.Voltou += AoVoltar;
             economia.Promoveu += AoPromover;
+            economia.DiscoQueimou += AoQueimarDisco;
+            economia.DiscoTrocado += AoTrocarDisco;
         }
 
         void Start()
@@ -69,7 +71,7 @@ namespace IdleDataCenter
             }
             proximoSalvamento = Time.time + IntervaloSalvamento;
 
-            // Opções para testes: -painel=<aba> abre o painel, -incidente trava o primeiro servidor
+            // Opções para testes: -painel=<aba> abre o painel, -incidente trava o primeiro servidor, -promover promove
             foreach (var arg in Environment.GetCommandLineArgs())
             {
                 if (arg.StartsWith("-painel"))
@@ -78,6 +80,7 @@ namespace IdleDataCenter
                     painel.AbrirAba(arg.Contains("=") ? arg.Substring(arg.IndexOf('=') + 1) : "visao");
                 }
                 if (arg == "-incidente") economia.Travar(0);
+                if (arg == "-promover") economia.Promover(); // só se as metas estiverem cumpridas
             }
         }
 
@@ -134,7 +137,7 @@ namespace IdleDataCenter
             Flutuante.Aplicar(texto.gameObject, 0.9f, 6f);
         }
 
-        void Faiscas(Vector2 topo, int quantidade)
+        public void Faiscas(Vector2 topo, int quantidade)
         {
             for (int i = 0; i < quantidade; i++)
                 Efeito(cenario.transform, Arte.Faisca, topo + new Vector2(UnityEngine.Random.Range(-8, 6), UnityEngine.Random.Range(-12, 0)), 0.5f, 3f);
@@ -168,6 +171,25 @@ namespace IdleDataCenter
                 if (economia.Travado(s)) { alvo = s; break; }
             ClicarServidor(alvo, topo);
         }
+
+        /// <summary>Clique num rack cheio (ou no storage saudável): só rende.</summary>
+        public void ClicarEquipamento(Vector2 topo)
+        {
+            Ganho(economia.ClicarEquipamento(), topo + new Vector2(-4, 1));
+            Sons.Moeda();
+            setaDica.enabled = false;
+        }
+
+        /// <summary>Clique no storage: com disco queimado, troca na hora; senão rende um clique.</summary>
+        public void ClicarStorage(Vector2 topo)
+        {
+            if (!economia.DiscoQueimado) { ClicarEquipamento(topo); return; }
+            Faiscas(topo, 3);
+            economia.TrocarDisco(porTecnico: false);
+        }
+
+        /// <summary>Trocar o disco pelo painel.</summary>
+        public void TrocarDisco() => economia.TrocarDisco(porTecnico: false);
 
         /// <summary>Reiniciar pelo painel.</summary>
         public void Reiniciar(int servidor)
@@ -208,6 +230,21 @@ namespace IdleDataCenter
             Loja.MostrarAviso("Técnico consertou", 1.5f, VerdeClaro);
             cenario.Tecnico.Comemorar();
             Sons.Conserto();
+        }
+
+        void AoQueimarDisco()
+        {
+            Loja.MostrarAviso("Disco queimou!", 2f, Vermelho);
+            Sons.Alerta();
+        }
+
+        void AoTrocarDisco(bool restaurou, double perda, bool peloTecnico)
+        {
+            if (restaurou) Loja.MostrarAviso("Backup restaurado!", 2f, VerdeClaro);
+            else Loja.MostrarAviso("Sem backup: -R$ " + Formatar(perda), 3f, Vermelho);
+            if (peloTecnico) cenario.Tecnico.Comemorar();
+            Sons.Conserto();
+            Salvamento.Salvar(economia.Estado);
         }
 
         void AoPromover(int cargo)
@@ -331,8 +368,9 @@ namespace IdleDataCenter
             if (economia.Cargo >= 1)
             {
                 string ambiente = $"{economia.ConsumoKw:0.0}/{economia.CapacidadeKw:0.0}kW {economia.Temperatura:0}C";
+                if (economia.NaSalaDeRacks) ambiente += $" {economia.TrafegoMbps:0}/{economia.BandaMbps:0}Mb"; // banda a partir de Analista
                 textoAmbiente.Definir(ambiente);
-                textoAmbiente.DefinirCor(economia.Sobrecarga || economia.Quente ? Vermelho : Laranja);
+                textoAmbiente.DefinirCor(economia.Sobrecarga || economia.Quente || economia.LinkSaturado ? Vermelho : Laranja);
                 textoAmbiente.transform.localPosition = new Vector3(x, LinhaHud, 0);
             }
             else textoAmbiente.Definir("");

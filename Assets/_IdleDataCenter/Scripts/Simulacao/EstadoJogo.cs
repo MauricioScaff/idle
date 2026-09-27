@@ -18,6 +18,11 @@ namespace IdleDataCenter.Simulacao
         public List<Travamento> travamentos = new List<Travamento>();
         public long ultimoSalvamentoUnix;   // segundos UTC; base do progresso offline
         public bool jaClicouNoServidor;     // esconde a dica do primeiro clique
+
+        // Storage (cargo 3): um disco queimado de cada vez
+        public bool discoQueimado;
+        public double discoSegundos;         // há quanto tempo está queimado
+        public int backupsRestaurados;
     }
 
     [Serializable]
