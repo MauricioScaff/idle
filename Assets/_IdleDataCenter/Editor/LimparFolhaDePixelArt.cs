@@ -232,6 +232,9 @@ namespace IdleDataCenter.Ferramentas
                     {
                         var a = caixas[i]; var b = caixas[j];
                         if (a.x0 - distancia > b.x1 || b.x0 - distancia > a.x1 || a.y0 - distancia > b.y1 || b.y0 - distancia > a.y1) continue;
+                        // só junta um pedaço pequeno (rodinha, fio) a um maior; duas peças grandes próximas continuam separadas
+                        int areaA = a.Largura * a.Altura, areaB = b.Largura * b.Altura;
+                        if (Math.Min(areaA, areaB) > 0.2f * Math.Max(areaA, areaB)) continue;
                         caixas[i] = new Caixa { x0 = Math.Min(a.x0, b.x0), y0 = Math.Min(a.y0, b.y0), x1 = Math.Max(a.x1, b.x1), y1 = Math.Max(a.y1, b.y1) };
                         caixas.RemoveAt(j);
                         mudou = true;

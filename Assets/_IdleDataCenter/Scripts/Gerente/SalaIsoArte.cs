@@ -10,8 +10,9 @@ namespace IdleDataCenter.Gerente
     /// na escala do manifesto Arte/Isometrico/folhas.txt). A grade segue a arte: cada piso gerado cobre 2 × 2 casas
     /// de 64 × 30 pixels. As paredes são desenhadas em código com as cores da arte (encaixam certinho no piso).
     ///
-    /// Vale para o armário (Técnico), a salinha (Sysadmin) e a sala de racks (Analista); os outros cargos
-    /// continuam com o desenho em código até ganharem as folhas deles. Regra da arrumação: o que é alto fica
+    /// Salas: armário (Técnico), salinha (Sysadmin), sala de racks (Analista), sala virtualizada (DevOps) e data center
+    /// (SRE, que também é o DC-01 por dentro do Arquiteto em diante). O campus e o mapa-múndi seguem desenhados
+    /// em código (SalaIsoCampus, SalaIsoMundo). Regra da arrumação: o que é alto fica
     /// encostado nas paredes do fundo e o que é baixo na frente, para nada esconder as pessoas.
     /// </summary>
     public partial class SalaIso
@@ -27,11 +28,11 @@ namespace IdleDataCenter.Gerente
         bool desenhandoArte;
         RectInt areaArte;
 
-        /// <summary>Cargos que já têm a arte nova.</summary>
-        bool TemArteNova => E.Cargo <= 2;
+        /// <summary>Todos os cargos usam a arte nova por dentro (do Arquiteto em diante, o DC-01 é o data center do SRE).</summary>
+        bool TemArteNova => true;
 
-        /// <summary>Armário 4 × 4 (apertado), salinha 6 × 6, sala de racks 8 × 8 casas.</summary>
-        static readonly int[] TamanhoDaSala = { 4, 6, 8 };
+        /// <summary>Armário 4 × 4 (apertado), salinha 6 × 6, sala de racks 8 × 8, sala virtualizada 10 × 10, data center 12 × 12 casas.</summary>
+        static readonly int[] TamanhoDaSala = { 4, 6, 8, 10, 12 };
 
         // ---------------- Sprites ----------------
 
@@ -54,6 +55,18 @@ namespace IdleDataCenter.Gerente
             var tex = ArteGerada.Textura("Iso/" + nome);
             s = Preparar(ArteGerada.PixelsDeCimaParaBaixo(tex), tex.width, tex.height);
             return sprites[nome] = s;
+        }
+
+        /// <summary>O mesmo sprite espelhado: no isométrico isso troca as direções (o que corria ao longo de gx passa a correr ao longo de gy).</summary>
+        static SpriteIso Espelhado(string nome)
+        {
+            string chave = nome + "|espelhado";
+            if (sprites.TryGetValue(chave, out var s)) return s;
+            var o = Carregar(nome);
+            var px = new Color32[o.px.Length];
+            for (int y = 0; y < o.h; y++)
+                for (int x = 0; x < o.w; x++) px[y * o.w + x] = o.px[y * o.w + (o.w - 1 - x)];
+            return sprites[chave] = Preparar(px, o.w, o.h);
         }
 
         static SpriteIso Preparar(Color32[] px, int w, int h)
@@ -106,7 +119,7 @@ namespace IdleDataCenter.Gerente
             {
                 case 0: Armario(); break;
                 case 1: Salinha(); break;
-                default: SalaDeRacks(); break;
+                default: SalaGrande(); break;
             }
             PersonagensArte();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
@@ -124,6 +137,8 @@ namespace IdleDataCenter.Gerente
             new[] { "2f4c80", "28416f", "1c2b4f", "18264a", "7a9bd4", "6886bd" },   // armário: azul-marinho
             new[] { "3f5a86", "364f78", "243553", "1f2f4c", "8aa6d6", "7893c4" },   // salinha: azul acinzentado
             new[] { "5b6a8a", "4f5d7c", "2e3750", "283149", "a9b8d6", "95a5c6" },   // sala de racks: cinza técnico
+            new[] { "2f3a5a", "293350", "1b2238", "171d31", "6a7aa8", "5d6c98" },   // sala virtualizada: grafite azulado
+            new[] { "242b47", "1f2540", "141a2d", "111627", "d08a3a", "b8782f" },   // data center: escuro, friso laranja
         };
 
         void ParedesEPisoArte()
@@ -143,7 +158,7 @@ namespace IdleDataCenter.Gerente
             for (int gy = 0; gy < aD; gy += 2)
                 for (int gx = 0; gx < aW; gx += 2)
                 {
-                    bool tecnico = E.Cargo >= 2 && (gx >= 4 || gy >= 4);
+                    bool tecnico = E.Cargo >= 2 && gx >= 4;   // o lado da esquerda (escritório, lounge, NOC) fica em madeira
                     var s = Carregar(tecnico ? "piso_elevado" : (gx + gy) / 2 % 2 == 0 ? "piso_a" : "piso_b");
                     var p = AP(gx, gy);
                     tela.Imagem(s.px, s.w, s.h, p.x - s.w / 2, p.y - 1);
@@ -169,9 +184,9 @@ namespace IdleDataCenter.Gerente
         /// Põe um sprite no piso com o canto do FUNDO da base em (gx, gy); o tamanho da base sai do próprio sprite,
         /// então ele encosta certinho nas paredes e nos vizinhos. z levanta (em cima de outra coisa).
         /// </summary>
-        Colocado Colocar(string nome, float gx, float gy, string clique = null, bool ledsPiscam = true, float z = 0)
+        Colocado Colocar(string nome, float gx, float gy, string clique = null, bool ledsPiscam = true, float z = 0, bool espelhar = false)
         {
-            var s = Carregar(nome);
+            var s = espelhar ? Espelhado(nome) : Carregar(nome);
             float cx = s.CasasX, cy = s.CasasY;
             var f = AP(gx + cx, gy + cy, z);
             int x = f.x - s.frente, y = f.y - s.h + 1;
@@ -366,16 +381,20 @@ namespace IdleDataCenter.Gerente
             else Marcador = AP(rackArte.gx + rackArte.casasX / 2, rackArte.gy + rackArte.casasY / 2, 130);
         }
 
-        // ---------------- Sala de racks (Analista) ----------------
+        // ---------------- Sala de racks (Analista), sala virtualizada (DevOps) e data center (SRE) ----------------
 
-        void SalaDeRacks()
+        /// <summary>Onde começam as fileiras do piso técnico e o corredor entre elas.</summary>
+        const float InicioDasFileiras = 5.1f, PrimeiraFileira = 2.9f, Corredor = 1.2f;
+
+        void SalaGrande()
         {
             tecnicoConsertando = false;
+            int cargo = E.Cargo;
             float fimDaMesa = CantoDoTecnico();
             Torres(fimDaMesa + 0.25f, Encosto, fimDaMesa + 2.4f, 4);
             ArCondicionado(fimDaMesa + 0.9f, fimDaMesa + 0.4f, 2.4f);
 
-            // parede da direita, depois das torres: ar de precisão (a sala de racks já vem com ele) e o storage
+            // parede da direita, depois das torres: ar de precisão (a sala de racks já vem com ele), storage e fita
             float gx = fimDaMesa + 2.6f;
             Colocar("crac", gx, Encosto);
             gx += Carregar("crac").CasasX + 0.15f;
@@ -387,26 +406,111 @@ namespace IdleDataCenter.Gerente
                 if (queimado) fila.Add((c.FimX + c.FimY + 3f, () => AlertaArte(c.tela.x + c.tela.width / 2, c.tela.y - 4)));
                 gx = c.FimX + 0.06f;
             }
-            if (E.TemBackup) Colocar("fita", gx + 0.1f, Encosto);
+            if (E.TemBackup) { var f = Colocar("fita", gx + 0.1f, Encosto); gx = f.FimX + 0.1f; }
+            if (cargo >= 3 && gx + 1 < aW) NaParedeArte("tv_dashboard", gx + 0.9f, 0.02f, 70);
 
-            // parede da esquerda: racks 1U, no-breaks, link de fibra na parede, extintor
+            // parede da esquerda: racks 1U, no-breaks, links de fibra na parede
             Racks1U(FilaEmY("rack_1u", Encosto, 1.0f, 3.0f, 2));
             float fimNoBreaks = NoBreaks(2.9f, 5.6f);
             NovaPlacaArte("Rede", "Rede", 0.02f, fimNoBreaks + 0.6f, 104, IsoGui.Cyan);
             for (int i = 0; i < Mathf.Min(2, E.Nivel(Catalogo.Link)); i++) NaParedeArte("link_fibra", 0.02f, fimNoBreaks + 0.4f + i * 0.9f, 60);
-            Colocar("extintor", Encosto, aD - 0.9f);
-            // laboratório (onde o técnico escreve os scripts): quadro branco e estante perto da frente
-            Colocar("quadro_branco", 1.1f, aD - 1.6f);
-            Colocar("estante", 2.3f, aD - 1.5f);
-            NovaPlacaArte("Automacao", "Laboratório", 1.7f, aD - 1.6f, 110, IsoGui.Roxo);
 
-            // racks cheios em fileiras no piso técnico, na metade da direita (não tampam a mesa), com corredores entre elas
+            // a frente da esquerda muda com o cargo: laboratório (Analista), lounge (DevOps), NOC (SRE)
+            if (cargo == 2)
+            {
+                Colocar("extintor", Encosto, aD - 0.9f);
+                Colocar("quadro_branco", 1.1f, aD - 1.6f);
+                Colocar("estante", 2.3f, aD - 1.5f);
+                NovaPlacaArte("Automacao", "Laboratório", 1.7f, aD - 1.6f, 110, IsoGui.Roxo);
+            }
+            else if (cargo == 3) Lounge();
+            else Noc();
+
+            // piso técnico: uma fileira por tipo de equipamento, com corredores entre elas
             var rc = Carregar("rack_cheio");
+            float gy = PrimeiraFileira;
+            string principal = cargo == 2 ? "rack_cheio" : cargo == 3 ? "containers" : "k8s";
+            Vector2? marcador = null;
+
+            // racks cheios (no Analista ocupam duas fileiras)
+            var lugaresRacks = Fileira("rack_cheio", ref gy, cargo == 2 ? 2 : 1);
+            for (int i = 0; i < Mathf.Min(lugaresRacks.Count, E.RacksCheios); i++) Colocar("rack_cheio", lugaresRacks[i].x, lugaresRacks[i].y, "equipamento");
+            if (principal == "rack_cheio" && E.RacksCheios < lugaresRacks.Count) marcador = lugaresRacks[E.RacksCheios];
+
+            if (cargo >= 3)
+            {
+                // virtualização: hypervisors, o servidor de CI e o switch 10G
+                var lugares = Fileira("hypervisor", ref gy, 1);
+                int k = 0;
+                for (int i = 0; i < Mathf.Min(3, E.NivelHypervisor) && k < lugares.Count; i++, k++) Colocar("hypervisor", lugares[k].x, lugares[k].y, "equipamento");
+                if (E.TemCi && k < lugares.Count) { Colocar("servidor_ci", lugares[k].x, lugares[k].y, "containers"); k++; }
+                for (int i = 0; i < Mathf.Min(2, E.Nivel(Catalogo.Link10G)) && k < lugares.Count; i++, k++) Colocar("switch_10g", lugares[k].x, lugares[k].y, "equipamento");
+
+                // containers (o primeiro fica vermelho com o deploy quebrado)
+                var hosts = Fileira("containers", ref gy, 1);
+                for (int i = 0; i < Mathf.Min(hosts.Count, E.HostsContainers); i++)
+                {
+                    bool quebrado = i == 0 && E.DeployQuebrado;
+                    var c = Colocar(quebrado ? "containers_quebrado" : "containers", hosts[i].x, hosts[i].y, "containers");
+                    if (quebrado) fila.Add((c.FimX + c.FimY + 3f, () => AlertaArte(c.tela.x + c.tela.width / 2, c.tela.y - 4)));
+                }
+                if (principal == "containers" && E.HostsContainers < hosts.Count) marcador = hosts[E.HostsContainers];
+            }
+            if (cargo >= 4)
+            {
+                // o cluster: nós Kubernetes (laranja num pico sem escala) e o balanceador na ponta
+                var nos = Fileira("k8s", ref gy, 1);
+                bool pico = E.EmPico && !E.PicoFoiEscalado;
+                int n = Mathf.Min(nos.Count - (E.TemBalanceador ? 1 : 0), E.NosKubernetes);
+                for (int i = 0; i < n; i++) Colocar(pico ? "k8s_pico" : "k8s", nos[i].x, nos[i].y, "k8s");
+                if (E.TemBalanceador && nos.Count > 0) { var l = nos[nos.Count - 1]; Colocar("balanceador", l.x, l.y + 0.2f, "equipamento"); }
+                if (principal == "k8s" && E.NosKubernetes < nos.Count - (E.TemBalanceador ? 1 : 0)) marcador = nos[E.NosKubernetes];
+            }
+            if (marcador.HasValue) { var p = Carregar(principal); MarcadorEm(marcador.Value.x, marcador.Value.y, p.CasasX, p.CasasY); }
+        }
+
+        /// <summary>Lugares de uma ou mais fileiras de um equipamento no piso técnico; gy avança para a próxima fileira.</summary>
+        List<Vector2> Fileira(string nome, ref float gy, int fileiras)
+        {
+            var s = Carregar(nome);
             var lugares = new List<Vector2>();
-            for (float gy = 2.9f; gy + rc.CasasY <= aD - 0.3f && lugares.Count < 16; gy += rc.CasasY + 1.3f)
-                lugares.AddRange(FilaEmX("rack_cheio", 5.1f, gy, aW - 0.15f, 16 - lugares.Count, 0.03f));
-            for (int i = 0; i < Mathf.Min(lugares.Count, E.RacksCheios); i++) Colocar("rack_cheio", lugares[i].x, lugares[i].y, "equipamento");
-            if (E.RacksCheios < lugares.Count) { var l = lugares[E.RacksCheios]; MarcadorEm(l.x, l.y, rc.CasasX, rc.CasasY); }
+            for (int f = 0; f < fileiras && gy + s.CasasY <= aD - 0.3f; f++)
+            {
+                lugares.AddRange(FilaEmX(nome, InicioDasFileiras, gy, aW - 0.15f, 20, 0.03f));
+                gy += Carregar("rack_cheio").CasasY + Corredor;
+            }
+            return lugares;
+        }
+
+        /// <summary>DevOps: sofá, puff e máquina de café na frente da esquerda, com a mesa de pé do time.</summary>
+        void Lounge()
+        {
+            Colocar("cafeteira", Encosto, aD - 1.9f);
+            Colocar("extintor", Encosto, aD - 0.7f);
+            Colocar("sofa", 1.3f, aD - 1.7f);
+            Colocar("puff", 3.2f, aD - 1.4f);
+            Colocar("mesa_dev", 1.4f, aD - 3.9f, "noc");
+            NovaPlacaArte("NOC", "NOC", 2.0f, aD - 3.9f, 100, IsoGui.Cyan);
+            Colocar("quadro_branco", 3.3f, aD - 4.0f);
+            NovaPlacaArte("Automacao", "Laboratório", 3.7f, aD - 4.0f, 104, IsoGui.Roxo);
+        }
+
+        /// <summary>SRE: a sala do NOC (mesa curva e telão), separada do piso técnico por uma divisória de vidro.</summary>
+        void Noc()
+        {
+            NaParedeArte("telao", 0.02f, aD - 3.4f, 64);
+            NaParedeArte("porta", 0.02f, aD - 0.9f, 0);
+            Colocar("mesa_noc", 1.0f, aD - 4.3f, "noc");
+            NovaPlacaArte("NOC", "NOC", 1.7f, aD - 4.3f, 104, IsoGui.Cyan);
+            for (int i = 0; i < Mathf.Min(3, E.Nivel(Catalogo.Observabilidade)); i++) Colocar("observabilidade", 3.0f + i * 0.95f, aD - 4.6f, "equipamento");
+            Colocar("sofa", 1.3f, aD - 1.6f);
+            Colocar("cafeteira", 3.4f, aD - 1.5f);
+            Colocar("quadro_branco", 4.2f, aD - 3.0f);
+            NovaPlacaArte("Automacao", "Laboratório", 4.6f, aD - 3.0f, 104, IsoGui.Roxo);
+            // divisória de vidro entre o NOC e o piso técnico
+            var vidro = Espelhado("vidro");   // espelhado: o painel corre ao longo de gy, paralelo à parede da esquerda
+            for (float y = aD - 5.2f; y + vidro.CasasY <= aD - 0.1f; y += vidro.CasasY + 0.02f) Colocar("vidro", InicioDasFileiras - 0.5f, y, null, true, 0, true);
+            Colocar("carrinho", InicioDasFileiras + 0.2f, aD - 1.3f);
         }
 
         // ---------------- Pessoas e efeitos ----------------
@@ -424,8 +528,9 @@ namespace IdleDataCenter.Gerente
         void PersonagensArte()
         {
             // corredor onde as pessoas andam: na frente do canto do técnico
-            float gy = E.Cargo == 0 ? 2.3f : E.Cargo == 1 ? 3.0f : 2.4f;
-            float gxFim = E.Cargo == 0 ? 3.3f : E.Cargo == 1 ? 4.6f : 3.6f;   // na sala de racks, só no lado do escritório
+            int cargo = E.Cargo;
+            float gy = cargo == 0 ? 2.3f : cargo == 1 ? 3.0f : 2.4f;
+            float gxFim = cargo == 0 ? 3.3f : cargo == 1 ? 4.6f : 3.6f;   // da sala de racks em diante, só no lado do escritório
             float gxAndando = PosicaoAndando(1.2f, gxFim, 0f, 0.55f, out bool voltando);
             // técnico: conserta o que travou (ajoelhado ao lado), comemora logo depois de uma compra, senão passeia
             if (tecnicoConsertando) PessoaArte(Pessoa("tecnico_conserta", "tecnico"), lugarDoTecnico.x, lugarDoTecnico.y, false);
@@ -438,11 +543,20 @@ namespace IdleDataCenter.Gerente
                 float gx = PosicaoAndando(1.4f, gxFim - 0.3f, 0.9f, 0.45f, out bool volta);
                 PessoaArte(Passo("estagiario", "estagiario", 0.37f), gx, gy + 1.3f, volta);
             }
-            // na sala de racks chega o engenheiro de campo, andando no corredor entre as fileiras
-            if (E.Cargo >= 2)
+            // da sala de racks em diante, engenheiros de campo nos corredores entre as fileiras (um por cargo)
+            float profundidade = Carregar("rack_cheio").CasasY;
+            for (int i = 0; i < Mathf.Min(cargo - 1, 3); i++)
             {
-                float gx = PosicaoAndando(5.2f, aW - 0.5f, 0.6f, 0.4f, out bool volta);
-                PessoaArte(Passo("engenheiro", "engenheiro", 0.6f), gx, 2.9f + Carregar("rack_cheio").CasasY + 0.65f, volta);
+                float corredor = PrimeiraFileira + profundidade + 0.6f + i * (profundidade + Corredor);
+                if (corredor > aD - 0.5f) break;
+                float gx = PosicaoAndando(InicioDasFileiras + 0.1f, aW - 0.5f, 0.6f + i * 0.31f, 0.4f + i * 0.05f, out bool volta);
+                PessoaArte(Passo("engenheiro", "engenheiro", 0.6f + i), gx, corredor, volta);
+            }
+            // no SRE, o robô de limpeza passeia pelo corredor da frente
+            if (cargo >= 4)
+            {
+                float gx = PosicaoAndando(InicioDasFileiras, aW - 0.6f, 0.2f, 0.25f, out _);
+                Colocar("robo", gx, aD - 0.6f);
             }
         }
 
@@ -494,6 +608,10 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.RackCheio: case Catalogo.PisoElevado: return new Vector2(5f, 3.8f);
                 case Catalogo.Storage: case Catalogo.Backup: return new Vector2(mesaArte.FimX + 4f, 0.4f);
                 case Catalogo.Link: return new Vector2(0.3f, 5.5f);
+                case Catalogo.Containers: case Catalogo.ServidorCi: case Catalogo.ImagensEnxutas: case Catalogo.CacheRedis: return new Vector2(InicioDasFileiras + 1f, PrimeiraFileira + 4.5f);
+                case Catalogo.Hypervisor: case Catalogo.Link10G: return new Vector2(InicioDasFileiras + 1f, PrimeiraFileira + 2.5f);
+                case Catalogo.NoKubernetes: case Catalogo.Balanceador: case Catalogo.ServiceMesh: return new Vector2(InicioDasFileiras + 1f, PrimeiraFileira + 6.5f);
+                case Catalogo.Observabilidade: return new Vector2(3.5f, aD - 4f);
                 default: return null;
             }
         }

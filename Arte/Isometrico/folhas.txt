@@ -9,3 +9,5 @@ server-closet-room-tiles-v1.png ; 3.25 ; piso_a, piso_b, parede_esq, parede_dir,
 server-closet-characters-v1.png ; 2.9 ; tecnico_parado, tecnico_andar_a, tecnico_andar_b, tecnico_conserta, tecnico_comemora, estagiario_parado, estagiario_andar_a, estagiario_andar_b, estagiario_conserta, estagiario_comemora, engenheiro_parado, engenheiro_andar_a, engenheiro_andar_b, engenheiro_conserta, engenheiro_comemora
 server-room-equipment-v1.png ; 2.4 ; rack_vazio@120, rack_1u@120, servidor_1u@16, nobreak@50, ar_split@30, ar_portatil@52, cabos@18, switch@14, quadro_branco@88, estante@104
 proper-server-room-equipment-v1.png ; 2.4 ; rack_cheio@120, rack_cheio_travado@120, storage@120, storage_queimado@120, fita@84, link_fibra@40, crac@118, piso_elevado#127, calha@30, extintor@34
+modern-devops-equipment-v1.png ; 2.4 ; hypervisor@120, containers@84, containers_quebrado@84, servidor_ci@112, switch_10g@120, mesa_dev@80, tv_dashboard@56, sofa@50, cafeteira@62, puff@42
+noc-datacenter-equipment-v1.png ; 2.4 ; k8s@120, k8s_pico@120, balanceador@44, mesa_noc@80, telao@62, observabilidade@96, vidro@112, carrinho@76, porta@118, robo@16
