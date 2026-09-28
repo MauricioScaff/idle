@@ -60,6 +60,7 @@ namespace IdleDataCenter.Gerente
         {
             get
             {
+                if (desenhandoArte) return areaArte;
                 if (dSala == null) return new RectInt(0, 0, Largura, Altura);
                 int esquerda = dSala.P(0, D).x, direita = dSala.P(W, 0).x, topo = dSala.P(0, 0).y - AlturaParede, baixo = dSala.P(W, D).y + 6;
                 return new RectInt(esquerda, topo, direita - esquerda, baixo - topo);
@@ -139,6 +140,13 @@ namespace IdleDataCenter.Gerente
                 DesenharCampus();
                 return;
             }
+            if (TemArteNova)
+            {
+                if (cargoDosPersonagens != E.Cargo) CarregarPersonagens();
+                DesenharArte();
+                return;
+            }
+            desenhandoArte = false;
             if (cargoMontado != E.Cargo || telaSala == null) Montar();
             tela = telaSala; d = dSala;
             tela.Limpar(new Color32(0, 0, 0, 0));
