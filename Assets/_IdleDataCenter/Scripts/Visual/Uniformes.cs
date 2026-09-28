@@ -19,14 +19,13 @@ namespace IdleDataCenter
         public static Texture2D TexturaDoCargo(string arquivo, string prefixo, int cargo)
         {
             var t = ArteGerada.Textura(arquivo);
-            if (prefixo != "tecnico") return t;
-            if (cargo == 1) return ArteGerada.TrocarCorDaRoupa(t, MatizSysadmin);
-            if (cargo == 2) return ArteGerada.TrocarCorDaRoupa(t, MatizAnalista, brilho: BrilhoAnalista);
-            if (cargo == 3) return ArteGerada.TrocarCorDaRoupa(t, MatizDevOps, brilho: BrilhoDevOps);
-            if (cargo == 4) return ArteGerada.TrocarCorDaRoupa(t, MatizSre, brilho: BrilhoSre);
-            if (cargo == 5) return ArteGerada.TrocarCorDaRoupa(t, MatizArquiteto, brilho: BrilhoArquiteto);
-            if (cargo >= 6) return ArteGerada.TrocarCorDaRoupa(t, MatizCto, brilho: BrilhoCto);
-            return t;
+            if (prefixo != "tecnico" || cargo == 0) return t;
+            // sprites da arte nova (Iso/): só o tronco muda, porque a calça jeans também é azul
+            bool novo = arquivo.StartsWith("Iso/");
+            float cabeca = novo ? 0.30f : 0.36f, pernas = novo ? 0.45f : 0f;
+            float matiz = cargo == 1 ? MatizSysadmin : cargo == 2 ? MatizAnalista : cargo == 3 ? MatizDevOps : cargo == 4 ? MatizSre : cargo == 5 ? MatizArquiteto : MatizCto;
+            float brilho = cargo == 1 ? 1f : cargo == 2 ? BrilhoAnalista : cargo == 3 ? BrilhoDevOps : cargo == 4 ? BrilhoSre : cargo == 5 ? BrilhoArquiteto : BrilhoCto;
+            return ArteGerada.TrocarCorDaRoupa(t, matiz, brilho: brilho, cabeca: cabeca, pernas: pernas);
         }
     }
 }

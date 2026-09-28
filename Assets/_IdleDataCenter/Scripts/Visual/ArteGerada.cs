@@ -70,15 +70,19 @@ namespace IdleDataCenter
         /// Cópia da textura com a roupa azul trocada por outro matiz (0..1), mantendo luz e sombra.
         /// Só mexe abaixo da cabeça e em tons claros o bastante (os olhos e a calça escura ficam iguais).
         /// </summary>
-        public static Texture2D TrocarCorDaRoupa(Texture2D origem, float novoMatiz, Vector2Int? cracha = null, float brilho = 1f)
+        /// <param name="cabeca">Fração de cima que é cabeça (não muda).</param>
+        /// <param name="pernas">Fração de baixo que são pernas (não muda: a calça jeans também é azul nos sprites novos).</param>
+        public static Texture2D TrocarCorDaRoupa(Texture2D origem, float novoMatiz, Vector2Int? cracha = null, float brilho = 1f, float cabeca = 0.36f, float pernas = 0f)
         {
             var px = origem.GetPixels32();
             var r = AreaOpaca(origem);
-            int limiteCabeca = r.yMax - Mathf.RoundToInt(r.height * 0.36f); // acima disso é cabeça
+            int limiteCabeca = r.yMax - Mathf.RoundToInt(r.height * cabeca); // acima disso é cabeça
+            int limitePernas = r.yMin + Mathf.RoundToInt(r.height * pernas);  // abaixo disso são pernas
             for (int i = 0; i < px.Length; i++)
             {
                 var c = px[i];
-                if (c.a == 0 || i / origem.width >= limiteCabeca || c.r + c.g + c.b < 200) continue;
+                int y = i / origem.width;
+                if (c.a == 0 || y >= limiteCabeca || y < limitePernas || c.r + c.g + c.b < 200) continue;
                 Color.RGBToHSV(c, out float h, out float sat, out float v);
                 if (h < 0.52f || h > 0.72f || sat < 0.25f) continue; // só azuis
                 var n = (Color32)Color.HSVToRGB(novoMatiz, sat, v * brilho);

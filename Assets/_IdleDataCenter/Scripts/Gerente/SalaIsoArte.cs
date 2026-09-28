@@ -208,30 +208,66 @@ namespace IdleDataCenter.Gerente
 
         // ---------------- Pessoas e efeitos ----------------
 
-        void PersonagensArte()
+        /// <summary>Sprite de pessoa da arte nova, com o uniforme do cargo (cache por cargo).</summary>
+        SpriteIso Pessoa(string nome, string prefixo)
         {
-            // os sprites de personagem ainda são os antigos: desenhados em dobro para ficar na escala da arte nova
-            AndandoArte(tecnico, 1.2f, 4.6f, 3.0f, 0f, 0.55f);
-            if (E.TemEstagiario) AndandoArte(estagiario, 1.4f, 4.2f, 4.2f, 0.37f, 0.5f);
+            string chave = nome + "#" + E.Cargo;
+            if (sprites.TryGetValue(chave, out var s)) return s;
+            var tex = Uniformes.TexturaDoCargo("Iso/" + nome, prefixo, E.Cargo);
+            s = new SpriteIso { px = ArteGerada.PixelsDeCimaParaBaixo(tex), w = tex.width, h = tex.height };
+            return sprites[chave] = s;
         }
 
-        void AndandoArte(Quadro[] quadros, float gx0, float gx1, float gy, float fase, float velocidade)
+        void PersonagensArte()
+        {
+            // técnico: conserta a torre travada (ajoelhado ao lado dela), comemora logo depois de uma compra, senão passeia
+            int travada = -1;
+            for (int i = 0; i < Mathf.Min(LugaresDasTorres.Length, E.Torres); i++)
+                if (E.Travado(i)) { travada = i; break; }
+            float gxAndando = PosicaoAndando(1.2f, 4.4f, 0f, 0.55f, out bool voltando);
+            if (travada >= 0)
+            {
+                var l = LugaresDasTorres[travada];
+                PessoaArte(Pessoa("tecnico_conserta", "tecnico"), l.x - 0.3f, l.y + 1.0f, false);
+            }
+            else if (t - ultimaCompraEm < 1.5f) PessoaArte(Pessoa("tecnico_comemora", "tecnico"), gxAndando, 3.0f, false);
+            else PessoaArte(Passo("tecnico", "tecnico", 0f), gxAndando, 3.0f, voltando);
+
+            if (E.TemEstagiario)
+            {
+                float gx = PosicaoAndando(1.4f, 4.0f, 0.37f, 0.5f, out bool volta);
+                PessoaArte(Passo("estagiario", "estagiario", 0.37f), gx, 4.4f, volta);
+            }
+        }
+
+        /// <summary>Vai e volta entre gx0 e gx1 (a pessoa olha para onde anda).</summary>
+        float PosicaoAndando(float gx0, float gx1, float fase, float velocidade, out bool voltando)
         {
             float ciclo = (t * velocidade * 0.2f + fase) % 2f;
-            float u = ciclo < 1f ? ciclo : 2f - ciclo;
-            float gx = Mathf.Lerp(gx0, gx1, u);
-            bool voltando = ciclo >= 1f;
+            voltando = ciclo >= 1f;
+            return Mathf.Lerp(gx0, gx1, ciclo < 1f ? ciclo : 2f - ciclo);
+        }
+
+        /// <summary>Quadro da caminhada: passada, parado, outra passada, parado.</summary>
+        SpriteIso Passo(string quem, string prefixo, float fase)
+        {
+            int q = Mathf.FloorToInt(t * 5f + fase * 10) % 4;
+            return Pessoa(q == 0 ? quem + "_andar_a" : q == 2 ? quem + "_andar_b" : quem + "_parado", prefixo);
+        }
+
+        /// <summary>Desenha uma pessoa com os pés em (gx, gy); espelhada quando anda para trás.</summary>
+        void PessoaArte(SpriteIso s, float gx, float gy, bool espelhar)
+        {
             fila.Add((gx + gy + 0.4f, () =>
             {
-                var q = quadros[Mathf.FloorToInt(t * 6f + fase * 10) % quadros.Length];
                 var p = AP(gx, gy);
-                const int e = 2;
-                tela.Ret(p.x - 10, p.y - 2, 20, 4, new Color32(20, 20, 40, 90));
-                for (int y = 0; y < q.h; y++)
-                    for (int x = 0; x < q.w; x++)
+                tela.Ret(p.x - 12, p.y - 2, 24, 4, new Color32(20, 20, 40, 90));   // sombra
+                int x0 = p.x - s.w / 2, y0 = p.y - s.h;
+                for (int y = 0; y < s.h; y++)
+                    for (int x = 0; x < s.w; x++)
                     {
-                        var c = q.px[y * q.w + (voltando ? q.w - 1 - x : x)];
-                        if (c.a > 0) tela.Ret(p.x - q.w * e / 2 + x * e, p.y - q.h * e + y * e, e, e, c);
+                        var c = s.px[y * s.w + (espelhar ? s.w - 1 - x : x)];
+                        if (c.a > 0) tela.Pixel(x0 + x, y0 + y, c);
                     }
             }));
         }
