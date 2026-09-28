@@ -33,6 +33,29 @@ namespace IdleDataCenter.Ferramentas
             Processar(folha, saida, nomes?.Split(',') ?? new string[0], escalaFixa);
         }
 
+        /// <summary>
+        /// Reprocessa todas as folhas listadas em Arte/Isometrico/folhas.txt para Resources/Arte/Iso.
+        /// Uso: Unity -batchmode -quit -executeMethod IdleDataCenter.Ferramentas.LimparFolhaDePixelArt.ProcessarTudo
+        /// </summary>
+        [UnityEditor.MenuItem("Idle Data Center/Reprocessar arte gerada")]
+        public static void ProcessarTudo()
+        {
+            string raiz = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            string pasta = Path.Combine(raiz, "Arte", "Isometrico");
+            string saida = Path.Combine(Application.dataPath, "_IdleDataCenter", "Resources", "Arte", "Iso");
+            foreach (var linha in File.ReadAllLines(Path.Combine(pasta, "folhas.txt")))
+            {
+                var l = linha.Trim();
+                if (l.Length == 0 || l.StartsWith("#")) continue;
+                var campos = l.Split(';');
+                if (campos.Length < 3) { Debug.LogError("Linha inválida no manifesto: " + l); continue; }
+                float.TryParse(campos[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float escala);
+                var nomes = campos[2].Split(',').Select(n => n.Trim()).ToArray();
+                Processar(Path.Combine(pasta, campos[0].Trim()), saida, nomes, escala);
+            }
+            UnityEditor.AssetDatabase.Refresh();
+        }
+
         public static void Processar(string folha, string saida, string[] nomes, float escalaFixa = 0)
         {
             var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -70,18 +93,34 @@ namespace IdleDataCenter.Ferramentas
             for (int i = 0; i < caixas.Count; i++)
             {
                 var c = caixas[i];
+                // A IA não respeita a escala entre objetos, então cada um pode dizer o tamanho final (pixels da arte):
+                // "torre@44" = 44 de altura, "piso#127" = 127 de largura, "caneca*0.5" = metade. A célula cresce ou
+                // encolhe e cada pixel de saída ainda é a cor do centro de uma célula, então o resultado continua nítido.
+                string nome = "objeto_" + (i + 1);
+                float fator = 1, cel = escala, ocx = ox, ocy = oy;
+                if (i < nomes.Length && nomes[i].Length > 0)
+                {
+                    var partes = nomes[i].Split('*', '@', '#');
+                    nome = partes[0];
+                    float valor = 0;
+                    if (partes.Length > 1) float.TryParse(partes[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out valor);
+                    if (nomes[i].Contains("@") && valor > 0) fator = valor / (c.Altura / escala);
+                    else if (nomes[i].Contains("#") && valor > 0) fator = valor / (c.Largura / escala);
+                    else if (valor > 0) fator = valor;
+                }
+                if (fator > 0 && Math.Abs(fator - 1) > 0.001f) { cel = escala / fator; ocx = c.x0; ocy = c.y0; }
                 // reduz: um pixel de saída por célula da grade, com a cor do centro da célula
-                int gx0 = Mathf.FloorToInt((c.x0 - ox) / escala) - 1, gy0 = Mathf.FloorToInt((c.y0 - oy) / escala) - 1;
-                int gx1 = Mathf.CeilToInt((c.x1 - ox) / escala) + 1, gy1 = Mathf.CeilToInt((c.y1 - oy) / escala) + 1;
+                int gx0 = Mathf.FloorToInt((c.x0 - ocx) / cel) - 1, gy0 = Mathf.FloorToInt((c.y0 - ocy) / cel) - 1;
+                int gx1 = Mathf.CeilToInt((c.x1 - ocx) / cel) + 1, gy1 = Mathf.CeilToInt((c.y1 - ocy) / cel) + 1;
                 int sw = gx1 - gx0 + 1, sh = gy1 - gy0 + 1;
                 var saidaPx = new Color32[sw * sh];
                 for (int gy = 0; gy < sh; gy++)
                     for (int gx = 0; gx < sw; gx++)
                     {
-                        int cx = Mathf.RoundToInt(ox + (gx0 + gx + 0.5f) * escala), cy = Mathf.RoundToInt(oy + (gy0 + gy + 0.5f) * escala);
+                        int cx = Mathf.RoundToInt(ocx + (gx0 + gx + 0.5f) * cel), cy = Mathf.RoundToInt(ocy + (gy0 + gy + 0.5f) * cel);
                         var cor = new Color32(0, 0, 0, 0);
                         if (cx >= c.x0 - 2 && cx <= c.x1 + 2 && cy >= c.y0 - 2 && cy <= c.y1 + 2 && cx >= 0 && cy >= 0 && cx < w && cy < h && !fundo[cy * w + cx])
-                            cor = Moda(P, fundo, w, h, cx, cy, Mathf.Max(1, Mathf.FloorToInt(escala / 3)));
+                            cor = Moda(P, fundo, w, h, cx, cy, Mathf.Max(1, Mathf.FloorToInt(cel / 3)));
                         saidaPx[(sh - 1 - gy) * sw + gx] = cor;
                     }
                 TirarFranja(saidaPx, sw, sh);
@@ -89,7 +128,6 @@ namespace IdleDataCenter.Ferramentas
                 var s = new Texture2D(rw, rh, TextureFormat.RGBA32, false);
                 s.SetPixels32(recorte);
                 s.Apply();
-                string nome = i < nomes.Length && nomes[i].Length > 0 ? nomes[i] : "objeto_" + (i + 1);
                 File.WriteAllBytes(Path.Combine(saida, nome + ".png"), s.EncodeToPNG());
                 Debug.Log($"  {nome}: {rw}x{rh}");
             }

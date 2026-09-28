@@ -1,0 +1,11 @@
+# Folhas de arte gerada e como recortar cada uma (ferramenta LimparFolhaDePixelArt, modo manifesto).
+# Formato: arquivo ; tamanho do pixel na imagem (px) ; peças na ordem de leitura (linhas de cima para baixo)
+# Tamanho de cada peça, em pixels da arte (a régua é o técnico: 96 px de altura):
+#   nome@44 = 44 de altura    nome#127 = 127 de largura    nome = tamanho natural da folha
+# Linhas começando com # são comentários.
+
+server-closet-objects-v1.png ; 3.25 ; torre@44, torre_travada@45, mesa_crt@74, cadeira@56, planta@40, caneca@12, filtro_linha@26, ventilador@36, caixas@44, prateleira@50, roteador@26, lixeira@30
+server-closet-room-tiles-v1.png ; 3.25 ; piso_a, piso_b, parede_esq, parede_dir, parede_canto, janela@56, quadro@40
+server-closet-characters-v1.png ; 2.9 ; tecnico_parado, tecnico_andar_a, tecnico_andar_b, tecnico_conserta, tecnico_comemora, estagiario_parado, estagiario_andar_a, estagiario_andar_b, estagiario_conserta, estagiario_comemora, engenheiro_parado, engenheiro_andar_a, engenheiro_andar_b, engenheiro_conserta, engenheiro_comemora
+server-room-equipment-v1.png ; 2.4 ; rack_vazio@120, rack_1u@120, servidor_1u@16, nobreak@50, ar_split@30, ar_portatil@52, cabos@18, switch@14, quadro_branco@88, estante@104
+proper-server-room-equipment-v1.png ; 2.4 ; rack_cheio@120, rack_cheio_travado@120, storage@120, storage_queimado@120, fita@84, link_fibra@40, crac@118, piso_elevado#127, calha@30, extintor@34

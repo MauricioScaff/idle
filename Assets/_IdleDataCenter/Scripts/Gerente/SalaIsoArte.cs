@@ -14,8 +14,8 @@ namespace IdleDataCenter.Gerente
     public partial class SalaIso
     {
         const int AHW = 32, AHH = 15;       // meia casa da grade da arte nova
-        const int AParede = 92;
-        const int ACasas = 6;               // armário: 6 × 6 casas (3 × 3 pisos)
+        const int AParede = 132;   // um pouco mais que a altura de uma pessoa (96)
+        const int ACasas = 4;               // armário: 4 × 4 casas (2 × 2 pisos): apertado, como um armário
 
         PixelCanvas telaArte;
         IsoDesenho dArte;
@@ -26,21 +26,46 @@ namespace IdleDataCenter.Gerente
         /// <summary>Cargos que já têm a arte nova.</summary>
         bool TemArteNova => E.Cargo == 0;
 
-        class SpriteIso { public Color32[] px; public int w, h; public List<int> leds = new List<int>(); }
+        /// <summary>
+        /// Um sprite da arte nova. "frente" é o x do canto da frente da base (o pixel mais baixo): à esquerda dele
+        /// fica a face que corre ao longo de gx, à direita a que corre ao longo de gy. Daí sai quantas casas ele ocupa.
+        /// </summary>
+        class SpriteIso
+        {
+            public Color32[] px; public int w, h, frente;
+            public List<int> leds = new List<int>();
+            public float CasasX => frente / (float)AHW;          // ao longo de gx (face da esquerda)
+            public float CasasY => (w - frente) / (float)AHW;    // ao longo de gy (face da direita)
+        }
         static readonly Dictionary<string, SpriteIso> sprites = new Dictionary<string, SpriteIso>();
 
         static SpriteIso Carregar(string nome)
         {
             if (sprites.TryGetValue(nome, out var s)) return s;
             var tex = ArteGerada.Textura("Iso/" + nome);
-            s = new SpriteIso { px = ArteGerada.PixelsDeCimaParaBaixo(tex), w = tex.width, h = tex.height };
+            s = Preparar(ArteGerada.PixelsDeCimaParaBaixo(tex), tex.width, tex.height);
+            return sprites[nome] = s;
+        }
+
+        static SpriteIso Preparar(Color32[] px, int w, int h)
+        {
+            var s = new SpriteIso { px = px, w = w, h = h, frente = w / 2 };
             // LEDs: pixels bem verdes ou bem vermelhos e claros (piscam no desenho)
-            for (int i = 0; i < s.px.Length; i++)
+            for (int i = 0; i < px.Length; i++)
             {
-                var c = s.px[i];
+                var c = px[i];
                 if (c.a > 0 && ((c.g > 170 && c.r < 140 && c.b < 140) || (c.r > 190 && c.g < 90 && c.b < 90))) s.leds.Add(i);
             }
-            return sprites[nome] = s;
+            // canto da frente: média dos pixels opacos nas duas linhas mais baixas
+            for (int y = h - 1; y >= 0; y--)
+            {
+                int soma = 0, n = 0;
+                for (int yy = y; yy >= Mathf.Max(0, y - 1); yy--)
+                    for (int x = 0; x < w; x++)
+                        if (px[yy * w + x].a > 0) { soma += x; n++; }
+                if (n > 0) { s.frente = soma / n; break; }
+            }
+            return s;
         }
 
         Vector2Int AP(float gx, float gy, float z = 0) =>
@@ -101,10 +126,9 @@ namespace IdleDataCenter.Gerente
             d.Poligono(C("4a2b30"), AP(0, n), AP(n, n), AP(n, n, -6), AP(0, n, -6));
             d.Poligono(C("3b2227"), AP(n, 0), AP(n, n), AP(n, n, -6), AP(n, 0, -6));
 
-            // na parede: janela da cidade (esquerda), quadro (direita) e a prateleira com os manuais
-            NaParedeArte("janela", 0.02f, 1.7f, 34);
-            NaParedeArte("quadro", 2.4f, 0.02f, 40);
-            NaParedeArte("prateleira", 0.1f, 3.6f, 40);
+            // na parede: janela da cidade e prateleira (esquerda), quadro (direita, acima das torres)
+            NaParedeArte("janela", 0.02f, 1.25f, 52);
+            NaParedeArte("prateleira", 0.05f, 3.0f, 58);
         }
 
         void NaParedeArte(string nome, float gx, float gy, float z)
@@ -116,15 +140,23 @@ namespace IdleDataCenter.Gerente
 
         // ---------------- Objetos ----------------
 
-        /// <summary>Um sprite no piso: ocupa (gx..gx+w, gy..gy+dd); a base encosta no canto da frente.</summary>
-        void ObjetoArte(string nome, float gx, float gy, float w, float dd, string clique = null, bool ledsPiscam = true, int dy = 0)
+        struct Colocado { public float gx, gy, casasX, casasY; public RectInt tela; }
+
+        /// <summary>
+        /// Põe um sprite no piso com o canto do FUNDO da base em (gx, gy); o tamanho da base sai do próprio sprite,
+        /// então ele encosta certinho nas paredes e nos vizinhos. z levanta (em cima de outra coisa).
+        /// </summary>
+        Colocado Colocar(string nome, float gx, float gy, string clique = null, bool ledsPiscam = true, float z = 0)
         {
             var s = Carregar(nome);
-            var centro = AP(gx + w / 2, gy + dd / 2);
-            int x = centro.x - s.w / 2, y = AP(gx + w, gy + dd).y - s.h + dy;
+            float cx = s.CasasX, cy = s.CasasY;
+            var f = AP(gx + cx, gy + cy, z);
+            int x = f.x - s.frente, y = f.y - s.h + 1;
             float semente = gx * 7 + gy * 3;
-            fila.Add((gx + w + gy + dd, () => DesenharSprite(s, x, y, ledsPiscam ? semente : -1)));
-            if (clique != null) Alvos.Add(new Alvo { Area = new RectInt(x, y, s.w, s.h), Tipo = clique });
+            fila.Add((gx + cx + gy + cy + (z > 0 ? 0.05f : 0), () => DesenharSprite(s, x, y, ledsPiscam ? semente : -1)));
+            var r = new RectInt(x, y, s.w, s.h);
+            if (clique != null) Alvos.Add(new Alvo { Area = r, Tipo = clique });
+            return new Colocado { gx = gx, gy = gy, casasX = cx, casasY = cy, tela = r };
         }
 
         void DesenharSprite(SpriteIso s, int x, int y, float sementeLed = -1)
@@ -137,44 +169,57 @@ namespace IdleDataCenter.Gerente
             foreach (int i in s.leds) tela.Pixel(x + i % s.w, y + i / s.w, new Color32(30, 40, 30, 255));
         }
 
-        /// <summary>Onde ficam as torres visíveis (as demais contam, mas não cabem no armário).</summary>
-        static readonly Vector2[] LugaresDasTorres =
-        {
-            new Vector2(3.5f, 0.3f), new Vector2(4.3f, 0.3f), new Vector2(5.1f, 0.3f), new Vector2(5.1f, 1.2f), new Vector2(5.1f, 2.1f), new Vector2(5.1f, 3.0f),
-        };
+        /// <summary>Onde ficam as torres visíveis (as demais contam, mas não cabem no armário). Recalculado a cada quadro.</summary>
+        Vector2[] LugaresDasTorres = new Vector2[0];
+        Colocado mesaArte;
 
         void ObjetosArte()
         {
-            // canto: planta; mesa com o CRT encostada na parede da direita, cadeira na frente
-            ObjetoArte("planta", 0.3f, 0.3f, 0.8f, 0.8f);
-            ObjetoArte("mesa_crt", 1.3f, 0.2f, 1.9f, 1.1f, "equipamento");
-            ObjetoArte("cadeira", 1.9f, 1.4f, 0.8f, 0.8f);
-            // caneca na ponta da mesa (clique: café)
+            const float Parede = 0.08f;   // folga até a parede
+            // parede da direita: planta no canto, a mesa com o CRT e depois a fila de torres
+            var planta = Colocar("planta", Parede, Parede);
+            mesaArte = Colocar("mesa_crt", Parede + planta.casasX + 0.1f, Parede, "equipamento");
+            var mesa = mesaArte;
+            // caneca em cima da mesa, na ponta livre (clique: café)
             {
                 var s = Carregar("caneca");
-                var p = AP(3.0f, 1.0f, 38);
-                fila.Add((4.35f, () => DesenharSprite(s, p.x - s.w / 2, p.y - s.h)));
-                Alvos.Add(new Alvo { Area = new RectInt(p.x - s.w / 2 - 2, p.y - s.h - 2, s.w + 4, s.h + 4), Tipo = "cafe" });
+                int x = mesa.tela.x + Mathf.RoundToInt(mesa.tela.width * 0.72f), y = mesa.tela.y + Mathf.RoundToInt(mesa.tela.height * 0.36f);
+                fila.Add((mesa.gx + mesa.casasX + mesa.gy + mesa.casasY + 0.05f, () => DesenharSprite(s, x, y)));
+                Alvos.Add(new Alvo { Area = new RectInt(x - 3, y - 3, s.w + 6, s.h + 6), Tipo = "cafe" });
             }
+            // cadeira na frente da mesa; lixeira ao lado
+            var cadeira = Colocar("cadeira", mesa.gx + mesa.casasX * 0.3f, mesa.gy + mesa.casasY + 0.15f);
+            Colocar("lixeira", cadeira.gx + cadeira.casasX + 0.35f, cadeira.gy + 0.25f);
 
-            // torres: as que cabem aparecem; travada aparece com o LED vermelho e um "!"
-            NovaPlacaArte("Compute", "Compute", 4.3f, 0.3f, AParede + 6, IsoGui.Cyan);
+            // torres em fila na parede; quando a fila acaba, uma segunda fila na frente
+            var torre = Carregar("torre");
+            float inicio = mesa.gx + mesa.casasX + 0.25f, tx = inicio, ty = Parede;
+            var lugares = new List<Vector2>();
+            while (lugares.Count < 12)
+            {
+                if (tx + torre.CasasX > ACasas - Parede) { tx = inicio; ty += torre.CasasY + 0.3f; }
+                lugares.Add(new Vector2(tx, ty));
+                tx += torre.CasasX + 0.06f;
+            }
+            LugaresDasTorres = lugares.ToArray();
+            var meioDaFila = LugaresDasTorres[Mathf.Min(2, LugaresDasTorres.Length - 1)];
+            NovaPlacaArte("Compute", "Compute", meioDaFila.x + torre.CasasX / 2, meioDaFila.y, AParede + 8, IsoGui.Cyan);
+            NaParedeArte("quadro", meioDaFila.x + torre.CasasX, 0.02f, 66);
             for (int i = 0; i < Mathf.Min(LugaresDasTorres.Length, E.Torres); i++)
             {
-                var l = LugaresDasTorres[i]; int idx = i;
-                bool travado = E.Travado(idx);
-                ObjetoArte(travado ? "torre_travada" : "torre", l.x, l.y, 0.7f, 0.7f, "servidor:" + i);
-                if (travado) fila.Add((l.x + l.y + 2f, () => AlertaArte(l.x + 0.35f, l.y + 0.35f, 66)));
+                var l = LugaresDasTorres[i];
+                bool travado = E.Travado(i);
+                var c = Colocar(travado ? "torre_travada" : "torre", l.x, l.y, "servidor:" + i);
+                if (travado) fila.Add((l.x + l.y + 3f, () => AlertaArte(c.tela.x + c.tela.width / 2, c.tela.y - 4)));
             }
 
-            // compras do armário que aparecem
-            if (E.Nivel(Catalogo.FiltroDeLinha) > 0) ObjetoArte("filtro_linha", 3.6f, 1.3f, 1.2f, 0.6f);
-            if (E.Nivel(Catalogo.Ventilador) > 0) ObjetoArte("ventilador", 0.4f, 1.6f, 0.6f, 0.6f);
-            if (E.TemEstagiario) ObjetoArte("roteador", 0.4f, 4.3f, 0.8f, 0.6f, null, true, -42);   // o estagiário trouxe o roteador (fica em cima das caixas)
+            // compras do armário que aparecem: filtro de linha no chão, perto das torres; ventilador na parede da esquerda
+            if (E.Nivel(Catalogo.FiltroDeLinha) > 0) Colocar("filtro_linha", inicio - 0.1f, mesa.gy + mesa.casasY + 0.35f);
+            if (E.Nivel(Catalogo.Ventilador) > 0) Colocar("ventilador", Parede, 1.4f);
 
-            // decoração
-            ObjetoArte("caixas", 0.3f, 4.3f, 0.9f, 0.9f);
-            ObjetoArte("lixeira", 1.5f, 4.9f, 0.6f, 0.6f);
+            // parede da esquerda, no fundo: caixas (com o roteador em cima, quando o estagiário chega)
+            var caixas = Colocar("caixas", Parede, 3.0f);
+            if (E.TemEstagiario) Colocar("roteador", Parede + 0.05f, 3.05f, null, true, caixas.tela.height - 16);
 
             MarcadorArte();
         }
@@ -182,28 +227,29 @@ namespace IdleDataCenter.Gerente
         void NovaPlacaArte(string setor, string nome, float gx, float gy, float z, Color cor) =>
             Placas.Add(new Placa { Setor = setor, Nome = nome, Pos = AP(gx, gy, z), Cor = cor });
 
-        void AlertaArte(float gx, float gy, float z)
+        void AlertaArte(int x, int y)
         {
             if (!Piscar()) return;
-            var p = AP(gx, gy, z);
-            tela.Texto("!", p.x - 2, p.y - 10, IsoDesenho.C("ff3b4e"), true, 3);
+            tela.Texto("!", x - 2, y - 16, IsoDesenho.C("ff3b4e"), true, 3);
         }
 
         void MarcadorArte()
         {
             if (E.Torres >= LugaresDasTorres.Length) return;
             var l = LugaresDasTorres[E.Torres];
-            fila.Add((l.x + l.y + 1.4f, () =>
+            var torre = Carregar("torre");
+            float w = torre.CasasX, dd = torre.CasasY;
+            fila.Add((l.x + l.y + 0.2f, () =>
             {
                 var cor = Piscar(0.5f) ? IsoDesenho.C("ffb458") : IsoDesenho.C("d49335");
-                var a = AP(l.x, l.y); var b = AP(l.x + 0.7f, l.y); var c = AP(l.x + 0.7f, l.y + 0.7f); var e = AP(l.x, l.y + 0.7f);
+                var a = AP(l.x, l.y); var b = AP(l.x + w, l.y); var c = AP(l.x + w, l.y + dd); var e = AP(l.x, l.y + dd);
                 foreach (var (p, q) in new[] { (a, b), (b, c), (c, e), (e, a) })
                 {
                     int n = Mathf.Max(Mathf.Abs(q.x - p.x), Mathf.Abs(q.y - p.y));
                     for (int i = 0; i <= n; i += 3) d.Ponto(Vector2Int.RoundToInt(Vector2.Lerp(p, q, (float)i / Mathf.Max(1, n))), cor, 2);
                 }
             }));
-            Marcador = AP(l.x + 0.35f, l.y + 0.35f);
+            Marcador = AP(l.x + w / 2, l.y + dd / 2);
         }
 
         // ---------------- Pessoas e efeitos ----------------
@@ -224,19 +270,20 @@ namespace IdleDataCenter.Gerente
             int travada = -1;
             for (int i = 0; i < Mathf.Min(LugaresDasTorres.Length, E.Torres); i++)
                 if (E.Travado(i)) { travada = i; break; }
-            float gxAndando = PosicaoAndando(1.2f, 4.4f, 0f, 0.55f, out bool voltando);
+            float gxAndando = PosicaoAndando(1.0f, 3.3f, 0f, 0.55f, out bool voltando);
             if (travada >= 0)
             {
                 var l = LugaresDasTorres[travada];
-                PessoaArte(Pessoa("tecnico_conserta", "tecnico"), l.x - 0.3f, l.y + 1.0f, false);
+                var tr = Carregar("torre");
+                PessoaArte(Pessoa("tecnico_conserta", "tecnico"), l.x + tr.CasasX * 0.2f, l.y + tr.CasasY + 0.45f, false);   // ajoelhado na frente da torre
             }
-            else if (t - ultimaCompraEm < 1.5f) PessoaArte(Pessoa("tecnico_comemora", "tecnico"), gxAndando, 3.0f, false);
-            else PessoaArte(Passo("tecnico", "tecnico", 0f), gxAndando, 3.0f, voltando);
+            else if (t - ultimaCompraEm < 1.5f) PessoaArte(Pessoa("tecnico_comemora", "tecnico"), gxAndando, 2.3f, false);
+            else PessoaArte(Passo("tecnico", "tecnico", 0f), gxAndando, 2.3f, voltando);
 
             if (E.TemEstagiario)
             {
-                float gx = PosicaoAndando(1.4f, 4.0f, 0.37f, 0.5f, out bool volta);
-                PessoaArte(Passo("estagiario", "estagiario", 0.37f), gx, 4.4f, volta);
+                float gx = PosicaoAndando(1.2f, 3.4f, 0.37f, 0.5f, out bool volta);
+                PessoaArte(Passo("estagiario", "estagiario", 0.37f), gx, 3.3f, volta);
             }
         }
 
@@ -306,7 +353,7 @@ namespace IdleDataCenter.Gerente
         {
             if (!E.TemChamado) return;
             float bob = Mathf.Sin(t * 4) * 3;
-            var p = AP(2.2f, 0.7f, 110 + bob);
+            var p = AP(mesaArte.gx + mesaArte.casasX / 2, mesaArte.gy + mesaArte.casasY / 2, 104 + bob);   // flutua sobre a mesa
             string[] papel =
             {
                 "yyyyyyyyy.", "yWWWWWyyyy", "yyyyyyyyyy", "yWWWWWWWyy", "yyyyyyyyyy", "yWWWWWyyyy", "yyyyyyyyyy", "yWWWWWWWyy", "yyyyyyyyyy",
