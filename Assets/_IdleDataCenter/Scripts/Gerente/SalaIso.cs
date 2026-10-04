@@ -142,6 +142,7 @@ namespace IdleDataCenter.Gerente
             }
             if (TemArteNova)
             {
+                if (TemIlustracao) { DesenharIlustrada(); return; }
                 if (cargoDosPersonagens != E.Cargo) CarregarPersonagens();
                 DesenharArte();
                 return;
