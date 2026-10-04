@@ -1214,5 +1214,41 @@ namespace IdleDataCenter.Testes
             e.AgirNoEvento();
             Assert.AreEqual(Catalogo.FatorDdosBloqueado, e.FatorEvento, 1e-9);
         }
+
+        // ---------- Uptime e SLA ----------
+
+        [Test]
+        public void UptimeComecaEm99EUmServidorForaOBaixa()
+        {
+            var e = Nova();
+            Assert.AreEqual(0.99, e.Uptime, 1e-12, "sem histórico, nada de SLA");
+            Assert.IsNull(e.Sla);
+            e.Estado.uptime = 1;
+            e.Travar(0);
+            Assert.AreEqual(1, e.Indisponibilidade, 1e-9, "o único servidor caiu: tudo fora");
+            for (int s = 0; s <= Catalogo.TempoConsertoTecnico; s++) e.Avancar(1);   // o jogo avança em passos curtos
+            Assert.Less(e.Uptime, 0.999, "trinta segundos fora já tiram os três noves");
+        }
+
+        [Test]
+        public void TresNovesOuMaisPagamSla()
+        {
+            var e = Nova();
+            e.Estado.uptime = 0.9995;
+            Assert.AreEqual(1.05, e.ReceitaPorSegundo, 1e-9);
+            e.Estado.uptime = 0.99995;
+            Assert.AreEqual(1.10, e.ReceitaPorSegundo, 1e-9);
+            e.Estado.uptime = 0.995;
+            Assert.IsNull(e.Sla);
+            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+        }
+
+        [Test]
+        public void UptimeEscritoComoEmTI()
+        {
+            Assert.AreEqual("99,95%", Economia.FormatarUptime(0.99954));
+            Assert.AreEqual("99,995%", Economia.FormatarUptime(0.99995));
+            Assert.AreEqual("97,3%", Economia.FormatarUptime(0.973));
+        }
     }
 }

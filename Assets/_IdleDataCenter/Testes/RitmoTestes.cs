@@ -21,6 +21,7 @@ namespace IdleDataCenter.Testes
             var completo = new double[Catalogo.Cargos.Count];
             double primeiroBackup = -1;
             double ipo = -1;
+            double melhorUptime = 0, segundosComSla = 0;
             const double limite = 200 * 3600;
 
             for (double t = 0; t < limite; t += 1)
@@ -34,6 +35,8 @@ namespace IdleDataCenter.Testes
                 if (e.PodePromover) { e.Promover(); promocoes[e.Cargo] = t; }
                 if (e.PodeFazerIpo) { e.FazerIpo(); ipo = t; }
                 if (e.Estado.backupsRestaurados > 0 && primeiroBackup < 0) primeiroBackup = t;
+                melhorUptime = Math.Max(melhorUptime, e.Uptime);
+                if (e.Sla.HasValue) segundosComSla++;
 
                 bool tudo = e.MelhoriasDoCargo().Where(m => !m.Gerador && m.NivelMaximo < 30).All(m => e.NoMaximo(m.Id))   // geradores e infraestrutura não acabam
                             && Catalogo.Automacoes.Where(a => a.Cargo <= e.Cargo && e.Cargo >= Catalogo.CargoDasAutomacoes).All(a => e.TemAutomacao(a.Id));
@@ -45,7 +48,8 @@ namespace IdleDataCenter.Testes
             UnityEngine.Debug.Log($"RITMO: Sysadmin {H(promocoes[1])} (completo {H(completo[1])}); Analista {H(promocoes[2])} (1º backup {H(primeiroBackup)}, completo {H(completo[2])}); " +
                                   $"DevOps {H(promocoes[3])} (completo {H(completo[3])}); SRE {H(promocoes[4])} (completo {H(completo[4])}, {e.Estado.picosSobrevividos}/{e.Estado.picosTotal} picos); Arquiteto {H(promocoes[5])} (completo {H(completo[5])}); CTO {H(promocoes[6])} (completo {H(completo[6])}, IPO {H(ipo)}); {e.Estado.incidentesResolvidos} incidentes; " +
                                   $"receita final {e.ReceitaPorSegundo:0}/s; temperatura {e.Temperatura:0} C; " +
-                                  $"energia {e.ConsumoKw:0.0}/{e.CapacidadeKw:0.0} kW; banda {e.TrafegoMbps:0}/{e.BandaMbps:0} Mbps");
+                                  $"energia {e.ConsumoKw:0.0}/{e.CapacidadeKw:0.0} kW; banda {e.TrafegoMbps:0}/{e.BandaMbps:0} Mbps; " +
+                                  $"uptime final {Economia.FormatarUptime(e.Uptime)}, melhor {Economia.FormatarUptime(melhorUptime)}, com SLA {H(segundosComSla)}");
 
             // Documento de design: Técnico de 30 a 60 min; Sysadmin de 3 a 5 h; Analista de 1 a 2 dias; DevOps de 3 a 5 dias; SRE 1 semana.
             // Ocioso e sem cliques o jogador é o mais lento possível; com cliques e offline tudo anda mais rápido.

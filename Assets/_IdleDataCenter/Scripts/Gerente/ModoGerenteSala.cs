@@ -287,7 +287,10 @@ namespace IdleDataCenter.Gerente
             ui.Caixa(new Rect(1090, 20, 330, 104));
             string cargo = E.CargoAtual.Nome;
             ui.Texto(cargo, 1110, 34, Ouro, ui.Largura(cargo, 3) <= 290 ? 3 : 2);
-            ui.Texto(E.CargoAtual.Lugar, 1110, 60, IsoGui.Muted, 2);
+            // uptime da última hora; com três noves ou mais vira SLA e paga bônus
+            var sla = E.Sla;
+            string uptime = "Uptime " + Economia.FormatarUptime(E.Uptime) + (sla.HasValue ? "  SLA +" + Numero(sla.Value.bonus * 100) + "%" : "");
+            ui.Texto(uptime, 1110, 60, sla.HasValue ? IsoGui.Verde : E.Uptime < 0.99 ? IsoGui.Laranja : IsoGui.Muted, 2);
             float x = 1110;
             Medidor(ref x, 86, Raio, Energia, E.Sobrecarga, Numero(Mathf.Round((float)(E.ConsumoKw / Math.Max(0.001, E.CapacidadeKw) * 100))) + "%");
             Medidor(ref x, 86, Termometro, Frio, E.Quente, Numero(Mathf.Round((float)E.Temperatura)) + "°C");

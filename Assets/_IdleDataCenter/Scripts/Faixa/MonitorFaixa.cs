@@ -227,8 +227,9 @@ namespace IdleDataCenter
             Medidor(ref mx, r.y + 6, Termometro, Frio, E.Quente, Mathf.RoundToInt((float)E.Temperatura) + "°C");
             if (E.NaSalaDeRacks)
                 Medidor(ref mx, r.y + 6, Rede, IsoGui.Roxo, E.LinkSaturado, Mathf.RoundToInt((float)(E.TrafegoMbps / Math.Max(0.001, E.BandaMbps) * 100)) + "%");
-            string lugar = E.CargoAtual.Lugar;
-            ui.Texto(lugar, r.xMax - 10 - ui.Largura(lugar, 1), r.y + 8, IsoGui.Cyan, 1);
+            // uptime da última hora no canto (verde quando já paga SLA)
+            string uptime = "Uptime " + Economia.FormatarUptime(E.Uptime);
+            ui.Texto(uptime, r.xMax - 10 - ui.Largura(uptime, 1), r.y + 8, E.Sla.HasValue ? IsoGui.Verde : IsoGui.Cyan, 1);
 
             // aviso na parte de baixo da janela (ou a dica de que clicar abre o gerente)
             bool sobre = r.Contains(cursor);

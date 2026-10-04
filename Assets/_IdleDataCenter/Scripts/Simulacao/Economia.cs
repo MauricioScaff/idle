@@ -255,7 +255,8 @@ namespace IdleDataCenter.Simulacao
                                    * (1 + NivelBackup * Catalogo.BonusPorBackup)
                                    * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
                                    * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1)
-                                   * FatorEvento;
+                                   * FatorEvento
+                                   * FatorSla;
 
         // ---------------- Prestígio: certificações e desafio ----------------
 
@@ -438,6 +439,7 @@ namespace IdleDataCenter.Simulacao
             AvancarPico(segundos);
             AvancarCafeEChamados(segundos);
             AvancarEvento(segundos);
+            AvancarUptime(segundos);
             AvancarQuedaDeEnergia(segundos);
             AvancarPaneRegional(segundos);
 

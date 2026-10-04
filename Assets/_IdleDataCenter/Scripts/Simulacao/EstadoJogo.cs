@@ -53,6 +53,9 @@ namespace IdleDataCenter.Simulacao
         public double eventoSegundos;
         public double proximoEvento = -1;     // segundos até o próximo (-1 = ainda não agendado)
 
+        // Uptime da última hora (0 a 1): ver Uptime.cs. Começa em 99%: os noves do SLA se conquistam
+        public double uptime = 0.99;
+
         // Arquiteto: queda de energia num datacenter (índice do DC extra, -1 = nenhuma)
         public int quedaDc = -1;
         public double quedaSegundos;
