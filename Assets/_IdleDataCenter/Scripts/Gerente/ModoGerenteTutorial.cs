@@ -37,6 +37,8 @@ namespace IdleDataCenter.Gerente
             E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A empresa está na bolsa"; festaTexto = "De técnico de TI num armário a CTO de uma nuvem global."; };
             E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Vendida!"; festaCargo = "+" + c + " certificações"; festaTexto = "Uma empresa nova começa no armário, com os bônus."; };
             E.ChamadoApareceu += texto => Notificar("Chamado urgente: " + texto + "! Clique no papel sobre a mesa.", 8);
+            E.EventoComecou += AoComecarEvento;
+            E.EventoTerminou += AoTerminarEvento;
             E.ChamadoEncerrado += bonus => { if (bonus <= 0) Notificar("O chamado foi embora sem resposta."); };
         }
 
@@ -44,6 +46,29 @@ namespace IdleDataCenter.Gerente
         {
             if (faixa.TomarCafe()) Flutuar("Café! Receita ×2", pos, IsoGui.Cor("ffd65c"));
             else Flutuar(E.CafeAtivo ? "O café ainda faz efeito" : "Café em " + Numero(Mathf.Ceil((float)E.RecargaDoCafe)) + "s", pos, IsoGui.Muted);
+        }
+
+        void AoComecarEvento(EventoDef def)
+        {
+            switch (def.Id)
+            {
+                case Catalogo.EventoCliente: Notificar("Um cliente grande quer pagar o dobro por 90 s! Aceite no cartão à direita, mas nada pode travar.", 7); break;
+                case Catalogo.EventoAuditoria: Notificar("Auditoria em 60 s! Deixe tudo funcionando para ganhar um bônus.", 7); break;
+                case Catalogo.EventoInternet: Notificar("A internet do bairro caiu: renda pela metade por 60 s. Ligue o 4G do celular!", 7); break;
+                case Catalogo.EventoBlackFriday: Notificar("Black Friday! Renda x1,5 por 2 minutos.", 6); break;
+                case Catalogo.EventoCafeAcabou: Notificar("O café acabou e o técnico ficou lento. Compre café no cartão à direita.", 7); break;
+            }
+            Sons.Alerta();
+        }
+
+        void AoTerminarEvento(EventoDef def, double valor)
+        {
+            if (def.Id == Catalogo.EventoAuditoria)
+                Notificar(valor > 0 ? "Auditoria aprovada: +" + Dinheiro(valor) : "Auditoria achou problemas: multa de " + Dinheiro(-valor), 6);
+            else if (def.Id == Catalogo.EventoCliente && valor < 0)
+                Notificar("Algo travou: o cliente cancelou e cobrou " + Dinheiro(-valor) + " de multa.", 6);
+            else if (def.Id == Catalogo.EventoCafeAcabou) Notificar("Café novo na mesa: o técnico voltou ao normal.", 4);
+            if (valor > 0) Sons.Promocao();
         }
 
         void AtenderChamado(Vector2 pos)

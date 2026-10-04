@@ -256,15 +256,17 @@ namespace IdleDataCenter
             var r = new Rect(x, 6, LarguraLado, 116);
             if (E.EmPico && !E.PicoFoiEscalado)
                 Alerta(r, "Pico: " + E.NomeDoPico, E.PicoViolado ? "SLA violado!" : "Escale em " + Mathf.Max(0, Mathf.CeilToInt((float)(E.LimiteParaEscalar - E.SegundosDePico))) + "s", "Escalar", faixa.Escalar);
+            else if (E.TemEvento && E.BotaoDoEvento != null) AlertaDoEvento(r);
             else if (E.TemQuedaDeEnergia) Alerta(r, "Queda de energia", "DC-0" + (E.Estado.quedaDc + 1) + " apagado", "Religar", faixa.Religar);
             else if (E.TemPaneRegional) Alerta(r, "Pane regional", Catalogo.NomesRegioes[E.Estado.paneRegiao], "Redirecionar", faixa.Redirecionar);
             else if (E.DeployQuebrado) Alerta(r, "Deploy quebrou", "Apps fora do ar", "Rollback", faixa.FazerRollback);
-            else if (E.DiscoQueimado) Alerta(r, "Disco queimou", "No storage", "Trocar disco", faixa.TrocarDisco);
+            else if (E.DiscoQueimado) Alerta(r, "Disco queimou", E.NivelStorage > 0 ? "No storage" : "HD da torre", "Trocar disco", faixa.TrocarDisco);
             else if (E.Travamentos.Count > 0)
             {
                 int servidor = E.Travamentos[0].servidor;
                 Alerta(r, E.Travamentos.Count == 1 ? "Servidor travou" : E.Travamentos.Count + " servidores travados", "O técnico vai consertar", "Reiniciar", () => faixa.Reiniciar(servidor));
             }
+            else if (E.TemEvento) AlertaDoEvento(r);
             else if (E.TemChamado)
                 Alerta(r, "Chamado urgente", E.TextoDoChamado, "Atender " + Mathf.CeilToInt((float)E.SegundosDoChamado) + "s", () => faixa.AtenderChamado(), Ouro);
             else ProximaCompra(r);
@@ -277,7 +279,13 @@ namespace IdleDataCenter
             ui.Texto("!", r.center.x, r.y + 10, c, 4, true);
             ui.Texto(Cortar(titulo, 22), r.center.x, r.y + 38, c, 2, true);
             ui.Texto(Cortar(detalhe, 30), r.center.x, r.y + 58, IsoGui.Branco, 1, true);
-            Botao(new Rect(r.x + 14, r.y + 80, r.width - 28, 26), botao, c, acao);
+            if (botao != null) Botao(new Rect(r.x + 14, r.y + 80, r.width - 28, 26), botao, c, acao);
+        }
+
+        void AlertaDoEvento(Rect r)
+        {
+            bool bom = E.Evento.Id == Catalogo.EventoCliente || E.Evento.Id == Catalogo.EventoBlackFriday;
+            Alerta(r, E.Evento.Nome, E.TextoDoEvento, E.BotaoDoEvento, () => { if (E.AgirNoEvento()) Sons.Tique(); }, bom ? Ouro : (Color?)null);
         }
 
         void ProximaCompra(Rect r)

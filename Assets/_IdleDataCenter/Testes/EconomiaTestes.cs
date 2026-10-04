@@ -1059,5 +1059,93 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, "melhoria-antiga", 3);
             Assert.DoesNotThrow(() => { var _ = e.ReceitaPorSegundo; });
         }
+
+        // ---------- Eventos aleatórios ----------
+
+        [Test]
+        public void ClienteGrandeAceitoDobraARendaEMultaSeAlgoTravar()
+        {
+            var e = Nova(1000);
+            e.Estado.cargo = 1;
+            e.ComecarEvento(Catalogo.EventoCliente);
+            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9, "na oferta ainda não dobra");
+            Assert.IsTrue(e.AgirNoEvento());
+            Assert.AreEqual(2, e.ReceitaPorSegundo, 1e-9);
+            double multa = 0;
+            e.EventoTerminou += (def, valor) => multa = valor;
+            e.Travar(0);
+            Assert.IsFalse(e.TemEvento, "o cliente cancela");
+            Assert.AreEqual(-Catalogo.SegundosDeMultaDoCliente, multa, 1e-9);
+        }
+
+        [Test]
+        public void ClienteGrandeIgnoradoVaiEmboraSemCustar()
+        {
+            var e = Nova(1000);
+            e.Estado.cargo = 1;
+            e.ComecarEvento(Catalogo.EventoCliente);
+            e.Avancar(Catalogo.Eventos[0].Duracao + 1);
+            Assert.IsFalse(e.TemEvento);
+            Assert.Greater(e.Dinheiro, 1000);
+        }
+
+        [Test]
+        public void AuditoriaDaBonusComTudoFuncionandoEMultaComIncidente()
+        {
+            var e = Nova(1000);
+            e.Estado.cargo = 2;
+            double resultado = 0;
+            e.EventoTerminou += (def, valor) => resultado = valor;
+            e.ComecarEvento(Catalogo.EventoAuditoria);
+            e.Avancar(61);
+            Assert.AreEqual(Catalogo.SegundosDeBonusDaAuditoria, resultado, 1e-9);
+
+            DefinirNivel(e, Catalogo.Servidor, 1);   // duas torres: com uma travada ainda há receita para a multa
+            e.ComecarEvento(Catalogo.EventoAuditoria);
+            e.Avancar(55);
+            e.Travar(0);
+            e.Avancar(6);
+            Assert.Less(resultado, 0, "servidor travado na hora da auditoria");
+        }
+
+        [Test]
+        public void InternetCaidaCortaARendaEO4GSeguraUmPouco()
+        {
+            var e = Nova();
+            e.ComecarEvento(Catalogo.EventoInternet);
+            Assert.AreEqual(Catalogo.FatorInternetCaida, e.ReceitaPorSegundo, 1e-9);
+            e.AgirNoEvento();
+            Assert.AreEqual(Catalogo.FatorInternet4G, e.ReceitaPorSegundo, 1e-9);
+        }
+
+        [Test]
+        public void DoisLinksDeFibraEvitamAQuedaDaInternet()
+        {
+            var e = Nova();
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.Link, Catalogo.LinksQueEvitamAQuedaDaInternet);
+            e.ComecarEvento(Catalogo.EventoInternet);
+            Assert.IsFalse(e.TemEvento);
+        }
+
+        [Test]
+        public void SemCafeOTecnicoDemoraODobroAteComprarem()
+        {
+            var e = Nova(1000);
+            double normal = e.TempoConserto;
+            e.ComecarEvento(Catalogo.EventoCafeAcabou);
+            Assert.AreEqual(normal * Catalogo.FatorConsertoSemCafe, e.TempoConserto, 1e-9);
+            Assert.IsTrue(e.AgirNoEvento(), "comprar café");
+            Assert.IsFalse(e.TemEvento);
+            Assert.AreEqual(normal, e.TempoConserto, 1e-9);
+        }
+
+        [Test]
+        public void EventosSoComOJogoAberto()
+        {
+            var e = Nova();
+            e.Avancar(Catalogo.PrimeiroEvento + 1);
+            Assert.IsTrue(e.TemEvento, "jogando, o primeiro evento chega");
+        }
     }
 }

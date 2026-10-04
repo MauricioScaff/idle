@@ -313,12 +313,14 @@ namespace IdleDataCenter.Gerente
             var r = new Rect(1140, 140, 280, 190);
             if (E.EmPico && !E.PicoFoiEscalado)
                 Alerta(r, E.NomeDoPico, E.PicoViolado ? "SLA violado!" : "Escale em " + Numero(Mathf.Max(0, Mathf.Ceil((float)(E.LimiteParaEscalar - E.SegundosDePico)))) + "s", "Escalar", Escalar);
+            else if (E.TemEvento && E.BotaoDoEvento != null) AlertaDoEvento(r);
             else if (Incidentes > 1) Alerta(r, Incidentes + " incidentes", "O NOC está piscando", "Resolver tudo", Resolver);
             else if (E.TemQuedaDeEnergia) Alerta(r, "Queda de energia", "DC-0" + (E.DatacenterSemEnergia + 1) + " apagado", "Religar", () => { faixa.Religar(); Notificar("Energia de volta no DC-0" + (E.DatacenterSemEnergia + 1) + "."); });
             else if (E.TemPaneRegional) Alerta(r, "Pane regional", Catalogo.NomesRegioes[E.RegiaoEmPane], "Redirecionar", faixa.Redirecionar);
             else if (E.DeployQuebrado) Alerta(r, "Deploy quebrou", "Apps fora do ar", "Rollback", faixa.FazerRollback);
-            else if (E.DiscoQueimado) Alerta(r, "Disco queimou", "No storage", "Trocar disco", faixa.TrocarDisco);
+            else if (E.DiscoQueimado) Alerta(r, "Disco queimou", E.NivelStorage > 0 ? "No storage" : "HD da torre", "Trocar disco", faixa.TrocarDisco);
             else if (E.Travamentos.Count > 0) Alerta(r, "Servidor travou", "O técnico vai consertar", "Reiniciar", Resolver);
+            else if (E.TemEvento) AlertaDoEvento(r);
             else if (E.TemChamado)
                 Alerta(r, "Chamado urgente", Cortar(E.TextoDoChamado, 30), "Atender " + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "s", () => AtenderChamado(new Vector2(r.center.x, r.y)), Ouro);
             else ProximaCompra(r);
@@ -331,7 +333,18 @@ namespace IdleDataCenter.Gerente
             ui.Texto("!", r.center.x, r.y + 14, c, 6, true);
             ui.Texto(Cortar(titulo, 18), r.center.x, r.y + 60, c, 3, true);
             ui.Texto(detalhe, r.center.x, r.y + 92, IsoGui.Branco, 2, true);
-            if (ui.Botao(new Rect(r.x + 20, r.y + 124, r.width - 40, 46), botao, c, Livre, 3)) acao();
+            if (botao != null && ui.Botao(new Rect(r.x + 20, r.y + 124, r.width - 40, 46), botao, c, Livre, 3)) acao();
+        }
+
+        /// <summary>Evento aleatório no cartão: os bons (cliente grande, Black Friday) em dourado, os ruins em laranja.</summary>
+        void AlertaDoEvento(Rect r)
+        {
+            bool bom = E.Evento.Id == Catalogo.EventoCliente || E.Evento.Id == Catalogo.EventoBlackFriday;
+            Alerta(r, E.Evento.Nome, E.TextoDoEvento, E.BotaoDoEvento, () =>
+            {
+                if (E.AgirNoEvento()) Sons.Tique();
+                else Notificar("Falta dinheiro para isso.");
+            }, bom ? Ouro : (Color?)null);
         }
 
         void ProximaCompra(Rect r)

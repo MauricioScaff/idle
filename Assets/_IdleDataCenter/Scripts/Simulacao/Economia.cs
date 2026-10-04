@@ -9,7 +9,7 @@ namespace IdleDataCenter.Simulacao
     ///
     /// Servidores são numerados assim: primeiro as torres (0 .. Torres-1), depois os de rack.
     /// </summary>
-    public class Economia
+    public partial class Economia
     {
         readonly Random sorteio;
 
@@ -139,9 +139,9 @@ namespace IdleDataCenter.Simulacao
 
         /// <summary>Quanto tempo o técnico leva para consertar sozinho (com estagiário, metade).</summary>
         public double TempoConserto =>
-            TemAutomacao(Catalogo.Runbooks) ? Catalogo.TempoRunbook
+            (TemAutomacao(Catalogo.Runbooks) ? Catalogo.TempoRunbook
             : TemAutomacao(Catalogo.Watchdog) ? Catalogo.TempoWatchdog
-            : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico;
+            : TemEstagiario ? Catalogo.TempoConsertoComEstagiario : Catalogo.TempoConsertoTecnico) * FatorConsertoDoEvento;
 
         /// <summary>Quanto tempo um deploy quebrado fica fora até o rollback sem clique.</summary>
         public double TempoRollback =>
@@ -254,7 +254,8 @@ namespace IdleDataCenter.Simulacao
         public double FatorGeral => FatorEnergia * FatorTemperatura * FatorBanda * FatorStorage
                                    * (1 + NivelBackup * Catalogo.BonusPorBackup)
                                    * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
-                                   * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1);
+                                   * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1)
+                                   * FatorEvento;
 
         // ---------------- Prestígio: certificações e desafio ----------------
 
@@ -436,6 +437,7 @@ namespace IdleDataCenter.Simulacao
             AvancarEscrita(segundos);
             AvancarPico(segundos);
             AvancarCafeEChamados(segundos);
+            AvancarEvento(segundos);
             AvancarQuedaDeEnergia(segundos);
             AvancarPaneRegional(segundos);
 
@@ -498,6 +500,7 @@ namespace IdleDataCenter.Simulacao
         public void Travar(int servidor)
         {
             if (servidor < 0 || servidor >= TotalServidores || Travado(servidor)) return;
+            QuebrouDuranteEvento();   // antes de travar: a multa sai da receita de antes da queda
             Estado.travamentos.Add(new Travamento { servidor = servidor });
             Travou?.Invoke(servidor);
         }

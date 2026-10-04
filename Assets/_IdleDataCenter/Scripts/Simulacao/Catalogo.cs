@@ -71,7 +71,7 @@ namespace IdleDataCenter.Simulacao
     /// <summary>
     /// Números de balanceamento. Tudo que mexe no ritmo do jogo fica aqui, num lugar só.
     /// </summary>
-    public static class Catalogo
+    public static partial class Catalogo
     {
         // --- Ids das melhorias ---
         public const string Ssd = "ssd";

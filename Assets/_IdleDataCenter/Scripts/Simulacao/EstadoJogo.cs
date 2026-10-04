@@ -47,6 +47,12 @@ namespace IdleDataCenter.Simulacao
         public string chamadoTexto = "";
         public int chamadosAtendidos;
 
+        // Evento aleatório em andamento (vazio = nenhum): ver Eventos.cs
+        public string evento = "";
+        public int eventoFase;
+        public double eventoSegundos;
+        public double proximoEvento = -1;     // segundos até o próximo (-1 = ainda não agendado)
+
         // Arquiteto: queda de energia num datacenter (índice do DC extra, -1 = nenhuma)
         public int quedaDc = -1;
         public double quedaSegundos;

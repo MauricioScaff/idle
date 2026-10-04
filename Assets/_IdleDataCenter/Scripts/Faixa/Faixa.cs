@@ -52,6 +52,8 @@ namespace IdleDataCenter
             economia.SlaViolado += multa => { Avisar("SLA violado: -R$ " + Formatar(multa), 3f, Vermelho); Sons.Alerta(); };
             economia.PicoTerminou += AoTerminarPico;
             economia.ChamadoApareceu += texto => { Avisar("Chamado: " + texto, 4f, Amarelo); Sons.Tique(); };
+            economia.EventoComecou += def => { Avisar(def.Nome + "!", 4f, def.Id == Catalogo.EventoCliente || def.Id == Catalogo.EventoBlackFriday ? Amarelo : Laranja); Sons.Alerta(); };
+            economia.EventoTerminou += (def, valor) => { if (valor > 0) Avisar(def.Nome + ": +R$ " + Formatar(valor), 3f, VerdeClaro); else if (valor < 0) Avisar(def.Nome + ": -R$ " + Formatar(-valor), 3f, Vermelho); };
             economia.ChamadoEncerrado += bonus => { if (bonus <= 0) Avisar("O chamado foi embora", 1.5f, Laranja); };
             economia.QuedaDeEnergia += dc => { Avisar("Queda de energia no DC-0" + (dc + 1) + "!", 3f, Vermelho); Sons.Alerta(); };
             economia.EnergiaVoltou += (dc, sozinho) => { Avisar("DC-0" + (dc + 1) + " religado", 2f, VerdeClaro); Sons.Conserto(); };
