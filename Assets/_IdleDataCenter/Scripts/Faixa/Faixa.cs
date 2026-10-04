@@ -304,6 +304,14 @@ namespace IdleDataCenter
             else AbrirPainel();
         }
 
+        /// <summary>O botão ▲ da faixa: abre o modo gerente direto na loja (aba Tudo, com o que dá para comprar primeiro).
+        /// O painel antigo da faixa só abre pelo teste -painel.</summary>
+        public void AbrirLoja()
+        {
+            AbrirGerente(lembrar: false);
+            gerente.AbrirSecao("melhorias");
+        }
+
         // ---------------- Modo gerente (vista isométrica) ----------------
 
         /// <summary>Troca a faixa pela vista isométrica do data center, numa janela normal. O botão "Ir para a faixa" volta.</summary>

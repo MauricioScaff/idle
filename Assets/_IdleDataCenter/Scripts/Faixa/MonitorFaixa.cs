@@ -318,7 +318,7 @@ namespace IdleDataCenter
         void Icones(float x)
         {
             Icone(x, 0, Losango, IsoGui.Cyan, faixa.AbrirGerente);
-            Icone(x, 1, Triangulo, IsoGui.Muted, faixa.AlternarPainel);
+            Icone(x, 1, Triangulo, IsoGui.Muted, faixa.AbrirLoja);
             Icone(x, 2, Baixo, IsoGui.Muted, faixa.Ocultar);
             Icone(x, 3, Xis, IsoGui.Cor("ff7a8a"), Application.Quit);
         }
