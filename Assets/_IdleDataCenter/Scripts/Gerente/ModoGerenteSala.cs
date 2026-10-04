@@ -143,8 +143,9 @@ namespace IdleDataCenter.Gerente
             // nas áreas: o nome da área e o caminho de volta
             if (EmArea)
             {
-                ui.Texto(VistaAtual == SalaIso.Vista.Dados ? "Dados e backup" : "Rede e segurança", areaSala.x + 12, areaSala.y + 12, IsoGui.Cyan, 3);
-                if (ui.Botao(new Rect(areaSala.x + 12, areaSala.y + 44, 200, 36), "< Voltar", IsoGui.Borda, Livre)) vistaEscolhida = SalaIso.Vista.Sala;
+                // embaixo, à esquerda da sala (em cima ficam o help desk e os contratos)
+                ui.Texto(VistaAtual == SalaIso.Vista.Dados ? "Dados e backup" : "Rede e segurança", areaSala.x + 12, areaSala.yMax - 84, IsoGui.Cyan, 3);
+                if (ui.Botao(new Rect(areaSala.x + 12, areaSala.yMax - 52, 200, 40), "< Voltar", IsoGui.Borda, Livre)) vistaEscolhida = SalaIso.Vista.Sala;
             }
 
             // marcador de construção: compra o equipamento principal do cargo (ou, numa área, o próximo dela)

@@ -373,6 +373,7 @@ namespace IdleDataCenter
             else ProcessarCursor();
 
             economia.Avancar(Time.deltaTime);
+            Sons.Ambiente(economia.Cargo, economia.TotalServidores, economia.Nivel(Catalogo.ArCondicionado) > 0);
 
             if (Time.time >= proximoSalvamento)
             {

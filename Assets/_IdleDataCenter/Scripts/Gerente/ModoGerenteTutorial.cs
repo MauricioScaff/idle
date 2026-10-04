@@ -28,6 +28,7 @@ namespace IdleDataCenter.Gerente
             E.Comprou += id =>
             {
                 salaIso?.Comprou(id, Time.unscaledTime);
+                FestaDaCompra(id);
                 if (!E.AtingiuMarco(id)) return;
                 // marco de um gerador: festa curta
                 festaDesde = Time.unscaledTime; festaTitulo = "Marco!";

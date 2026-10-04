@@ -30,7 +30,7 @@ namespace IdleDataCenter
 
         public static float VolumeFinal => Som ? Volumes[Volume] : 0f;
 
-        /// <summary>Zumbido de ventoinha ao fundo (desligado por padrão: o jogo convive com o seu trabalho).</summary>
+        /// <summary>Som ambiente da sala: ventoinhas, ar-condicionado, discos e o NOC (desligado por padrão: o jogo convive com o seu trabalho).</summary>
         public static bool Zumbido
         {
             get => PlayerPrefs.GetInt("zumbido", 0) == 1;

@@ -937,6 +937,9 @@ namespace IdleDataCenter.Gerente
 
         // ---------------- Efeitos ----------------
 
+        /// <summary>Onde fica na sala (pixels do canvas) o que acabou de ser comprado, para a festa da compra (ou null).</summary>
+        public Vector2Int? LugarDaCompra(string id) => LugarDoItemIlustrado(id);
+
         Vector2Int? LugarDoItemIlustrado(string id)
         {
             switch (id)

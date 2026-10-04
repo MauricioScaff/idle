@@ -15,7 +15,13 @@ namespace IdleDataCenter
 
         AudioSource[] fontes;
         int proxima;
-        AudioSource zumbido;
+        AudioSource zumbido, arCondicionado;
+        AudioClip disco, bipeNoc;
+        // o que o som ambiente sabe da sala (ver Ambiente)
+        int cargoAmbiente;
+        float cargaAmbiente;
+        bool arAmbiente;
+        float proximoDetalhe;
         AudioClip moeda, compra, alerta, conserto, promocao, tique;
         float ultimaMoeda;
 
@@ -35,6 +41,33 @@ namespace IdleDataCenter
         public static void Conserto() => I.Tocar(I.conserto, 0.5f);
         public static void Promocao() => I.Tocar(I.promocao, 0.7f);
         public static void Tique() => I.Tocar(I.tique, 0.35f);
+
+        /// <summary>
+        /// Som ambiente da sala (com "Som ambiente" ligado nos ajustes): as ventoinhas ficam mais altas com mais servidores e
+        /// mais graves nas salas grandes, o ar-condicionado sopra quando existe, e de vez em quando um disco faz clique (sala
+        /// de racks em diante) ou o NOC bipa (data center). Chamado a cada quadro pela faixa.
+        /// </summary>
+        public static void Ambiente(int cargo, int servidores, bool arCondicionado)
+        {
+            if (instancia == null) return;
+            instancia.cargoAmbiente = cargo;
+            instancia.cargaAmbiente = Mathf.Clamp01(servidores / 40f);
+            instancia.arAmbiente = arCondicionado;
+        }
+
+        void Update()
+        {
+            bool ligado = Ajustes.Som && Ajustes.Zumbido;
+            if (!ligado) { if (arCondicionado.isPlaying) arCondicionado.Stop(); return; }
+            zumbido.volume = 0.10f + 0.12f * cargaAmbiente + (cargoAmbiente >= 4 ? 0.04f : 0);
+            zumbido.pitch = 1f - 0.12f * Mathf.Min(cargoAmbiente, 6) / 6f;
+            if (arAmbiente && !arCondicionado.isPlaying) arCondicionado.Play();
+            if (!arAmbiente && arCondicionado.isPlaying) arCondicionado.Stop();
+            if (Time.unscaledTime < proximoDetalhe) return;
+            proximoDetalhe = Time.unscaledTime + Random.Range(7f, 18f);
+            if (cargoAmbiente >= 4 && Random.value < 0.4f) Tocar(bipeNoc, 0.12f);
+            else if (cargoAmbiente >= 2) Tocar(disco, 0.25f, Random.Range(0.9f, 1.1f));
+        }
 
         void Awake()
         {
@@ -60,6 +93,13 @@ namespace IdleDataCenter
             zumbido.clip = Clip("zumbido", Ventoinha());
             zumbido.loop = true;
             zumbido.volume = 0.18f;
+
+            arCondicionado = gameObject.AddComponent<AudioSource>();
+            arCondicionado.clip = Clip("ar", Sopro());
+            arCondicionado.loop = true;
+            arCondicionado.volume = 0.06f;
+            disco = Clip("disco", Cliques());
+            bipeNoc = Clip("bipe", Notas(Onda.Seno, 0.06f, 0.2f, 1568, 0, 1568));
 
             Ajustes.Mudou += Aplicar;
             Aplicar();
@@ -138,6 +178,41 @@ namespace IdleDataCenter
         }
 
         /// <summary>Zumbido de ventoinha: ruído grave e suave + um leve tom de 120 Hz, em loop de 4 s sem estalo.</summary>
+        /// <summary>Sopro do ar-condicionado: ruído bem filtrado (só o grave do vento), em loop.</summary>
+        static float[] Sopro()
+        {
+            int n = 3 * Taxa;
+            var d = new float[n];
+            var r = new System.Random(11);
+            float a = 0, b = 0;
+            for (int i = 0; i < n; i++)
+            {
+                a += ((float)(r.NextDouble() * 2 - 1) - a) * 0.08f;   // passa-baixa duas vezes
+                b += (a - b) * 0.08f;
+                d[i] = b * 2.2f;
+            }
+            int cruzamento = Taxa / 4;
+            for (int i = 0; i < cruzamento; i++)
+            {
+                float k = i / (float)cruzamento;
+                d[n - cruzamento + i] = d[n - cruzamento + i] * (1 - k) + d[i] * k;
+            }
+            var loop = new float[n - cruzamento];
+            System.Array.Copy(d, cruzamento, loop, 0, loop.Length);
+            return loop;
+        }
+
+        /// <summary>O disco procurando dados: quatro cliques secos e curtos.</summary>
+        static float[] Cliques()
+        {
+            var d = new float[Taxa / 4];
+            var r = new System.Random(3);
+            foreach (int inicio in new[] { 0, 1900, 3300, 6100 })
+                for (int i = 0; i < 160 && inicio + i < d.Length; i++)
+                    d[inicio + i] = (float)(r.NextDouble() * 2 - 1) * (1 - i / 160f) * 0.5f;
+            return d;
+        }
+
         static float[] Ventoinha()
         {
             int n = 4 * Taxa;

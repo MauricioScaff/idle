@@ -71,8 +71,13 @@ namespace IdleDataCenter.Gerente
 
         void Notificar(string texto, float segundos = 5) { aviso = texto; avisoAte = Time.unscaledTime + segundos; }
 
-        /// <summary>Abre direto numa seção (teste: -gerente=prestigio).</summary>
-        public void AbrirSecao(string secao) => Abrir(char.ToUpperInvariant(secao[0]) + secao.Substring(1));
+        /// <summary>Abre direto numa seção (teste: -gerente=prestigio) ou numa área (-gerente=dados, -gerente=rede).</summary>
+        public void AbrirSecao(string secao)
+        {
+            if (secao == "dados") { vistaEscolhida = SalaIso.Vista.Dados; return; }
+            if (secao == "rede") { vistaEscolhida = SalaIso.Vista.Rede; return; }
+            Abrir(char.ToUpperInvariant(secao[0]) + secao.Substring(1));
+        }
 
         /// <summary>Aviso vindo de fora (por exemplo, o resumo de quando o jogo estava fechado).</summary>
         public void Avisar(string texto, float segundos) => Notificar(texto, segundos);
@@ -175,6 +180,7 @@ namespace IdleDataCenter.Gerente
             if (!Tutorial() && Time.unscaledTime < avisoAte) Aviso(aviso);
             Festa();
             if (!string.IsNullOrEmpty(janela)) Loja();
+            Confetes();   // por cima da loja: a compra pode ter sido feita nela
             GUI.matrix = anterior;
         }
     }

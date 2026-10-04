@@ -509,7 +509,7 @@ namespace IdleDataCenter
             {
                 ("Som", Ajustes.Som ? "Ligado" : "Desligado", () => Ajustes.Som = !Ajustes.Som, true),
                 ("Volume", Ajustes.NomesVolume[Ajustes.Volume], () => Ajustes.Volume = (Ajustes.Volume + 1) % Ajustes.NomesVolume.Length, Ajustes.Som),
-                ("Zumbido de ventoinha", Ajustes.Zumbido ? "Ligado" : "Desligado", () => Ajustes.Zumbido = !Ajustes.Zumbido, Ajustes.Som),
+                ("Som ambiente", Ajustes.Zumbido ? "Ligado" : "Desligado", () => Ajustes.Zumbido = !Ajustes.Zumbido, Ajustes.Som),
                 ("Monitor", $"{(Ajustes.Monitor % n) + 1} de {n}", () => Ajustes.Monitor = (Ajustes.Monitor + 1) % n, n > 1),
                 ("Lado da tela", Ajustes.Direita ? "Direita" : "Esquerda", () => Ajustes.Direita = !Ajustes.Direita, true),
                 ("Esconder em tela cheia", Ajustes.EsconderEmTelaCheia ? "Sim" : "Não", () => Ajustes.EsconderEmTelaCheia = !Ajustes.EsconderEmTelaCheia, true),
