@@ -39,7 +39,7 @@ namespace IdleDataCenter.Gerente
             // avisos na barra de notícias (os sons e o save continuam por conta da faixa)
             E.AutomacaoPronta += id => Notificar("Automação pronta: " + Catalogo.BuscarAutomacao(id).Nome, 8);
             E.Travou += _ => Notificar("Servidor travou. Clique no NOC ou em Reiniciar.");
-            E.DiscoQueimou += () => Notificar("Disco queimou no storage. Clique em Storage para trocar.");
+            E.DiscoQueimou += () => Notificar(E.NivelStorage > 0 ? "Disco queimou no storage. Clique no storage para trocar." : "O HD da torre queimou! Clique na torre com o alerta para trocar o disco.");
             E.DeployQuebrou += () => Notificar("Deploy quebrou. Clique em Deploy para o rollback.");
             E.PicoComecou += nome => Notificar("Pico de tráfego: " + nome + "! Escale o cluster.", 10);
             E.QuedaDeEnergia += dc => Notificar("Queda de energia no DC-0" + (dc + 1) + "! Clique no prédio apagado para religar.", 8);

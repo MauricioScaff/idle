@@ -222,7 +222,8 @@ namespace IdleDataCenter
 
         void AoTrocarDisco(bool restaurou, double perda, bool peloTecnico)
         {
-            if (restaurou) Avisar("Backup restaurado!", 2f, VerdeClaro);
+            if (restaurou && perda <= 0) Avisar("Backup restaurado!", 2f, VerdeClaro);
+            else if (restaurou) Avisar("Backup salvou a maior parte: -R$ " + Formatar(perda), 3f, Laranja);
             else Avisar("Sem backup: -R$ " + Formatar(perda), 3f, Vermelho);
             Sons.Conserto();
             Salvamento.Salvar(economia.Estado);

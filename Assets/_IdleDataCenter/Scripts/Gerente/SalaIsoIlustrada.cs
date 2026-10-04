@@ -203,7 +203,7 @@ namespace IdleDataCenter.Gerente
             for (int i = 0; i < visiveis; i++)
             {
                 var l = Lugar(i);
-                bool travado = E.Travado(i);
+                bool travado = E.Travado(i) || HdDaTorreQueimado(i);
                 var s = travado ? Travada(nome, true) : torre;
                 int semente = i;
                 fila.Add((-i * 0.01f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));   // a da frente cobre a de trás
@@ -266,6 +266,7 @@ namespace IdleDataCenter.Gerente
             TorresNaParede(61, 7, true);
             Alvos.Add(new Alvo { Area = new RectInt(244, 128, 90, 108), Tipo = "equipamento", Prof = -20 });   // mesa da ilustração (atrás de tudo que fica em cima dela)
             Caneca("caneca", new Vector2Int(308, 176));
+            BackupNaMesa(new Vector2Int(294, 182), new Vector2Int(262, 170));
             pontoDoVentilador = new Vector2Int(318, 112);
             var ventilador = CarregarPixelLab("ventilador");
             if (ventilador != null && E.Nivel(Catalogo.Ventilador) > 0)
@@ -307,6 +308,7 @@ namespace IdleDataCenter.Gerente
 
             Alvos.Add(new Alvo { Area = new RectInt(270, 140, 80, 85), Tipo = "equipamento", Prof = -20 });   // mesa da ilustração (atrás de tudo que fica em cima dela)
             Caneca("caneca_p", new Vector2Int(338, 180));
+            BackupNaMesa(new Vector2Int(322, 186), new Vector2Int(283, 162));
             pontoDoChamado = new Vector2Int(302, 124);
         }
 
@@ -359,7 +361,8 @@ namespace IdleDataCenter.Gerente
         /// </summary>
         static readonly Color32 LedRackCheio = new Color32(110, 200, 70, 255), LedHypervisor = new Color32(190, 120, 255, 255),
             LedCi = new Color32(255, 210, 80, 255), LedContainers = new Color32(80, 160, 255, 255), LedK8s = new Color32(70, 230, 230, 255),
-            LedPico = new Color32(255, 150, 50, 255), LedBalanceador = new Color32(240, 240, 255, 255), LedQuebrado = new Color32(255, 70, 80, 255);
+            LedPico = new Color32(255, 150, 50, 255), LedBalanceador = new Color32(240, 240, 255, 255), LedQuebrado = new Color32(255, 70, 80, 255),
+            LedStorage = new Color32(200, 225, 255, 255), LedFita = new Color32(255, 120, 200, 255);
 
         static SpriteIso ComLeds(string nome, Color32 cor)
         {
@@ -431,7 +434,7 @@ namespace IdleDataCenter.Gerente
             {
                 var l = NaParedeDireita(torre, x);
                 x += LarguraNaDireita(torre) + 2;
-                bool travado = E.Travado(i);
+                bool travado = E.Travado(i) || HdDaTorreQueimado(i);
                 var s = travado ? Travada("torre" + Sala.tamanho, false) : torre;
                 int semente = i;
                 fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
@@ -447,6 +450,17 @@ namespace IdleDataCenter.Gerente
             var lugaresRacks = Fileira();
             if (cargo == 2) while (f < fileiras.Length) lugaresRacks.AddRange(Fileira());
             string principal = cargo == 2 ? Catalogo.RackCheio : cargo == 3 ? Catalogo.Containers : Catalogo.NoKubernetes;
+
+            // na ponta da primeira fileira: o storage (LEDs brancos; vermelho com disco queimado) e a biblioteca de fitas (rosa)
+            int naPonta = 0;
+            for (int i = 0; i < Mathf.Min(3, E.NivelStorage) && naPonta < lugaresRacks.Count; i++, naPonta++)
+            {
+                bool queimado = i == 0 && E.DiscoQueimado;
+                MaquinaNaFileira(ComLeds("rack" + equip, queimado ? LedQuebrado : LedStorage), lugaresRacks[naPonta], "storage", queimado);
+                if (i == 0) pontoDoStorage = lugaresRacks[naPonta] + new Vector2Int(10, 10);
+            }
+            if (E.Nivel(Catalogo.Backup) > 0 && naPonta < lugaresRacks.Count) { pontoDaFita = lugaresRacks[naPonta] + new Vector2Int(10, 10); MaquinaNaFileira(ComLeds("rack" + equip, LedFita), lugaresRacks[naPonta++], "equipamento"); }
+            if (naPonta > 0) lugaresRacks.RemoveRange(0, naPonta);
 
             var rackCheio = ComLeds("rack" + equip, LedRackCheio);
             for (int i = 0; i < Mathf.Min(lugaresRacks.Count, E.RacksCheios); i++) MaquinaNaFileira(rackCheio, lugaresRacks[i], "equipamento");
@@ -494,11 +508,47 @@ namespace IdleDataCenter.Gerente
             {
                 Alvos.Add(new Alvo { Area = new RectInt(52, 150, 75, 58), Tipo = "equipamento", Prof = -20 });
                 Caneca("caneca_m", new Vector2Int(112, 163));
+                BackupNaMesa(new Vector2Int(81, 179), new Vector2Int(64, 171));
                 pontoDoChamado = new Vector2Int(86, 140);
             }
         }
 
         Vector2Int pontoDoRackCheio, pontoDoHypervisor, pontoDosContainers, pontoDosNos;
+        Vector2Int pontoDoStorage, pontoDaFita, pontoDoHd, pontoDoNas;
+
+        /// <summary>Antes do storage, o disco que queima é o HD da primeira torre: ela fica com o alerta até trocarem.</summary>
+        bool HdDaTorreQueimado(int torre) => torre == 0 && E.DiscoQueimado && E.NivelStorage == 0;
+
+        /// <summary>
+        /// O começo da linha de backup, em cima da mesa: o HD externo (caixinha preta com LED azul) e o NAS (caixa de dois
+        /// discos com LEDs verdes). São pequenos, então são desenhados aqui mesmo, pixel a pixel.
+        /// </summary>
+        void BackupNaMesa(Vector2Int hd, Vector2Int nas)
+        {
+            pontoDoHd = hd + new Vector2Int(0, -4);
+            pontoDoNas = nas + new Vector2Int(0, -6);
+            var contorno = new Color32(20, 20, 28, 255);
+            if (E.Nivel(Catalogo.HdExterno) > 0)
+                fila.Add((1.1f, () =>
+                {
+                    tela.Ret(hd.x - 4, hd.y - 4, 9, 4, contorno);
+                    tela.Ret(hd.x - 3, hd.y - 3, 7, 2, new Color32(60, 62, 74, 255));
+                    tela.Ret(hd.x - 3, hd.y - 3, 7, 1, new Color32(96, 100, 118, 255));
+                    tela.Pixel(hd.x + 2, hd.y - 2, Piscar(0.7f) ? new Color32(90, 190, 255, 255) : new Color32(40, 90, 140, 255));
+                }));
+            if (E.Nivel(Catalogo.Nas) > 0)
+                fila.Add((1.1f, () =>
+                {
+                    tela.Ret(nas.x - 5, nas.y - 12, 11, 12, contorno);
+                    tela.Ret(nas.x - 4, nas.y - 11, 9, 10, new Color32(48, 52, 66, 255));
+                    tela.Ret(nas.x - 4, nas.y - 11, 9, 1, new Color32(92, 98, 120, 255));
+                    for (int b = 0; b < 2; b++)
+                    {
+                        tela.Ret(nas.x - 3 + b * 4, nas.y - 9, 3, 7, new Color32(30, 32, 42, 255));
+                        tela.Pixel(nas.x - 2 + b * 4, nas.y - 8, Piscar(0.5f + b * 0.2f) ? new Color32(110, 220, 90, 255) : new Color32(50, 110, 50, 255));
+                    }
+                }));
+        }
 
         /// <summary>Cantos de cima das imagens dos racks de uma fileira em gy, um encostado no outro ao longo de gx.</summary>
         List<Vector2Int> LugaresNaFileira(float gy)
@@ -697,6 +747,10 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.Ventilador: return pontoDoVentilador;
                 case Catalogo.NoBreak: return pontoDoNoBreak;
                 case Catalogo.ArCondicionado: return pontoDoAr;
+                case Catalogo.Storage: return pontoDoStorage;
+                case Catalogo.Backup: return pontoDaFita;
+                case Catalogo.HdExterno: return pontoDoHd;
+                case Catalogo.Nas: return pontoDoNas;
                 case Catalogo.RackCheio: case Catalogo.PisoElevado: return pontoDoRackCheio + new Vector2Int(10, 10);
                 case Catalogo.Hypervisor: case Catalogo.Link10G: return pontoDoHypervisor + new Vector2Int(10, 10);
                 case Catalogo.Containers: case Catalogo.ServidorCi: case Catalogo.ImagensEnxutas: case Catalogo.CacheRedis: return pontoDosContainers + new Vector2Int(10, 10);

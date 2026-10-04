@@ -25,9 +25,9 @@ namespace IdleDataCenter.Gerente
         {
             switch (id)
             {
-                case "Compute": case "Equipe": return 0;
+                case "Compute": case "Equipe": case "Storage": return 0;   // Storage: a linha de backup começa no HD externo
                 case "Energia": case "Refrigeracao": return 1;
-                case "Storage": case "Rede": case "Automacao": return 2;
+                case "Rede": case "Automacao": return 2;
                 case "NOC": return 3;
                 case "Campus": return 5;
                 case "Mundo": return 6;

@@ -80,7 +80,11 @@ namespace IdleDataCenter.Simulacao
         public bool TemEstagiario => Nivel(Catalogo.Estagiario) > 0;
         public int RacksCheios => Nivel(Catalogo.RackCheio);
         public int NivelStorage => Nivel(Catalogo.Storage);
-        public bool TemBackup => Nivel(Catalogo.Backup) > 0;
+        /// <summary>Quantos níveis da linha de backup (HD externo, NAS, fita, sala, DC de recuperação, outra região) já foram comprados.</summary>
+        public int NivelBackup { get { int n = 0; foreach (var id in Catalogo.LinhaDeBackup) if (Nivel(id) > 0) n++; return n; } }
+        public bool TemBackup => NivelBackup > 0;
+        /// <summary>Quanto da perda de um disco queimado o backup evita: metade por nível; com a linha toda, tudo.</summary>
+        public double ProtecaoBackup => NivelBackup >= Catalogo.LinhaDeBackup.Length ? 1 : 1 - Math.Pow(0.5, NivelBackup);
         public bool NaSalaDeRacks => Estado.cargo >= 2;
         public bool DiscoQueimado => Estado.discoQueimado;
         public double SegundosDiscoQueimado => Estado.discoSegundos;
@@ -248,6 +252,7 @@ namespace IdleDataCenter.Simulacao
 
         /// <summary>Tudo que multiplica a receita de todos os servidores.</summary>
         public double FatorGeral => FatorEnergia * FatorTemperatura * FatorBanda * FatorStorage
+                                   * (1 + NivelBackup * Catalogo.BonusPorBackup)
                                    * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
                                    * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1);
 
@@ -446,13 +451,14 @@ namespace IdleDataCenter.Simulacao
                 if (sorteio.NextDouble() < segundos * mult / mtbf) Travar(s);
             }
 
-            // Storage: um disco queimado de cada vez; o técnico troca sozinho (ou o hot-spare entra)
+            // Disco: um queimado de cada vez; o técnico troca sozinho (ou o hot-spare entra). Antes do storage, quem queima é o
+            // HD da torre; depois, os discos do storage (mais níveis, mais discos, mais falhas)
             if (DiscoQueimado)
             {
                 Estado.discoSegundos += segundos;
                 if (Estado.discoSegundos >= TempoTrocaDisco) TrocarDisco(porTecnico: true);
             }
-            else if (NivelStorage > 0 && sorteio.NextDouble() < segundos * mult * NivelStorage / Catalogo.MtbfDisco)
+            else if (sorteio.NextDouble() < segundos * mult * (NivelStorage > 0 ? NivelStorage / Catalogo.MtbfDisco : 1 / Catalogo.MtbfDiscoSemStorage))
                 QueimarDisco();
 
             // Deploys: cada host de containers recebe versões novas; às vezes uma quebra
@@ -498,15 +504,15 @@ namespace IdleDataCenter.Simulacao
 
         public void QueimarDisco()
         {
-            if (NivelStorage == 0 || DiscoQueimado) return;
+            if (DiscoQueimado) return;
             Estado.discoQueimado = true;
             Estado.discoSegundos = 0;
             DiscoQueimou?.Invoke();
         }
 
         /// <summary>
-        /// Troca o disco queimado. Com backup, os dados voltam (conta como backup restaurado);
-        /// sem backup, os clientes são reembolsados. Retorna o valor perdido.
+        /// Troca o disco queimado. Com backup, os dados voltam (conta como backup restaurado); o que o backup não cobre
+        /// (metade por nível da linha de backup) vira reembolso aos clientes. Retorna o valor perdido.
         /// </summary>
         public double TrocarDisco(bool porTecnico)
         {
@@ -516,11 +522,9 @@ namespace IdleDataCenter.Simulacao
             Estado.incidentesResolvidos++;
             double perda = 0;
             if (TemBackup) Estado.backupsRestaurados++;
-            else
-            {
-                perda = Math.Min(Estado.dinheiro, ReceitaPorSegundo * Catalogo.SegundosPerdidosSemBackup);
-                Estado.dinheiro -= perda;
-            }
+            // o que o backup não salvou vira reembolso aos clientes
+            perda = Math.Min(Estado.dinheiro, ReceitaPorSegundo * Catalogo.SegundosPerdidosSemBackup * (1 - ProtecaoBackup));
+            Estado.dinheiro -= perda;
             DiscoTrocado?.Invoke(TemBackup, perda, porTecnico);
             return perda;
         }

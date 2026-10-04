@@ -17,6 +17,8 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.RackCheio: return "Rack cheio";
                 case Catalogo.Storage: return "Storage RAID";
                 case Catalogo.Backup: return "Backup em fita";
+                case Catalogo.HdExterno: return "HD externo de backup";
+                case Catalogo.Nas: return "NAS de backup";
                 case Catalogo.Link: return "Link de fibra";
                 case Catalogo.ServidorCi: return "Servidor de CI";
                 case Catalogo.Containers: return "Host de containers";
@@ -48,7 +50,7 @@ namespace IdleDataCenter.Gerente
                                                Catalogo.Hypervisor, Catalogo.Containers, Catalogo.ServidorCi, Catalogo.NoKubernetes, Catalogo.Balanceador };
                 case "Energia": return new[] { Catalogo.NoBreak };
                 case "Refrigeracao": return new[] { Catalogo.ArCondicionado };
-                case "Storage": return new[] { Catalogo.Storage, Catalogo.Backup };
+                case "Storage": return new[] { Catalogo.Storage, Catalogo.HdExterno, Catalogo.Nas, Catalogo.Backup, Catalogo.SalaBackup, Catalogo.DcRecuperacao, Catalogo.BackupRegiao };
                 case "Rede": return new[] { Catalogo.Link, Catalogo.Link10G };
                 case "NOC": return new[] { Catalogo.Observabilidade };
                 case "Equipe": return new[] { Catalogo.Estagiario };
@@ -93,6 +95,7 @@ namespace IdleDataCenter.Gerente
             switch (id)
             {
                 case "Refrigeracao": return "Refrig.";
+                case "Storage": return "Dados";
                 case "Melhorias": return "Tudo";
                 case "Prestigio": return "Prestígio";
                 default: return id;

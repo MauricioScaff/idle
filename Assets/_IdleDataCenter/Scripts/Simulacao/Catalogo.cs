@@ -85,6 +85,10 @@ namespace IdleDataCenter.Simulacao
         public const string RackCheio = "rackcheio";   // rack inteiro de servidores (cargo 3)
         public const string Storage = "storage";
         public const string Backup = "backup";
+        /// <summary>A linha de backup, do mais barato ao mais caro: HD externo (Técnico), NAS (Sysadmin), fita (Analista),
+        /// sala de backup (DevOps), DC de recuperação (Arquiteto) e backup em outra região (CTO).</summary>
+        public const string HdExterno = "hdexterno", Nas = "nas", SalaBackup = "salabackup", DcRecuperacao = "dcrecuperacao", BackupRegiao = "backupregiao";
+        public static readonly string[] LinhaDeBackup = { HdExterno, Nas, Backup, SalaBackup, DcRecuperacao, BackupRegiao };
         public const string Link = "link";
         public const string Hypervisor = "hypervisor";   // cargo 4 (DevOps)
         public const string Containers = "containers";
@@ -195,6 +199,9 @@ namespace IdleDataCenter.Simulacao
         public const double TempoConsertoTecnico = 30; // o técnico resolve sozinho depois disso
         public const double TempoConsertoComEstagiario = 15;
         public const double MtbfDisco = 1200;          // por nível de storage (mais discos, mais falhas)
+        public const double MtbfDiscoSemStorage = 1800;  // antes do storage, o disco que queima é o HD da torre
+        /// <summary>Cada nível da linha de backup dá esta fração a mais de receita (os clientes confiam).</summary>
+        public const double BonusPorBackup = 0.02;
         /// <summary>Sem backup, um disco queimado custa esta quantidade de segundos de receita em reembolsos.</summary>
         public const double SegundosPerdidosSemBackup = 120;
         public const double MtbfDeploy = 1200;          // por host de containers
@@ -331,6 +338,7 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = FiltroDeLinha, Nome = "Filtro de linha", Efeito = "+0.8 kW", Cargo = 0, NivelMaximo = 12, Alvo = AlvoKw, BonusPorNivel = 0.8, CustoBase = 600, FatorCusto = 1.8 },
             new MelhoriaDef { Id = Ventilador, Nome = "Ventilador", Efeito = "-3 graus", Cargo = 0, NivelMaximo = 12, Alvo = AlvoGraus, BonusPorNivel = 3, CustoBase = 500, FatorCusto = 1.8 },
             new MelhoriaDef { Id = PastaTermica, Nome = "Pasta térmica", Efeito = "Torres +30%", Cargo = 0, NivelMaximo = 3, Alvo = AlvoTorres, BonusPorNivel = 0.3, CustoBase = 1800, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = HdExterno, Nome = "HD externo", Efeito = "Backup: disco queimado perde metade, +2% renda", Cargo = 0, NivelMaximo = 1, CustoBase = 1500, FatorCusto = 1 },
             new MelhoriaDef { Id = Estagiario, Nome = "Estagiário", Efeito = "Conserto em 15s", Cargo = 0, NivelMaximo = 1, CustoBase = 2500, FatorCusto = 1 },
 
             // Sysadmin: a salinha com o primeiro rack.
@@ -340,11 +348,12 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = ArCondicionado, Nome = "Ar-cond.", Efeito = "-6 graus", Cargo = 1, NivelMaximo = 60, CustoBase = 5000, FatorCusto = 1.35 },
             new MelhoriaDef { Id = CabosOrganizados, Nome = "Cabos organizados", Efeito = "Servidores 1U +25%", Cargo = 1, NivelMaximo = 3, Alvo = Alvo1U, BonusPorNivel = 0.25, CustoBase = 15000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Firmware, Nome = "Firmware novo", Efeito = "Servidores 1U +40%", Cargo = 1, Requisito = Servidor1U, NivelMaximo = 2, Alvo = Alvo1U, BonusPorNivel = 0.4, CustoBase = 40000, FatorCusto = 3 },
+            new MelhoriaDef { Id = Nas, Nome = "NAS", Efeito = "Backup: perde só 1/4, +2% renda", Cargo = 1, NivelMaximo = 1, CustoBase = 25000, FatorCusto = 1 },
 
             // Analista: a sala de racks.
             new MelhoriaDef { Id = RackCheio, Nome = "Rack cheio", Efeito = "+72/s, 1.6 kW, 160 Mb", Cargo = 2, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 90000, FatorCusto = 1.3 },
             new MelhoriaDef { Id = Storage, Nome = "Storage", Efeito = "RAID: receita +25%", Cargo = 2, NivelMaximo = 3, CustoBase = 150000, FatorCusto = 2.5 },
-            new MelhoriaDef { Id = Backup, Nome = "Backup fita", Efeito = "Salva os dados", Cargo = 2, Requisito = Storage, NivelMaximo = 1, CustoBase = 100000, FatorCusto = 1 },
+            new MelhoriaDef { Id = Backup, Nome = "Backup fita", Efeito = "Backup: perde só 1/8, +2% renda", Cargo = 2, NivelMaximo = 1, CustoBase = 100000, FatorCusto = 1 },
             new MelhoriaDef { Id = Link, Nome = "Link fibra", Efeito = "+300 Mbps", Cargo = 2, NivelMaximo = 40, CustoBase = 50000, FatorCusto = 1.45 },
             new MelhoriaDef { Id = PisoElevado, Nome = "Piso elevado", Efeito = "Racks cheios +30%", Cargo = 2, Requisito = RackCheio, NivelMaximo = 3, Alvo = AlvoRackCheio, BonusPorNivel = 0.3, CustoBase = 250000, FatorCusto = 2.5 },
 
@@ -355,6 +364,7 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Link10G, Nome = "Link 10G", Efeito = "+1500 Mbps", Cargo = 3, NivelMaximo = 30, CustoBase = 700000, FatorCusto = 1.5 },
             new MelhoriaDef { Id = ImagensEnxutas, Nome = "Imagens enxutas", Efeito = "Apps +30%", Cargo = 3, Requisito = Containers, NivelMaximo = 3, Alvo = AlvoApps, BonusPorNivel = 0.3, CustoBase = 2000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = CacheRedis, Nome = "Cache Redis", Efeito = "Apps +50%", Cargo = 3, Requisito = Containers, NivelMaximo = 1, Alvo = AlvoApps, BonusPorNivel = 0.5, CustoBase = 5000000, FatorCusto = 1 },
+            new MelhoriaDef { Id = SalaBackup, Nome = "Sala de backup", Efeito = "Backup separado: perde só 1/16, +2% renda", Cargo = 3, NivelMaximo = 1, CustoBase = 3000000, FatorCusto = 1 },
 
             // SRE: o data center pequeno e o cluster.
             new MelhoriaDef { Id = NoKubernetes, Nome = "Nó K8s", Efeito = "+400/s, 0.8 kW, 150 Mb", Cargo = 4, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 4000000, FatorCusto = 1.28 },
@@ -369,6 +379,7 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Gerador, Nome = "Gerador", Efeito = "Queda de luz: volta em 5 s", Cargo = 5, Requisito = Datacenter, NivelMaximo = 1, CustoBase = 20000000, FatorCusto = 1 },
             new MelhoriaDef { Id = ResfriamentoLiquido, Nome = "Resfriamento líquido", Efeito = "Datacenters +30%", Cargo = 5, Requisito = Datacenter, NivelMaximo = 3, Alvo = AlvoDatacenters, BonusPorNivel = 0.3, CustoBase = 80000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = ContratoDeEnergia, Nome = "Contrato de energia", Efeito = "Datacenters +50%", Cargo = 5, Requisito = Datacenter, NivelMaximo = 1, Alvo = AlvoDatacenters, BonusPorNivel = 0.5, CustoBase = 150000000, FatorCusto = 1 },
+            new MelhoriaDef { Id = DcRecuperacao, Nome = "DC de recuperação", Efeito = "Backup em outro prédio: perde só 1/32, +2% renda", Cargo = 5, Requisito = Datacenter, NivelMaximo = 1, CustoBase = 60000000, FatorCusto = 1 },
 
             // CTO: o mundo.
             new MelhoriaDef { Id = Regiao, Nome = "Região", Efeito = "Nova região: +100K/s", Cargo = 6, NivelMaximo = 3, CustoBase = 1500000000, FatorCusto = 3 },
@@ -377,6 +388,7 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Gpu, Nome = "GPU / IA", Efeito = "Nuvem de IA: +60K/s", Cargo = 6, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 1200000000, FatorCusto = 1.35 },
             new MelhoriaDef { Id = Edge, Nome = "Edge computing", Efeito = "Regiões +30%", Cargo = 6, Requisito = Regiao, NivelMaximo = 3, Alvo = AlvoRegioes, BonusPorNivel = 0.3, CustoBase = 2000000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = ChipsProprios, Nome = "Chips próprios", Efeito = "GPU +50%", Cargo = 6, Requisito = Gpu, NivelMaximo = 2, Alvo = AlvoGpu, BonusPorNivel = 0.5, CustoBase = 5000000000, FatorCusto = 3 },
+            new MelhoriaDef { Id = BackupRegiao, Nome = "Backup em outra região", Efeito = "Backup do outro lado do mundo: não perde nada, +2% renda", Cargo = 6, Requisito = Regiao, NivelMaximo = 1, CustoBase = 2000000000, FatorCusto = 1 },
         };
 
         // --- Ids das automações ---

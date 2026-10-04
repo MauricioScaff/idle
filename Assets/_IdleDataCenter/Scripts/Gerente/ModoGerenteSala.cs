@@ -163,6 +163,7 @@ namespace IdleDataCenter.Gerente
             {
                 var r = NaTela(a.Area);
                 bool quebrado = (a.Tipo.StartsWith("servidor:") && E.Travado(int.Parse(a.Tipo.Substring(9))))
+                             || (a.Tipo == "servidor:0" && E.DiscoQueimado && E.NivelStorage == 0)
                              || (a.Tipo == "rack" && E.Travamentos.Any(t => t.servidor >= E.Torres))
                              || (a.Tipo == "storage" && E.DiscoQueimado) || (a.Tipo == "containers" && E.DeployQuebrado)
                              || (a.Tipo == "dc:" + E.DatacenterSemEnergia && E.TemQuedaDeEnergia) || (a.Tipo == "regiao:" + E.RegiaoEmPane && E.TemPaneRegional);
@@ -208,6 +209,8 @@ namespace IdleDataCenter.Gerente
             {
                 int s = int.Parse(tipo.Substring(9));
                 if (E.Travado(s)) { faixa.Reiniciar(s); Flutuar("Reiniciado", pos, IsoGui.Verde); return; }
+                // antes do storage, o disco que queima é o HD da primeira torre
+                if (s == 0 && E.DiscoQueimado && E.NivelStorage == 0) { faixa.TrocarDisco(); Flutuar("Disco trocado", pos, IsoGui.Verde); return; }
             }
             else if (tipo == "rack")
             {

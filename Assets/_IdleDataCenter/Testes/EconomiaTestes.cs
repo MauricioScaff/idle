@@ -94,10 +94,10 @@ namespace IdleDataCenter.Testes
         public void LojaMostraSoAsMelhoriasDoCargo()
         {
             var e = Nova();
-            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.Estagiario },
+            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.HdExterno, Catalogo.Estagiario },
                 System.Linq.Enumerable.Select(e.MelhoriasDoCargo(), m => m.Id));
             e.Estado.cargo = 1;
-            Assert.AreEqual(6, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()));
+            Assert.AreEqual(7, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()));
         }
 
         [Test]
@@ -321,12 +321,12 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
-        public void ComBackupOTecnicoRestauraSozinho()
+        public void ComALinhaDeBackupInteiraOTecnicoRestauraSemPerder()
         {
             var e = Nova(1000);
             e.Estado.cargo = 2;
             DefinirNivel(e, Catalogo.Storage, 1);
-            DefinirNivel(e, Catalogo.Backup, 1);
+            foreach (var id in Catalogo.LinhaDeBackup) DefinirNivel(e, id, 1);
             bool restaurou = false;
             e.DiscoTrocado += (backup, perda, tecnico) => restaurou = backup && perda == 0 && tecnico;
             e.QueimarDisco();
@@ -337,15 +337,37 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
-        public void SorteioQueimaDiscoSoComStorage()
+        public void SemStorageQuemQueimaEOHdDaTorre()
         {
             var e = Nova(sorteio: 0);
-            e.Estado.cargo = 2;
             e.Avancar(1);
-            Assert.IsFalse(e.DiscoQueimado, "sem storage não há disco");
-            DefinirNivel(e, Catalogo.Storage, 1);
-            e.Avancar(1);
-            Assert.IsTrue(e.DiscoQueimado);
+            Assert.IsTrue(e.DiscoQueimado, "o HD da torre também queima");
+        }
+
+        [Test]
+        public void CadaNivelDeBackupCortaAPerdaPelaMetade()
+        {
+            double PerdaCom(int niveis)
+            {
+                var e = Nova(1000000);
+                for (int i = 0; i < niveis; i++) DefinirNivel(e, Catalogo.LinhaDeBackup[i], 1);
+                e.QueimarDisco();
+                return e.TrocarDisco(porTecnico: false) / e.ReceitaPorSegundo;   // em segundos de receita
+            }
+            Assert.AreEqual(Catalogo.SegundosPerdidosSemBackup, PerdaCom(0), 1e-9);
+            Assert.AreEqual(Catalogo.SegundosPerdidosSemBackup / 2, PerdaCom(1), 1e-9, "HD externo");
+            Assert.AreEqual(Catalogo.SegundosPerdidosSemBackup / 4, PerdaCom(2), 1e-9, "NAS");
+            Assert.AreEqual(Catalogo.SegundosPerdidosSemBackup / 8, PerdaCom(3), 1e-9, "fita");
+            Assert.AreEqual(0, PerdaCom(Catalogo.LinhaDeBackup.Length), 1e-9, "linha inteira");
+        }
+
+        [Test]
+        public void CadaNivelDeBackupDaCincoPorCentoDeReceita()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.HdExterno, 1);
+            DefinirNivel(e, Catalogo.Nas, 1);
+            Assert.AreEqual(1 + 2 * Catalogo.BonusPorBackup, e.ReceitaPorSegundo, 1e-9);
         }
 
         // ---------- Engenheiro DevOps ----------
