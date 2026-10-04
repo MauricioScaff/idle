@@ -51,12 +51,12 @@ namespace IdleDataCenter
             economia.PicoEscalado += automatico => { Avisar(automatico ? "Autoscaling escalou" : "Cluster escalado: rende 2x", 2.5f, VerdeClaro); Sons.Compra(); };
             economia.SlaViolado += multa => { Avisar("SLA violado: -R$ " + Formatar(multa), 3f, Vermelho); Sons.Alerta(); };
             economia.PicoTerminou += AoTerminarPico;
-            economia.ChamadoApareceu += texto => { Avisar("Chamado: " + texto, 4f, Amarelo); Sons.Tique(); };
+            economia.ChamadoApareceu += c => { if (c.prioridade <= 2) { Avisar("Chamado P" + c.prioridade + ": " + c.texto, 4f, c.prioridade == 1 ? Laranja : Amarelo); Sons.Tique(); } };
             economia.EventoComecou += def => { Avisar(def.Nome + "!", 4f, def.Id == Catalogo.EventoCliente || def.Id == Catalogo.EventoBlackFriday ? Amarelo : Laranja); Sons.Alerta(); };
             economia.EventoTerminou += (def, valor) => { if (valor > 0) Avisar(def.Nome + ": +R$ " + Formatar(valor), 3f, VerdeClaro); else if (valor < 0) Avisar(def.Nome + ": -R$ " + Formatar(-valor), 3f, Vermelho); };
             economia.AtaqueBloqueado += (def, quem) => Avisar(quem + " bloqueou " + def.Nome, 3f, VerdeClaro);
             economia.HardwareEnvelheceu += garantia => Avisar(garantia ? "Garantia venceu: refresh!" : "Hardware no fim da vida", 4f, Laranja);
-            economia.ChamadoEncerrado += bonus => { if (bonus <= 0) Avisar("O chamado foi embora", 1.5f, Laranja); };
+            economia.ChamadoEncerrado += (c, bonus, equipe) => { if (bonus <= 0 && c.prioridade <= 2) Avisar("O P" + c.prioridade + " foi embora", 1.5f, Laranja); };
             economia.QuedaDeEnergia += dc => { Avisar("Queda de energia no DC-0" + (dc + 1) + "!", 3f, Vermelho); Sons.Alerta(); };
             economia.EnergiaVoltou += (dc, sozinho) => { Avisar("DC-0" + (dc + 1) + " religado", 2f, VerdeClaro); Sons.Conserto(); };
             economia.PaneRegional += r => { Avisar("Pane: " + Catalogo.NomesRegioes[r] + "!", 3f, Vermelho); Sons.Alerta(); };
@@ -157,10 +157,10 @@ namespace IdleDataCenter
             return true;
         }
 
-        /// <summary>Atende o chamado urgente aberto. Retorna o bônus (0 se não havia).</summary>
-        public double AtenderChamado()
+        /// <summary>Atende um chamado da fila (-1: o mais urgente). Retorna o bônus (0 se não havia).</summary>
+        public double AtenderChamado(int indice = -1)
         {
-            double bonus = economia.AtenderChamado();
+            double bonus = indice < 0 ? economia.AtenderChamado() : economia.AtenderChamado(indice);
             if (bonus <= 0) return 0;
             Avisar("Chamado resolvido: +R$ " + Formatar(bonus), 2f, VerdeClaro);
             Sons.Moeda();

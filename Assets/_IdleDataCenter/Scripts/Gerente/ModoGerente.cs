@@ -168,6 +168,7 @@ namespace IdleDataCenter.Gerente
                 Quaternion.identity, new Vector3(escala, escala, 1));
             DesenharSala();
             Hud();
+            PainelHelpDesk();
             CartaoAtencao();
             Barra();
             if (!Tutorial() && Time.unscaledTime < avisoAte) Aviso(aviso);

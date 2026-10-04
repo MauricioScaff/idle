@@ -270,8 +270,8 @@ namespace IdleDataCenter
             else if (E.TemEvento) AlertaDoEvento(r);
             else if (E.ForaDaGarantia && (E.PodeFazerRefresh || E.FimDaVida))
                 Alerta(r, E.FimDaVida ? "Fim de vida" : "Fora da garantia", "Travam " + E.FatorIdade + "x mais", "Refresh R$ " + Faixa.Formatar(E.CustoDoRefresh), () => { if (E.FazerRefresh()) Sons.Promocao(); });
-            else if (E.TemChamado)
-                Alerta(r, "Chamado urgente", E.TextoDoChamado, "Atender " + Mathf.CeilToInt((float)E.SegundosDoChamado) + "s", () => faixa.AtenderChamado(), Ouro);
+            else if (E.TemChamadoUrgente)
+                Alerta(r, "Chamado P" + E.PrioridadeDoChamado, E.TextoDoChamado, "Atender " + Mathf.CeilToInt((float)E.SegundosDoChamado) + "s", () => faixa.AtenderChamado(), Ouro);
             else ProximaCompra(r);
         }
 

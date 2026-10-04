@@ -36,12 +36,17 @@ namespace IdleDataCenter.Gerente
             E.Promoveu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Promovido!"; festaCargo = E.CargoAtual.Nome; festaTexto = "A sala cresceu. Novos setores e equipamentos na loja."; };
             E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A empresa está na bolsa"; festaTexto = "De técnico de TI num armário a CTO de uma nuvem global."; };
             E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Vendida!"; festaCargo = "+" + c + " certificações"; festaTexto = "Uma empresa nova começa no armário, com os bônus."; };
-            E.ChamadoApareceu += texto => Notificar("Chamado urgente: " + texto + "! Clique no papel sobre a mesa.", 8);
+            E.ChamadoApareceu += c => { if (c.prioridade <= 2) { Notificar("Chamado P" + c.prioridade + ": " + c.texto + "! Atenda no painel do help desk, à esquerda.", 6); if (c.prioridade == 1) Sons.Alerta(); } };
             E.EventoComecou += AoComecarEvento;
             E.EventoTerminou += AoTerminarEvento;
             E.AtaqueBloqueado += (def, quem) => Notificar(quem + " bloqueou um ataque de " + def.Nome.ToLower() + ".", 4);
             E.HardwareEnvelheceu += garantia => Notificar(garantia ? "A garantia dos servidores venceu: vão travar 2x mais. Faça o refresh no cartão à direita." : "Servidores no fim da vida: travam 3x mais. Hora do refresh!", 8);
-            E.ChamadoEncerrado += bonus => { if (bonus <= 0) Notificar("O chamado foi embora sem resposta."); };
+            E.ChamadoEncerrado += (c, bonus, equipe) =>
+            {
+                if (bonus > 0) return;
+                if (c.prioridade == 1) Notificar("O P1 \"" + c.texto + "\" estourou o prazo: o uptime sentiu.", 6);
+                else if (c.prioridade == 2) Notificar("Um P2 foi embora sem resposta.");
+            };
         }
 
         void TomarCafe(Vector2 pos)
@@ -86,9 +91,9 @@ namespace IdleDataCenter.Gerente
             if (valor > 0) Sons.Promocao();
         }
 
-        void AtenderChamado(Vector2 pos)
+        void AtenderChamado(Vector2 pos, int indice = -1)
         {
-            double bonus = faixa.AtenderChamado();
+            double bonus = faixa.AtenderChamado(indice);
             if (bonus > 0) Flutuar("+" + Dinheiro(bonus), pos, IsoGui.Cor("ffd65c"));
         }
 

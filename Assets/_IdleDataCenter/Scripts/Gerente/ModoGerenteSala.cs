@@ -112,7 +112,7 @@ namespace IdleDataCenter.Gerente
             // equipamentos clicáveis: só o que está sob o cursor (pelo desenho do objeto, o da frente ganha). Objetos com
             // pixels ganham um contorno no próprio desenho; os outros, o retângulo
             var mouse = Event.current.mousePosition;
-            int sob = Livre && retSala.Contains(mouse) ? salaIso.AlvoEm((mouse - retSala.position) / zoomSala) : -1;
+            int sob = Livre && retSala.Contains(mouse) && !RetHelpDesk.Contains(mouse) ? salaIso.AlvoEm((mouse - retSala.position) / zoomSala) : -1;
             dica = (null, mouse);
             salaIso.DestaqueTipo = null;
             if (sob >= 0)
@@ -157,18 +157,6 @@ namespace IdleDataCenter.Gerente
                 var cor = flashCompra > 0 ? IsoGui.Verde : IsoGui.Laranja;
                 if (ui.Botao(new Rect(pos.x - largura / 2, pos.y + 12, largura, 30), rotulo, cor, Livre)) Comprar(item);   // embaixo do lugar: não cobre os equipamentos
                 ui.Texto(Dinheiro(E.Custo(item)), pos.x, pos.y + 48, PodeComprarAqui(item) ? IsoGui.Verde : IsoGui.Branco, 2, true);
-            }
-
-            // texto do chamado ao lado do papel
-            if (salaIso.Chamado.HasValue && E.TemChamado)
-            {
-                var pos = NaTela(salaIso.Chamado.Value);
-                string texto = "Chamado: " + E.TextoDoChamado + "  (" + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "s)";
-                float largura = ui.Largura(texto, 2) + 20;
-                var r = new Rect(pos.x + 24, pos.y - 30, largura, 26);
-                ui.Caixa(r, IsoGui.Cor("2a1f10"), Ouro);
-                ui.Texto(texto, r.x + 10, r.y + 8, Ouro, 2);
-                if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) AtenderChamado(new Vector2(pos.x, pos.y - 20));
             }
 
             // "+R$" subindo e sumindo
@@ -373,8 +361,8 @@ namespace IdleDataCenter.Gerente
                     if (E.FazerRefresh()) { Notificar("Refresh feito: servidores novos, na garantia de novo.", 5); Sons.Promocao(); }
                     else Notificar("Falta dinheiro para o refresh.");
                 });
-            else if (E.TemChamado)
-                Alerta(r, "Chamado urgente", Cortar(E.TextoDoChamado, 30), "Atender " + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "s", () => AtenderChamado(new Vector2(r.center.x, r.y)), Ouro);
+            else if (E.TemChamadoUrgente)
+                Alerta(r, "Chamado P" + E.PrioridadeDoChamado, Cortar(E.TextoDoChamado, 30), "Atender " + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "s", () => AtenderChamado(new Vector2(r.center.x, r.y)), Ouro);
             else ProximaCompra(r);
         }
 

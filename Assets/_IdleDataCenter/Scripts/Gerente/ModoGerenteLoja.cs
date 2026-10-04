@@ -54,7 +54,7 @@ namespace IdleDataCenter.Gerente
                 case "Seguranca": return Catalogo.LinhaDeSeguranca;
                 case "Rede": return new[] { Catalogo.Link, Catalogo.Link10G };
                 case "NOC": return new[] { Catalogo.Observabilidade };
-                case "Equipe": return new[] { Catalogo.Estagiario };
+                case "Equipe": return new[] { Catalogo.Estagiario, Catalogo.HelpDesk, Catalogo.ServiceDesk };
                 case "Campus": return new[] { Catalogo.Datacenter, Catalogo.Fibra, Catalogo.Cdn, Catalogo.Gerador };
                 case "Mundo": return new[] { Catalogo.Regiao, Catalogo.CaboSubmarino, Catalogo.Renovavel, Catalogo.Gpu };
                 default:

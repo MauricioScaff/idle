@@ -43,9 +43,11 @@ namespace IdleDataCenter.Simulacao
         // Café (receita em dobro por um tempo) e chamados urgentes (bônus se atendidos a tempo)
         public double cafeRestante, cafeRecarga;
         public double proximoChamado = -1;    // segundos até o próximo (-1 = ainda não agendado)
-        public double chamadoRestante;        // > 0: tem chamado esperando
+        public List<ChamadoAberto> chamados = new List<ChamadoAberto>();   // a fila do help desk (ver HelpDesk.cs)
+        public double helpDeskTrabalho;        // quanto a equipe já trabalhou no chamado da vez
+        public int chamadosAtendidos, chamadosP1;
+        public double chamadoRestante;        // saves antigos: o chamado único (vira um P3 na fila)
         public string chamadoTexto = "";
-        public int chamadosAtendidos;
 
         // Evento aleatório em andamento (vazio = nenhum): ver Eventos.cs
         public string evento = "";

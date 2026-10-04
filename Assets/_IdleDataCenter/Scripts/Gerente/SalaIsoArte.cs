@@ -648,7 +648,7 @@ namespace IdleDataCenter.Gerente
                 for (int x = 0; x < papel[y].Length; x++)
                     if (papel[y][x] != '.') tela.Ret(p.x - 10 + x * 2, p.y - 20 + y * 2, 2, 2, IsoDesenho.C(papel[y][x] == 'y' ? "fdf6e3" : "7d82ad"));
             tela.Ret(p.x + 6, p.y - 20, 4, 4, IsoDesenho.C(Piscar() ? "ff3b4e" : "ff7a8a"));
-            float resta = (float)(E.SegundosDoChamado / Catalogo.TempoParaAtender);
+            float resta = (float)E.FracaoDoPrazoDoChamado;
             tela.Ret(p.x - 12, p.y + 3, 24, 3, IsoDesenho.C("1b1a2e"));
             tela.Ret(p.x - 12, p.y + 3, Mathf.RoundToInt(24 * resta), 3, IsoDesenho.C(resta > 0.3f ? "ffd65c" : "ff3b4e"));
             Chamado = p;

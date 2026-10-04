@@ -501,7 +501,7 @@ namespace IdleDataCenter.Gerente
             tela.Ret(p.x - 6, p.y - 11, 12, 11, IsoDesenho.C("1b1a2e"));
             tela.Mapa(papel, p.x - 5, p.y - 10);
             tela.Ret(p.x + 3, p.y - 10, 2, 2, IsoDesenho.C(Piscar() ? "ff3b4e" : "ff7a8a"));
-            float resta = (float)(E.SegundosDoChamado / Catalogo.TempoParaAtender);
+            float resta = (float)E.FracaoDoPrazoDoChamado;
             tela.Ret(p.x - 6, p.y + 2, 12, 2, IsoDesenho.C("1b1a2e"));
             tela.Ret(p.x - 6, p.y + 2, Mathf.RoundToInt(12 * resta), 2, IsoDesenho.C(resta > 0.3f ? "ffd65c" : "ff3b4e"));
             Chamado = p;

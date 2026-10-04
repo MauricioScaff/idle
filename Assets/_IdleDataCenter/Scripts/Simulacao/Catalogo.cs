@@ -212,14 +212,6 @@ namespace IdleDataCenter.Simulacao
 
         // --- Café e chamados urgentes (para quem está jogando) ---
         public const double DuracaoCafe = 30, RecargaCafe = 180, MultiplicadorCafe = 2;
-        public const double PrimeiroChamado = 90, IntervaloChamadoMin = 180, IntervaloChamadoMax = 360;
-        public const double TempoParaAtender = 20;
-        public const double SegundosDeBonusDoChamado = 60;   // o chamado paga 60 s de receita (mínimo R)
-        public static readonly string[] Chamados =
-        {
-            "Impressora não imprime", "É sempre o DNS", "Senha do Wi-Fi", "Mouse sem pilha", "Cliente quer o backup de ontem",
-            "Servidor fazendo barulho", "Esqueci a senha", "A internet caiu (não caiu)", "Planilha travou", "Certificado expirou",
-        };
         public const int PassosTutorial = 6;
 
         // --- Automações ---
@@ -355,6 +347,7 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Firmware, Nome = "Firmware novo", Efeito = "Servidores 1U +40%", Cargo = 1, Requisito = Servidor1U, NivelMaximo = 2, Alvo = Alvo1U, BonusPorNivel = 0.4, CustoBase = 40000, FatorCusto = 3 },
             new MelhoriaDef { Id = Nas, Nome = "NAS", Efeito = "Backup: perde só 1/4, +2% renda", Cargo = 1, NivelMaximo = 1, CustoBase = 25000, FatorCusto = 1 },
             new MelhoriaDef { Id = Firewall, Nome = "Firewall", Efeito = "Segurança: bloqueia 3/4 dos ataques", Cargo = 1, NivelMaximo = 1, CustoBase = 20000, FatorCusto = 1 },
+            new MelhoriaDef { Id = HelpDesk, Nome = "Analista de help desk", Efeito = "Fecha os chamados P3 e P4 sozinho", Cargo = 1, NivelMaximo = 1, CustoBase = 30000, FatorCusto = 1 },
 
             // Analista: a sala de racks.
             new MelhoriaDef { Id = RackCheio, Nome = "Rack cheio", Efeito = "+72/s, 1.6 kW, 160 Mb", Cargo = 2, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 90000, FatorCusto = 1.3 },
@@ -373,6 +366,7 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = CacheRedis, Nome = "Cache Redis", Efeito = "Apps +50%", Cargo = 3, Requisito = Containers, NivelMaximo = 1, Alvo = AlvoApps, BonusPorNivel = 0.5, CustoBase = 5000000, FatorCusto = 1 },
             new MelhoriaDef { Id = SalaBackup, Nome = "Sala de backup", Efeito = "Backup separado: perde só 1/16, +2% renda", Cargo = 3, NivelMaximo = 1, CustoBase = 3000000, FatorCusto = 1 },
             new MelhoriaDef { Id = ScannerVulnerabilidades, Nome = "Scanner de vulnerabilidades", Efeito = "Segurança no pipeline: bloqueia 15/16", Cargo = 3, NivelMaximo = 1, CustoBase = 2500000, FatorCusto = 1 },
+            new MelhoriaDef { Id = ServiceDesk, Nome = "Service desk 24h", Efeito = "Fecha também os chamados P2", Cargo = 3, Requisito = HelpDesk, NivelMaximo = 1, CustoBase = 3000000, FatorCusto = 1 },
 
             // SRE: o data center pequeno e o cluster.
             new MelhoriaDef { Id = NoKubernetes, Nome = "Nó K8s", Efeito = "+400/s, 0.8 kW, 150 Mb", Cargo = 4, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 4000000, FatorCusto = 1.28 },

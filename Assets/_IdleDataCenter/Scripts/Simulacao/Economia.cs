@@ -42,9 +42,6 @@ namespace IdleDataCenter.Simulacao
         /// <summary>O pico acabou (true = sobreviveu sem violar o SLA).</summary>
         public event Action<bool> PicoTerminou;
         /// <summary>Apareceu um chamado urgente (texto).</summary>
-        public event Action<string> ChamadoApareceu;
-        /// <summary>Chamado atendido (bônus) ou perdido (0).</summary>
-        public event Action<double> ChamadoEncerrado;
         /// <summary>Queda de energia num datacenter extra (índice 1..3, como DC-02..DC-04).</summary>
         public event Action<int> QuedaDeEnergia;
         /// <summary>O datacenter voltou (true se foi sozinho: técnico, gerador ou failover).</summary>
@@ -437,7 +434,8 @@ namespace IdleDataCenter.Simulacao
             // A automação em escrita avança
             AvancarEscrita(segundos);
             AvancarPico(segundos);
-            AvancarCafeEChamados(segundos);
+            AvancarCafe(segundos);
+            AvancarChamados(segundos);
             AvancarEvento(segundos);
             AvancarUptime(segundos);
             AvancarIdade(segundos);
@@ -712,52 +710,10 @@ namespace IdleDataCenter.Simulacao
             return true;
         }
 
-        public bool TemChamado => Estado.chamadoRestante > 0;
-        public string TextoDoChamado => Estado.chamadoTexto;
-        public double SegundosDoChamado => Estado.chamadoRestante;
-        public double BonusDoChamado => Math.Max(25, ReceitaPorSegundo * Catalogo.SegundosDeBonusDoChamado);
-
-        void AvancarCafeEChamados(double segundos)
+        void AvancarCafe(double segundos)
         {
             if (Estado.cafeRestante > 0) Estado.cafeRestante = Math.Max(0, Estado.cafeRestante - segundos);
             if (Estado.cafeRecarga > 0) Estado.cafeRecarga -= segundos;
-
-            if (TemChamado)
-            {
-                Estado.chamadoRestante -= segundos;
-                if (Estado.chamadoRestante <= 0) EncerrarChamado(0);
-                return;
-            }
-            if (Estado.proximoChamado < 0) Estado.proximoChamado = Catalogo.PrimeiroChamado;
-            Estado.proximoChamado -= segundos;
-            if (Estado.proximoChamado <= 0) AbrirChamado();
-        }
-
-        public void AbrirChamado()
-        {
-            if (TemChamado) return;
-            Estado.chamadoTexto = Catalogo.Chamados[sorteio.Next(Catalogo.Chamados.Length)];
-            Estado.chamadoRestante = Catalogo.TempoParaAtender;
-            ChamadoApareceu?.Invoke(Estado.chamadoTexto);
-        }
-
-        /// <summary>Atende o chamado aberto e recebe o bônus. Retorna o valor (0 se não havia chamado).</summary>
-        public double AtenderChamado()
-        {
-            if (!TemChamado) return 0;
-            double bonus = BonusDoChamado;
-            Ganhar(bonus);
-            Estado.chamadosAtendidos++;
-            EncerrarChamado(bonus);
-            return bonus;
-        }
-
-        void EncerrarChamado(double bonus)
-        {
-            Estado.chamadoRestante = 0;
-            Estado.chamadoTexto = "";
-            Estado.proximoChamado = Catalogo.IntervaloChamadoMin + sorteio.NextDouble() * (Catalogo.IntervaloChamadoMax - Catalogo.IntervaloChamadoMin);
-            ChamadoEncerrado?.Invoke(bonus);
         }
 
         // ---------------- Tutorial ----------------
@@ -945,7 +901,7 @@ namespace IdleDataCenter.Simulacao
             {
                 Estado.cafeRestante = 0;
                 Estado.cafeRecarga = 0;
-                if (TemChamado) { Estado.chamadoRestante = 0; Estado.chamadoTexto = ""; Estado.proximoChamado = Catalogo.IntervaloChamadoMin; }
+                LimparChamadosOffline();
             }
             if (fora >= Catalogo.SegundosMinimosOffline)
             {

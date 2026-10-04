@@ -97,7 +97,7 @@ namespace IdleDataCenter.Testes
             CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.HdExterno, Catalogo.Antivirus, Catalogo.Estagiario },
                 System.Linq.Enumerable.Select(e.MelhoriasDoCargo(), m => m.Id));
             e.Estado.cargo = 1;
-            Assert.AreEqual(8, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()));
+            Assert.AreEqual(9, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()), "o analista de help desk entra no Sysadmin");
         }
 
         [Test]
@@ -896,31 +896,99 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
-        public void ChamadoApareceEPagaSeAtendidoATempo()
+        public void ChamadoChegaNaFilaEPagaPelaPrioridade()
         {
             var e = Nova();
-            string texto = null;
-            e.ChamadoApareceu += s => texto = s;
+            ChamadoAberto chegou = null;
+            e.ChamadoApareceu += c => chegou = c;
             for (int i = 0; i < Catalogo.PrimeiroChamado; i++) e.Avancar(1);
             Assert.IsTrue(e.TemChamado);
-            Assert.IsNotNull(texto);
+            Assert.IsNotNull(chegou);
+            Assert.AreEqual(4, chegou.prioridade, "no armário, o sorteio alto dá P4");
             double antes = e.Dinheiro;
-            Assert.AreEqual(Catalogo.SegundosDeBonusDoChamado, e.AtenderChamado(), 1e-9, "60 s da receita de R$ 1/s");
-            Assert.AreEqual(antes + Catalogo.SegundosDeBonusDoChamado, e.Dinheiro, 1e-9);
+            Assert.AreEqual(25, e.AtenderChamado(), 1e-9, "P4 paga 6 s de R$ 1/s, mas no mínimo R$ 25");
+            Assert.AreEqual(antes + 25, e.Dinheiro, 1e-9);
             Assert.IsFalse(e.TemChamado);
+            e.AbrirChamado(1);
+            Assert.AreEqual(Catalogo.BonusDoChamadoEmSegundos[0], e.AtenderChamado(), 1e-9, "P1 paga 1 min de receita");
+        }
+
+        [Test]
+        public void FilaTemLimiteEOMaisUrgenteVemPrimeiro()
+        {
+            var e = Nova();
+            e.AbrirChamado(4); e.AbrirChamado(3); e.AbrirChamado(1); e.AbrirChamado(2); e.AbrirChamado(4);
+            Assert.IsNull(e.AbrirChamado(1), "fila cheia: o sexto não entra");
+            Assert.AreEqual(Catalogo.ChamadosNaFila, e.Chamados.Count);
+            Assert.AreEqual(1, e.Chamados[0].prioridade);
+            Assert.AreEqual(2, e.Chamados[1].prioridade);
+            Assert.AreEqual(1, e.PrioridadeDoChamado);
+            Assert.IsTrue(e.TemChamadoUrgente);
+            e.AtenderChamado(2);   // o terceiro da fila: o P3
+            Assert.AreEqual(0, System.Linq.Enumerable.Count(e.Chamados, c => c.prioridade == 3));
         }
 
         [Test]
         public void ChamadoIgnoradoSomeSemPagar()
         {
             var e = Nova();
-            e.AbrirChamado();
+            e.Estado.proximoChamado = 1e9;
+            e.AbrirChamado(3);
             double pago = -1;
-            e.ChamadoEncerrado += b => pago = b;
-            for (int i = 0; i < Catalogo.TempoParaAtender; i++) e.Avancar(1);
+            e.ChamadoEncerrado += (c, b, equipe) => pago = b;
+            for (int i = 0; i < Catalogo.PrazoDoChamado[2]; i++) e.Avancar(1);
             Assert.IsFalse(e.TemChamado);
             Assert.AreEqual(0, pago, 1e-9);
             Assert.AreEqual(0, e.AtenderChamado(), 1e-9);
+        }
+
+        [Test]
+        public void P1EstouradoDerrubaOUptime()
+        {
+            var e = Nova();
+            e.Estado.proximoChamado = 1e9;
+            e.Estado.uptime = 0.9995;
+            e.AbrirChamado(1);
+            for (int i = 0; i < Catalogo.PrazoDoChamado[0]; i++) e.Avancar(1);
+            Assert.IsFalse(e.TemChamado);
+            Assert.Less(e.Uptime, 0.9995 - 0.001, "5 s fora do ar na média da última hora");
+        }
+
+        [Test]
+        public void EquipeFechaOQueEDaAlcadaDela()
+        {
+            var e = Nova();
+            e.Estado.proximoChamado = 1e9;
+            DefinirNivel(e, Catalogo.Estagiario, 1);
+            e.AbrirChamado(4); e.AbrirChamado(3);
+            double pago = 0; bool porEquipe = false;
+            e.ChamadoEncerrado += (c, b, equipe) => { pago = b; porEquipe = equipe; };
+            for (int i = 0; i < Catalogo.TempoDaEquipeNoChamado; i++) e.Avancar(1);
+            Assert.AreEqual(1, e.Chamados.Count, "o estagiário fechou o P4");
+            Assert.AreEqual(3, e.Chamados[0].prioridade, "o P3 não é com ele");
+            Assert.IsTrue(porEquipe);
+            Assert.AreEqual(25 * Catalogo.FracaoDaEquipe, pago, 1e-9, "a equipe recebe metade");
+            for (int i = 0; i < Catalogo.TempoDaEquipeNoChamado; i++) e.Avancar(1);
+            Assert.AreEqual(1, e.Chamados.Count);
+            DefinirNivel(e, Catalogo.HelpDesk, 1);
+            for (int i = 0; i < Catalogo.TempoDaEquipeNoChamado; i++) e.Avancar(1);
+            Assert.IsFalse(e.TemChamado, "o analista de help desk fecha o P3");
+            e.AbrirChamado(1);
+            DefinirNivel(e, Catalogo.ServiceDesk, 1);
+            for (int i = 0; i < Catalogo.TempoDaEquipeNoChamado; i++) e.Avancar(1);
+            Assert.IsTrue(e.TemChamado, "P1 é sempre com o jogador");
+        }
+
+        [Test]
+        public void ChamadoDeSaveAntigoViraP3NaFila()
+        {
+            var e = Nova();
+            e.Estado.chamadoRestante = 12;
+            e.Estado.chamadoTexto = "Impressora não imprime";
+            Assert.AreEqual(1, e.Chamados.Count);
+            Assert.AreEqual(3, e.Chamados[0].prioridade);
+            Assert.AreEqual("Impressora não imprime", e.TextoDoChamado);
+            Assert.AreEqual(0, e.Estado.chamadoRestante, 1e-9);
         }
 
         [Test]

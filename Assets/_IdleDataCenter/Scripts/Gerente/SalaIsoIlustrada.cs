@@ -993,11 +993,11 @@ namespace IdleDataCenter.Gerente
                 for (int x = 0; x < papel[y].Length; x++)
                     if (papel[y][x] != '.') tela.Ret(p.x + (x - 6) * k, p.y + (y - 12) * k, k, k, IsoDesenho.C(papel[y][x] == 'y' ? "fdf6e3" : "7d82ad"));
             tela.Ret(p.x + 3 * k, p.y - 12 * k, 2 * k, 2 * k, IsoDesenho.C(Piscar() ? "ff3b4e" : "ff7a8a"));
-            float resta = (float)(E.SegundosDoChamado / Catalogo.TempoParaAtender);
+            float resta = (float)E.FracaoDoPrazoDoChamado;
             tela.Ret(p.x - 8 * k, p.y + 2 * k, 16 * k, 2 * k, IsoDesenho.C("1b1a2e"));
             tela.Ret(p.x - 8 * k, p.y + 2 * k, Mathf.RoundToInt(16 * k * resta), 2 * k, IsoDesenho.C(resta > 0.3f ? "ffd65c" : "ff3b4e"));
             Chamado = p;
-            Alvos.Add(new Alvo { Area = new RectInt(p.x - 10 * k, p.y - 16 * k, 20 * k, 22 * k), Tipo = "chamado", Prof = 100, Nome = "Chamado urgente" });
+            Alvos.Add(new Alvo { Area = new RectInt(p.x - 10 * k, p.y - 16 * k, 20 * k, 22 * k), Tipo = "chamado", Prof = 100, Nome = "Help desk: atender o chamado mais urgente" });
         }
     }
 }
