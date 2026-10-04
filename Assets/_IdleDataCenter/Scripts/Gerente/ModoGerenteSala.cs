@@ -65,6 +65,23 @@ namespace IdleDataCenter.Gerente
 
         // ---------------- Sala ----------------
 
+        /// <summary>Nome do equipamento sob o cursor (desenhado no fim, por cima de tudo).</summary>
+        (string texto, Vector2 pos) dica;
+
+        /// <summary>O nome do equipamento e, se ele quebrou, o que fazer.</summary>
+        string NomeComEstado(SalaIso.Alvo a)
+        {
+            if (a.Tipo.StartsWith("servidor:"))
+            {
+                int s = int.Parse(a.Tipo.Substring(9));
+                if (E.Travado(s)) return a.Nome + ": travou, clique para reiniciar";
+                if (s == 0 && E.DiscoQueimado && E.NivelStorage == 0) return a.Nome + ": HD queimou, clique para trocar";
+            }
+            if (a.Tipo == "storage" && E.DiscoQueimado) return a.Nome + ": disco queimou, clique para trocar";
+            if (a.Tipo == "rack" && E.Travamentos.Any(t => t.servidor >= E.Torres)) return a.Nome + ": um travou, clique";
+            return a.Nome;
+        }
+
         void DesenharSala()
         {
             if (salaIso == null || salaIso.Textura == null) AtualizarSala();
@@ -92,11 +109,13 @@ namespace IdleDataCenter.Gerente
             // pixels ganham um contorno no próprio desenho; os outros, o retângulo
             var mouse = Event.current.mousePosition;
             int sob = Livre && retSala.Contains(mouse) ? salaIso.AlvoEm((mouse - retSala.position) / zoomSala) : -1;
+            dica = (null, mouse);
             salaIso.DestaqueTipo = null;
             if (sob >= 0)
             {
                 var alvo = salaIso.Alvos[sob];
                 var r = NaTela(alvo.Area);
+                if (alvo.Nome != null) dica = (NomeComEstado(alvo), mouse);
                 if (alvo.Px != null) { salaIso.DestaqueTipo = alvo.Tipo; salaIso.DestaquePos = alvo.Area.position; }
                 else
                 {
@@ -149,6 +168,15 @@ namespace IdleDataCenter.Gerente
                 if (idade > 1.2f) { flutuantes.RemoveAt(i); continue; }
                 cor.a = Mathf.Clamp01(1.4f - idade);
                 ui.Texto(texto, pos.x, pos.y - 10 - idade * 36, cor, 2, true);
+            }
+
+            // nome do que está sob o cursor, por cima de tudo
+            if (dica.texto != null)
+            {
+                float largura = ui.Largura(dica.texto, 2) + 20;
+                var r = new Rect(Mathf.Min(dica.pos.x + 18, W - largura - 8), dica.pos.y + 20, largura, 28);
+                ui.Caixa(r, IsoGui.Cor("0d1426"), IsoGui.Cyan);
+                ui.Texto(dica.texto, r.x + 10, r.y + 10, IsoGui.Branco, 2);
             }
         }
 
@@ -436,13 +464,28 @@ namespace IdleDataCenter.Gerente
         }
 
         /// <summary>Aviso curto embaixo da meta (a barra de notícias).</summary>
+        /// <summary>
+        /// Aviso no alto da sala. Fica entre o HUD da esquerda e o cartão da direita (sem cobrir o cartão): texto comprido
+        /// quebra em duas linhas.
+        /// </summary>
         void Aviso(string texto)
         {
-            texto = CaberEm(texto, 1080 - 48, 2);
-            float largura = ui.Largura(texto, 2) + 48;
-            var r = new Rect(W / 2 - largura / 2, 138, largura, 36);
+            const float maxima = 800 - 48;
+            var linhas = new List<string>();
+            if (ui.Largura(texto, 2) <= maxima) linhas.Add(texto);
+            else
+            {
+                // quebra no espaço que deixa as duas linhas mais parecidas
+                int melhor = -1;
+                for (int i = texto.IndexOf(' '); i > 0; i = texto.IndexOf(' ', i + 1))
+                    if (melhor < 0 || Mathf.Abs(i - texto.Length / 2) < Mathf.Abs(melhor - texto.Length / 2)) melhor = i;
+                if (melhor < 0) linhas.Add(CaberEm(texto, maxima, 2));
+                else { linhas.Add(CaberEm(texto.Substring(0, melhor), maxima, 2)); linhas.Add(CaberEm(texto.Substring(melhor + 1), maxima, 2)); }
+            }
+            float largura = linhas.Max(l => ui.Largura(l, 2)) + 48;
+            var r = new Rect(W / 2 - largura / 2, 138, largura, 12 + linhas.Count * 24);
             ui.Caixa(r, IsoGui.Cor("162c40"), IsoGui.Cyan);
-            ui.Texto(texto, r.center.x, r.y + 13, IsoGui.Branco, 2, true);
+            for (int i = 0; i < linhas.Count; i++) ui.Texto(linhas[i], r.center.x, r.y + 13 + i * 24, IsoGui.Branco, 2, true);
         }
 
         /// <summary>Corta o texto (com reticências) até caber na largura.</summary>

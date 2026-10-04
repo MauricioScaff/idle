@@ -35,6 +35,7 @@ namespace IdleDataCenter.Gerente
 
         const float TamanhoPorEscala = 7f;          // tamanho da fonte por unidade de escala
         const float TopoDaMaiuscula = 0.30f;        // do topo da linha até o topo da maiúscula, em fração do tamanho
+        const float PixelDaLetra = 0.14f;           // na Silkscreen, um "pixel" da letra é 14% do tamanho (maiúscula de 5 pixels = 0,7)
 
         static Font fonte;
         static GUIStyle estilo;
@@ -70,7 +71,9 @@ namespace IdleDataCenter.Gerente
             // tamanho e posição na tela de verdade
             var m = GUI.matrix;
             float s1 = m.m00;
-            int tamanho = Mathf.Max(6, Mathf.RoundToInt(Tamanho(escala) * s1));
+            // tamanho que põe cada pixel da letra num número inteiro de pixels da tela: a letra fica nítida
+            int pixel = Mathf.Max(1, Mathf.RoundToInt(Tamanho(escala) * s1 * PixelDaLetra));
+            int tamanho = Mathf.RoundToInt(pixel / PixelDaLetra);
             e.fontSize = tamanho;
             var conteudo = new GUIContent(s);
             var tam = e.CalcSize(conteudo);

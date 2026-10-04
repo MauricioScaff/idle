@@ -39,7 +39,7 @@ namespace IdleDataCenter.Gerente
         /// Algo clicável na sala. Com Px (os pixels do objeto, do tamanho de Area), o clique e o destaque seguem o desenho
         /// dele e não o retângulo; Prof decide quem está na frente quando dois se sobrepõem.
         /// </summary>
-        public struct Alvo { public RectInt Area; public string Tipo; public Color32[] Px; public float Prof; }
+        public struct Alvo { public RectInt Area; public string Tipo, Nome; public Color32[] Px; public float Prof; }
 
         /// <summary>
         /// O alvo sob um ponto da tela da sala (pixels do canvas), ou -1. Objetos com pixels só contam onde têm pixel
