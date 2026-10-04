@@ -94,10 +94,10 @@ namespace IdleDataCenter.Testes
         public void LojaMostraSoAsMelhoriasDoCargo()
         {
             var e = Nova();
-            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.HdExterno, Catalogo.Estagiario },
+            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.HdExterno, Catalogo.Antivirus, Catalogo.Estagiario },
                 System.Linq.Enumerable.Select(e.MelhoriasDoCargo(), m => m.Id));
             e.Estado.cargo = 1;
-            Assert.AreEqual(7, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()));
+            Assert.AreEqual(8, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()));
         }
 
         [Test]
@@ -1146,6 +1146,73 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             e.Avancar(Catalogo.PrimeiroEvento + 1);
             Assert.IsTrue(e.TemEvento, "jogando, o primeiro evento chega");
+        }
+
+        // ---------- Segurança ----------
+
+        [Test]
+        public void SemSegurancaOAtaqueAcontece()
+        {
+            var e = Nova();
+            e.ComecarEvento(Catalogo.AtaqueMalware);
+            Assert.IsTrue(e.TemEvento);
+            Assert.AreEqual(Catalogo.FatorMalware, e.ReceitaPorSegundo, 1e-9);
+            Assert.IsTrue(e.AgirNoEvento(), "limpar");
+            Assert.IsFalse(e.TemEvento);
+        }
+
+        [Test]
+        public void SegurancaBloqueiaOAtaqueEAvisaQuemBloqueou()
+        {
+            var e = Nova(sorteio: 0);
+            DefinirNivel(e, Catalogo.Antivirus, 1);
+            DefinirNivel(e, Catalogo.Firewall, 1);
+            string quem = null;
+            e.AtaqueBloqueado += (def, nome) => quem = nome;
+            e.ComecarEvento(Catalogo.AtaqueMalware);
+            Assert.IsFalse(e.TemEvento);
+            Assert.AreEqual("Firewall", quem);
+            Assert.AreEqual(0.75, e.ProtecaoSeguranca, 1e-9);
+        }
+
+        [Test]
+        public void PhishingTravaDoisServidores()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 3);
+            e.ComecarEvento(Catalogo.AtaquePhishing);
+            Assert.AreEqual(Catalogo.ServidoresDoPhishing, e.Travamentos.Count);
+        }
+
+        [Test]
+        public void RansomwareComFitaRestauraESemBackupCobraResgate()
+        {
+            var e = Nova(1000000);
+            e.Estado.cargo = 2;
+            e.ComecarEvento(Catalogo.AtaqueRansomware);
+            Assert.AreEqual(Catalogo.FatorRansomware, e.ReceitaPorSegundo, 1e-9);
+            double antes = e.Dinheiro;
+            Assert.IsTrue(e.AgirNoEvento(), "pagar o resgate");
+            Assert.AreEqual(antes - Catalogo.SegundosDoResgate, e.Dinheiro, 1e-6);
+
+            DefinirNivel(e, Catalogo.HdExterno, 1); DefinirNivel(e, Catalogo.Nas, 1); DefinirNivel(e, Catalogo.Backup, 1);
+            e.ComecarEvento(Catalogo.AtaqueRansomware);
+            antes = e.Dinheiro;
+            Assert.IsTrue(e.RestauraRansomware);
+            Assert.IsTrue(e.AgirNoEvento(), "restaurar do backup");
+            Assert.AreEqual(antes, e.Dinheiro, 1e-9, "restaurar não custa nada");
+            Assert.IsFalse(e.TemEvento);
+        }
+
+        [Test]
+        public void DdosBloquearIpsSeguraQuaseTudo()
+        {
+            var e = Nova();
+            e.Estado.cargo = 4;
+            e.ComecarEvento(Catalogo.AtaqueDdos);
+            Assert.AreEqual(Catalogo.FatorDdos, e.FatorEvento, 1e-9);
+            e.AgirNoEvento();
+            Assert.AreEqual(Catalogo.FatorDdosBloqueado, e.FatorEvento, 1e-9);
         }
     }
 }

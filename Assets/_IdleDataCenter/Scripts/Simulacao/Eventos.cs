@@ -9,12 +9,14 @@ namespace IdleDataCenter.Simulacao
         public string Id, Nome;
         public int CargoMinimo, CargoMaximo = 99;
         public double Duracao;   // segundos (na oferta do cliente grande: o tempo para aceitar)
+        public bool Ataque;      // ataque: a linha de segurança pode bloquear antes de acontecer
     }
 
     public static partial class Catalogo
     {
         public const string EventoCliente = "cliente", EventoAuditoria = "auditoria", EventoInternet = "internet",
-                            EventoBlackFriday = "blackfriday", EventoCafeAcabou = "cafeacabou";
+                            EventoBlackFriday = "blackfriday", EventoCafeAcabou = "cafeacabou",
+                            AtaquePhishing = "phishing", AtaqueMalware = "malware", AtaqueDdos = "ddos", AtaqueRansomware = "ransomware";
 
         public static readonly IReadOnlyList<EventoDef> Eventos = new[]
         {
@@ -23,6 +25,10 @@ namespace IdleDataCenter.Simulacao
             new EventoDef { Id = EventoInternet, Nome = "Internet caiu", CargoMaximo = 2, Duracao = 60 },
             new EventoDef { Id = EventoBlackFriday, Nome = "Black Friday", CargoMinimo = 3, Duracao = 120 },
             new EventoDef { Id = EventoCafeAcabou, Nome = "O café acabou", Duracao = 180 },
+            new EventoDef { Id = AtaquePhishing, Nome = "Phishing", Duracao = 1, Ataque = true },
+            new EventoDef { Id = AtaqueMalware, Nome = "Malware", CargoMaximo = 3, Duracao = 90, Ataque = true },
+            new EventoDef { Id = AtaqueRansomware, Nome = "Ransomware", CargoMinimo = 2, Duracao = 180, Ataque = true },
+            new EventoDef { Id = AtaqueDdos, Nome = "DDoS", CargoMinimo = 4, Duracao = 90, Ataque = true },
         };
 
         public static EventoDef BuscarEvento(string id)
@@ -39,6 +45,10 @@ namespace IdleDataCenter.Simulacao
         public const int LinksQueEvitamAQuedaDaInternet = 2;   // com dois links de fibra a internet tem redundância
         public const double MultiplicadorBlackFriday = 1.5;
         public const double FatorConsertoSemCafe = 2, SegundosDoPrecoDoCafe = 10;
+        public const int ServidoresDoPhishing = 2;
+        public const double FatorMalware = 0.7, FatorDdos = 0.5, FatorDdosBloqueado = 0.85, FatorRansomware = 0.2;
+        public const double SegundosDoResgate = 300;   // o resgate custa 5 minutos de receita (sem o ataque)
+        public const int BackupQueRestauraRansomware = 3;   // fita (offline): restaura na hora
     }
 
     /// <summary>
@@ -49,12 +59,27 @@ namespace IdleDataCenter.Simulacao
     /// - Internet caiu (até o Analista): metade da receita por 60 s; o 4G do celular segura 80%; dois links de fibra evitam.
     /// - Black Friday (DevOps em diante): receita ×1,5 por 2 minutos.
     /// - O café acabou: o técnico conserta na metade da velocidade até comprarem café.
+    /// Ataques (a linha de segurança bloqueia metade dos que ainda passavam a cada nível):
+    /// - Phishing: alguém clicou no link e dois servidores travam.
+    /// - Malware (até o DevOps): receita a 70% até clicarem em limpar.
+    /// - Ransomware (Analista em diante): receita a 20%; com backup até a fita, restaura na hora; senão paga o resgate ou espera.
+    /// - DDoS (SRE em diante): metade da receita; bloquear os IPs segura 85%.
     /// </summary>
     public partial class Economia
     {
         public event Action<EventoDef> EventoComecou;
         /// <summary>O evento acabou: (qual, valor ganho; negativo se foi multa).</summary>
         public event Action<EventoDef, double> EventoTerminou;
+        /// <summary>Um ataque foi bloqueado antes de acontecer: (qual, o nome do que bloqueou).</summary>
+        public event Action<EventoDef, string> AtaqueBloqueado;
+
+        /// <summary>Quantos níveis da linha de segurança já foram comprados.</summary>
+        public int NivelSeguranca { get { int n = 0; foreach (var id in Catalogo.LinhaDeSeguranca) if (Nivel(id) > 0) n++; return n; } }
+        /// <summary>Chance de um ataque ser bloqueado: metade a cada nível.</summary>
+        public double ProtecaoSeguranca => 1 - Math.Pow(0.5, NivelSeguranca);
+        /// <summary>Com backup até a fita (offline), o ransomware se resolve restaurando.</summary>
+        public bool RestauraRansomware => NivelBackup >= Catalogo.BackupQueRestauraRansomware;
+        public double PrecoDoResgate => ReceitaPorSegundo / Catalogo.FatorRansomware * Catalogo.SegundosDoResgate;
 
         public EventoDef Evento => Catalogo.BuscarEvento(Estado.evento);
         public bool TemEvento => Evento != null;
@@ -72,6 +97,9 @@ namespace IdleDataCenter.Simulacao
                     case Catalogo.EventoCliente: return Estado.eventoFase == 1 ? Catalogo.MultiplicadorCliente : 1;
                     case Catalogo.EventoInternet: return Estado.eventoFase == 1 ? Catalogo.FatorInternet4G : Catalogo.FatorInternetCaida;
                     case Catalogo.EventoBlackFriday: return Catalogo.MultiplicadorBlackFriday;
+                    case Catalogo.AtaqueMalware: return Catalogo.FatorMalware;
+                    case Catalogo.AtaqueDdos: return Estado.eventoFase == 1 ? Catalogo.FatorDdosBloqueado : Catalogo.FatorDdos;
+                    case Catalogo.AtaqueRansomware: return Catalogo.FatorRansomware;
                     default: return 1;
                 }
             }
@@ -95,6 +123,10 @@ namespace IdleDataCenter.Simulacao
                     case Catalogo.EventoInternet: return Estado.eventoFase == 0 ? "Renda pela metade: " + s + " s" : "No 4G: " + s + " s";
                     case Catalogo.EventoBlackFriday: return "Renda x1,5: " + s + " s";
                     case Catalogo.EventoCafeAcabou: return "Técnico 2x mais lento";
+                    case Catalogo.AtaquePhishing: return "Clicaram no link: servidores travaram";
+                    case Catalogo.AtaqueMalware: return "Renda a 70% até limpar";
+                    case Catalogo.AtaqueDdos: return Estado.eventoFase == 0 ? "Tráfego falso: renda pela metade" : "IPs bloqueados: " + s + " s";
+                    case Catalogo.AtaqueRansomware: return "Dados criptografados: " + s + " s";
                     default: return "";
                 }
             }
@@ -110,6 +142,9 @@ namespace IdleDataCenter.Simulacao
                     case Catalogo.EventoCliente: return Estado.eventoFase == 0 ? "Aceitar " + (int)Math.Ceiling(Estado.eventoSegundos) + "s" : null;
                     case Catalogo.EventoInternet: return Estado.eventoFase == 0 ? "Ligar o 4G" : null;
                     case Catalogo.EventoCafeAcabou: return "Café R$ " + Formatar(PrecoDoCafe);
+                    case Catalogo.AtaqueMalware: return "Limpar";
+                    case Catalogo.AtaqueDdos: return Estado.eventoFase == 0 ? "Bloquear IPs" : null;
+                    case Catalogo.AtaqueRansomware: return RestauraRansomware ? "Restaurar backup" : "Resgate R$ " + Formatar(PrecoDoResgate);
                     default: return null;
                 }
             }
@@ -144,10 +179,26 @@ namespace IdleDataCenter.Simulacao
             }
             if (possiveis.Count == 0) { AgendarProximoEvento(); return; }
             var def = possiveis[sorteio.Next(possiveis.Count)];
+            if (def.Ataque && sorteio.NextDouble() < ProtecaoSeguranca)
+            {
+                // bloqueado: avisa quem bloqueou (o item de segurança mais alto)
+                string quem = "A segurança";
+                foreach (var idSeg in Catalogo.LinhaDeSeguranca) if (Nivel(idSeg) > 0) quem = Catalogo.Buscar(idSeg).Nome;
+                AgendarProximoEvento();
+                AtaqueBloqueado?.Invoke(def, quem);
+                return;
+            }
             Estado.evento = def.Id;
             Estado.eventoFase = 0;
             Estado.eventoSegundos = def.Duracao;
             EventoComecou?.Invoke(def);
+            if (def.Id == Catalogo.AtaquePhishing)
+            {
+                // trava os primeiros servidores que estiverem de pé (os que podem travar)
+                int travados = 0;
+                for (int s = 0; s < TotalServidores && travados < Catalogo.ServidoresDoPhishing; s++)
+                    if (!Travado(s) && (EhTorre(s) ? s : s - Torres) < Catalogo.ServidoresQueTravam) { Travar(s); travados++; }
+            }
         }
 
         /// <summary>O botão do evento: aceita o cliente, liga o 4G ou compra o café. Retorna se fez algo.</summary>
@@ -161,6 +212,18 @@ namespace IdleDataCenter.Simulacao
                     return true;
                 case Catalogo.EventoInternet when Estado.eventoFase == 0:
                     Estado.eventoFase = 1;
+                    return true;
+                case Catalogo.AtaqueMalware:
+                    EncerrarEvento(0);
+                    return true;
+                case Catalogo.AtaqueDdos when Estado.eventoFase == 0:
+                    Estado.eventoFase = 1;
+                    return true;
+                case Catalogo.AtaqueRansomware:
+                    if (RestauraRansomware) { Estado.backupsRestaurados++; EncerrarEvento(0); return true; }
+                    double resgate = PrecoDoResgate;
+                    if (Estado.dinheiro < resgate) return false;
+                    EncerrarEvento(-resgate);   // EncerrarEvento desconta o valor negativo
                     return true;
                 case Catalogo.EventoCafeAcabou:
                     double preco = PrecoDoCafe;

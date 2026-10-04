@@ -39,6 +39,7 @@ namespace IdleDataCenter.Gerente
             E.ChamadoApareceu += texto => Notificar("Chamado urgente: " + texto + "! Clique no papel sobre a mesa.", 8);
             E.EventoComecou += AoComecarEvento;
             E.EventoTerminou += AoTerminarEvento;
+            E.AtaqueBloqueado += (def, quem) => Notificar(quem + " bloqueou um ataque de " + def.Nome.ToLower() + ".", 4);
             E.ChamadoEncerrado += bonus => { if (bonus <= 0) Notificar("O chamado foi embora sem resposta."); };
         }
 
@@ -57,6 +58,10 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.EventoInternet: Notificar("A internet do bairro caiu: renda pela metade por 60 s. Ligue o 4G do celular!", 7); break;
                 case Catalogo.EventoBlackFriday: Notificar("Black Friday! Renda x1,5 por 2 minutos.", 6); break;
                 case Catalogo.EventoCafeAcabou: Notificar("O café acabou e o técnico ficou lento. Compre café no cartão à direita.", 7); break;
+                case Catalogo.AtaquePhishing: Notificar((E.TemEstagiario ? "O estagiário" : "Alguém") + " clicou num link de phishing: servidores travaram! Compre segurança na loja.", 7); break;
+                case Catalogo.AtaqueMalware: Notificar("Malware na rede: renda a 70%. Clique em Limpar no cartão à direita.", 7); break;
+                case Catalogo.AtaqueDdos: Notificar("Ataque DDoS: tráfego falso derrubando a renda. Bloqueie os IPs!", 7); break;
+                case Catalogo.AtaqueRansomware: Notificar(E.RestauraRansomware ? "Ransomware criptografou os dados! Restaure do backup no cartão à direita." : "Ransomware criptografou os dados! Sem backup em fita, é pagar o resgate ou esperar.", 8); break;
             }
             Sons.Alerta();
         }
@@ -68,6 +73,7 @@ namespace IdleDataCenter.Gerente
             else if (def.Id == Catalogo.EventoCliente && valor < 0)
                 Notificar("Algo travou: o cliente cancelou e cobrou " + Dinheiro(-valor) + " de multa.", 6);
             else if (def.Id == Catalogo.EventoCafeAcabou) Notificar("Café novo na mesa: o técnico voltou ao normal.", 4);
+            else if (def.Id == Catalogo.AtaqueRansomware) Notificar(valor < 0 ? "Resgate pago: " + Dinheiro(-valor) + ". Backup em fita evita isso." : "Dados de volta: o ransomware acabou.", 6);
             if (valor > 0) Sons.Promocao();
         }
 

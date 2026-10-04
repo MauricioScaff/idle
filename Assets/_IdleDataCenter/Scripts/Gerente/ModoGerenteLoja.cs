@@ -51,6 +51,7 @@ namespace IdleDataCenter.Gerente
                 case "Energia": return new[] { Catalogo.NoBreak };
                 case "Refrigeracao": return new[] { Catalogo.ArCondicionado };
                 case "Storage": return new[] { Catalogo.Storage, Catalogo.HdExterno, Catalogo.Nas, Catalogo.Backup, Catalogo.SalaBackup, Catalogo.DcRecuperacao, Catalogo.BackupRegiao };
+                case "Seguranca": return Catalogo.LinhaDeSeguranca;
                 case "Rede": return new[] { Catalogo.Link, Catalogo.Link10G };
                 case "NOC": return new[] { Catalogo.Observabilidade };
                 case "Equipe": return new[] { Catalogo.Estagiario };
@@ -86,7 +87,7 @@ namespace IdleDataCenter.Gerente
         }
 
         /// <summary>As abas da LOJA: um setor por aba (as que o cargo ainda não tem ficam de fora) e "Tudo" no fim.</summary>
-        static readonly string[] AbasDaLoja = { "Compute", "Energia", "Refrigeracao", "Storage", "Rede", "NOC", "Equipe", "Campus", "Mundo", "Melhorias" };
+        static readonly string[] AbasDaLoja = { "Compute", "Energia", "Refrigeracao", "Storage", "Seguranca", "Rede", "NOC", "Equipe", "Campus", "Mundo", "Melhorias" };
         static readonly string[] AbasDaCarreira = { "Carreira", "Prestigio" };
         string ultimaAbaLoja = "Compute";
 
@@ -96,6 +97,7 @@ namespace IdleDataCenter.Gerente
             {
                 case "Refrigeracao": return "Refrig.";
                 case "Storage": return "Dados";
+                case "Seguranca": return "Segurança";
                 case "Melhorias": return "Tudo";
                 case "Prestigio": return "Prestígio";
                 default: return id;
