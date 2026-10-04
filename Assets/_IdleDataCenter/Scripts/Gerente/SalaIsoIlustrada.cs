@@ -6,15 +6,33 @@ namespace IdleDataCenter.Gerente
 {
     /// <summary>
     /// Sala ilustrada (PixelLab): uma ilustração inteira da sala como fundo (Resources/Arte/Salas) e, por cima, as compras
-    /// em lugares fixos e as pessoas (Resources/Arte/PixelLab). Por enquanto só o armário do Técnico; as outras salas
-    /// seguem com a arte de SalaIsoArte até ganharem a sua ilustração.
+    /// encostadas nas paredes e as pessoas (Resources/Arte/PixelLab). O armário (Técnico) e a salinha (Sysadmin) já são
+    /// assim; as outras salas seguem com a arte de SalaIsoArte até ganharem a sua ilustração.
     ///
-    /// Armário: as torres compradas se enfileiram encostadas na parede da esquerda, embaixo da janela; o ventilador
-    /// fica preso na parede da direita, o filtro de linha no chão na frente da mesa e a caneca em cima dela.
+    /// Armário: as torres se enfileiram na parede da esquerda, embaixo da janela; o ventilador fica preso na parede da
+    /// direita, o filtro de linha no chão na frente da mesa e a caneca em cima dela.
+    /// Salinha: na parede da esquerda os racks no fundo e as torres na frente; os no-breaks embaixo da janela (a porta e a
+    /// mesa ocupam o resto da parede da direita) e o ar-condicionado no alto, sobre a mesa.
+    /// A salinha é maior, então tudo nela é desenhado menor: as pessoas e as torres usam a versão reduzida ("_p").
     /// </summary>
     public partial class SalaIso
     {
-        static readonly string[] Ilustracoes = { "armario" };
+        /// <summary>
+        /// Uma ilustração e o losango do piso nela: canto do fundo (onde as paredes se encontram), da esquerda e da direita.
+        /// As linhas fundo→esquerda e fundo→direita são o pé das paredes, onde as compras encostam.
+        /// </summary>
+        class Ilustracao
+        {
+            public string nome, tamanho;   // tamanho: sufixo dos sprites de pessoas e torres nessa escala ("" ou "_p")
+            public Vector2 fundo, esquerda, direita;
+            public int casas;
+        }
+
+        static readonly Ilustracao[] Ilustracoes =
+        {
+            new Ilustracao { nome = "armario", tamanho = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },
+            new Ilustracao { nome = "salinha", tamanho = "_p", fundo = new Vector2(199, 143), esquerda = new Vector2(47, 219), direita = new Vector2(351, 219), casas = 6 },
+        };
 
         PixelCanvas telaIlustrada;
         IsoDesenho dIlustrada;
@@ -22,16 +40,19 @@ namespace IdleDataCenter.Gerente
         int cargoIlustrado = -1;
 
         bool TemIlustracao => E.Cargo < Ilustracoes.Length;
+        Ilustracao Sala => Ilustracoes[E.Cargo];
 
-        // piso do armário na ilustração (400 × 320): canto do fundo e o passo de uma casa ao longo de gx (parede da direita)
-        // e de gy (parede da esquerda). O piso tem 4 × 4 casas, como na sala antiga.
-        static readonly Vector2 FundoDoPiso = new Vector2(200, 146), PassoGx = new Vector2(35f, 18f), PassoGy = new Vector2(-35.25f, 17.75f);
-
+        /// <summary>Ponto do piso: gx corre ao longo da parede da direita, gy ao longo da da esquerda (em casas).</summary>
         Vector2Int IP(float gx, float gy, float z = 0)
         {
-            var p = FundoDoPiso + PassoGx * gx + PassoGy * gy;
+            var s = Sala;
+            var p = s.fundo + (s.direita - s.fundo) / s.casas * gx + (s.esquerda - s.fundo) / s.casas * gy;
             return new Vector2Int(Mathf.RoundToInt(p.x), Mathf.RoundToInt(p.y - z));
         }
+
+        /// <summary>y do pé da parede da esquerda / da direita na coluna x (a primeira linha do piso fica logo abaixo).</summary>
+        float PeDaParedeEsquerda(float x) => Mathf.Lerp(Sala.esquerda.y, Sala.fundo.y, (x - Sala.esquerda.x) / (Sala.fundo.x - Sala.esquerda.x));
+        float PeDaParedeDireita(float x) => Mathf.Lerp(Sala.fundo.y, Sala.direita.y, (x - Sala.fundo.x) / (Sala.direita.x - Sala.fundo.x));
 
         // ---------------- Sprites do PixelLab ----------------
 
@@ -52,12 +73,12 @@ namespace IdleDataCenter.Gerente
             return sprites[chave] = Preparar(px, tex.width, tex.height);
         }
 
-        /// <summary>A torre com os LEDs em vermelho: é assim que ela aparece travada.</summary>
-        static SpriteIso TorreTravada()
+        /// <summary>O mesmo sprite com os LEDs em vermelho: é assim que um servidor travado aparece.</summary>
+        static SpriteIso Travada(string nome, bool espelhar)
         {
-            const string chave = "pl/torre|travada";
+            string chave = "pl/" + nome + (espelhar ? "|espelhado" : "") + "|travada";
             if (sprites.TryGetValue(chave, out var s)) return s;
-            var o = CarregarPixelLab("torre", true);
+            var o = CarregarPixelLab(nome, espelhar);
             var px = (Color32[])o.px.Clone();
             foreach (int i in o.leds) px[i] = new Color32(255, 70, 80, 255);
             s = new SpriteIso { px = px, w = o.w, h = o.h, frente = o.frente };
@@ -74,12 +95,53 @@ namespace IdleDataCenter.Gerente
             return s.h - 1;
         }
 
+        /// <summary>Os quatro cantos da base de um objeto isométrico, lidos da imagem.</summary>
+        struct Base { public Vector2Int esquerda, direita, frente, fundo; }
+        static readonly Dictionary<SpriteIso, Base> bases = new Dictionary<SpriteIso, Base>();
+
+        /// <summary>
+        /// Esquerda e direita: o pixel mais baixo da primeira e da última coluna opaca. Frente: a linha mais baixa.
+        /// O canto do fundo fecha o losango (esquerda + direita - frente).
+        /// </summary>
+        static Base BaseDe(SpriteIso s)
+        {
+            if (bases.TryGetValue(s, out var b)) return b;
+            int MaisBaixo(int x) { for (int y = s.h - 1; y >= 0; y--) if (s.px[y * s.w + x].a > 0) return y; return -1; }
+            int xe = 0, xd = s.w - 1;
+            while (xe < s.w - 1 && MaisBaixo(xe) < 0) xe++;
+            while (xd > 0 && MaisBaixo(xd) < 0) xd--;
+            int yf = Pes(s);
+            b.esquerda = new Vector2Int(xe, MaisBaixo(xe));
+            b.direita = new Vector2Int(xd, MaisBaixo(xd));
+            b.frente = new Vector2Int(s.frente, yf);
+            b.fundo = b.esquerda + b.direita - b.frente;
+            return bases[s] = b;
+        }
+
+        /// <summary>Canto de cima da imagem para o objeto encostar na parede da esquerda com o canto esquerdo da base na coluna x.</summary>
+        Vector2Int NaParedeEsquerda(SpriteIso s, float x)
+        {
+            var b = BaseDe(s);
+            return new Vector2Int(Mathf.RoundToInt(x) - b.esquerda.x, Mathf.RoundToInt(PeDaParedeEsquerda(x)) + 1 - b.esquerda.y);
+        }
+
+        /// <summary>O mesmo na parede da direita: o canto do fundo da base na coluna x.</summary>
+        Vector2Int NaParedeDireita(SpriteIso s, float x)
+        {
+            var b = BaseDe(s);
+            return new Vector2Int(Mathf.RoundToInt(x) - b.fundo.x, Mathf.RoundToInt(PeDaParedeDireita(x)) + 1 - b.fundo.y);
+        }
+
+        /// <summary>Quanto o objeto ocupa ao longo da parede da esquerda / da direita, em colunas.</summary>
+        static int LarguraNaEsquerda(SpriteIso s) => BaseDe(s).fundo.x - BaseDe(s).esquerda.x;
+        static int LarguraNaDireita(SpriteIso s) => BaseDe(s).direita.x - BaseDe(s).fundo.x;
+
         // ---------------- Montagem e desenho ----------------
 
         void MontarIlustrada()
         {
             cargoIlustrado = E.Cargo;
-            var tex = ArteGerada.Textura("Salas/" + Ilustracoes[E.Cargo]);
+            var tex = ArteGerada.Textura("Salas/" + Sala.nome);
             fundoIlustrado = Preparar(ArteGerada.PixelsDeCimaParaBaixo(tex), tex.width, tex.height);
             telaIlustrada = new PixelCanvas(tex.width, tex.height);
             dIlustrada = new IsoDesenho(telaIlustrada);
@@ -95,7 +157,9 @@ namespace IdleDataCenter.Gerente
             tela.Limpar(new Color32(0, 0, 0, 0));
             tela.Imagem(fundoIlustrado.px, fundoIlustrado.w, fundoIlustrado.h, 0, 0);
 
-            ArmarioIlustrado();
+            tecnicoConsertando = false;
+            if (E.Cargo == 0) ArmarioIlustrado(); else SalinhaIlustrada();
+            PessoasIlustradas();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
             foreach (var (_, desenhar) in fila) desenhar();
             FaiscasDaCompraIlustrada();
@@ -103,68 +167,90 @@ namespace IdleDataCenter.Gerente
             tela.Aplicar();
         }
 
-        // ---------------- Armário ----------------
+        // ---------------- Peças que se repetem ----------------
 
-        /// <summary>Quantas torres cabem em fila na parede da esquerda (da quina até a planta).</summary>
-        const int VagasNaParede = 7;
+        Vector2Int pontoDaTorre, pontoDoRack, pontoDoFiltro, pontoDoVentilador, pontoDoNoBreak, pontoDoAr, pontoDoEstagiario;
+        Vector2Int pontoDoChamado;
 
         /// <summary>
-        /// Canto de cima à esquerda da imagem da torre i (espelhada, painel virado para dentro da sala). A base dela tem o
-        /// canto da esquerda em (16, 49) na imagem; esse canto encosta na linha entre a parede e o piso, que sobe meio
-        /// pixel a cada pixel para a direita. Cada torre ocupa 16 pixels ao longo da parede.
+        /// Torres em fila na parede da esquerda, da coluna x0 (frente) para o fundo, até caberem 'vagas'. Espelhadas: o painel
+        /// fica virado para dentro da sala. Com mais torres do que vagas, uma placa com o total abre a loja de Compute.
+        /// Retorna onde a próxima torre entraria (ou null, com a fila cheia).
         /// </summary>
-        static Vector2Int LugarDaTorre(int i)
+        Vector2Int? TorresNaParede(float x0, int vagas, bool marcar)
         {
-            int x = 61 + i * 16;
-            int y = Mathf.RoundToInt(217 - 0.5f * (x - 57.5f)) + 1;
-            return new Vector2Int(x - 16, y - 49);
+            string nome = "torre" + Sala.tamanho;
+            var torre = CarregarPixelLab(nome, true);
+            int passo = LarguraNaEsquerda(torre) + 2;
+            Vector2Int Lugar(int i) => NaParedeEsquerda(torre, x0 + i * passo);
+            var b = BaseDe(torre);
+            int visiveis = Mathf.Min(E.Torres, vagas);
+            for (int i = 0; i < visiveis; i++)
+            {
+                var l = Lugar(i);
+                bool travado = E.Travado(i);
+                var s = travado ? Travada(nome, true) : torre;
+                int semente = i;
+                fila.Add((-i * 0.01f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));   // a da frente cobre a de trás
+                Alvos.Add(new Alvo { Area = new RectInt(l.x + b.esquerda.x - 2, l.y + 4, b.direita.x - b.esquerda.x + 4, b.frente.y - 4), Tipo = "servidor:" + i });
+                if (travado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente);
+            }
+            if (E.Torres > vagas)
+            {
+                var l = Lugar(vagas - 1);
+                Placas.Add(new Placa { Setor = "Compute", Nome = E.Torres + " torres", Pos = l + new Vector2Int(b.frente.x, 4), Cor = IsoGui.Cyan });
+            }
+            var ultima = Lugar(Mathf.Clamp(E.Torres - 1, 0, vagas - 1));
+            pontoDaTorre = ultima + new Vector2Int(b.frente.x, b.frente.y / 2);
+            if (E.Torres < vagas)
+            {
+                if (marcar) ContornoDaBase(torre, Lugar(E.Torres));
+                return Lugar(E.Torres);
+            }
+            if (marcar) Marcador = ultima + new Vector2Int(b.frente.x + 8, b.frente.y + 4);
+            return null;
         }
 
-        Vector2Int pontoDaTorre, pontoDoFiltro, pontoDoVentilador, pontoDoEstagiario;
+        /// <summary>Alerta piscando sobre o que quebrou e o técnico indo consertar (o primeiro quebrado chama o técnico).</summary>
+        void Quebrado(Vector2Int topo, Vector2Int frente)
+        {
+            fila.Add((5, () => { if (Piscar()) tela.Texto("!", topo.x - 2, topo.y - 2, IsoDesenho.C("ff3b4e"), true, 2); }));
+            if (!tecnicoConsertando) { tecnicoConsertando = true; lugarDoTecnico = new Vector2(frente.x + 12, frente.y + 8); }
+        }
+
+        /// <summary>Contorno tracejado da base de um objeto no lugar l: onde entra a próxima compra do equipamento principal.</summary>
+        void ContornoDaBase(SpriteIso s, Vector2Int l)
+        {
+            var b = BaseDe(s);
+            var a = l + b.esquerda; var c = l + b.fundo; var e = l + b.direita; var f = l + b.frente;
+            fila.Add((-2, () =>
+            {
+                var cor = Piscar(0.5f) ? IsoDesenho.C("ffb458") : IsoDesenho.C("d49335");
+                foreach (var (p, q) in new[] { (a, c), (c, e), (e, f), (f, a) })
+                {
+                    int n = Mathf.Max(1, Mathf.Max(Mathf.Abs(q.x - p.x), Mathf.Abs(q.y - p.y)));
+                    for (int i = 0; i <= n; i += 3) tela.Pixel(Mathf.RoundToInt(Mathf.Lerp(p.x, q.x, (float)i / n)), Mathf.RoundToInt(Mathf.Lerp(p.y, q.y, (float)i / n)), cor);
+                }
+            }));
+            Marcador = new Vector2Int((a.x + e.x) / 2, (c.y + f.y) / 2);
+        }
+
+        void Caneca(string nome, Vector2Int base_)
+        {
+            var caneca = CarregarPixelLab(nome);
+            if (caneca == null) return;
+            int x = base_.x - caneca.w / 2, y = base_.y - caneca.h;
+            fila.Add((1, () => DesenharSprite(caneca, x, y)));
+            Alvos.Add(new Alvo { Area = new RectInt(x - 3, y - 3, caneca.w + 6, caneca.h + 6), Tipo = "cafe" });
+        }
+
+        // ---------------- Armário (Técnico) ----------------
 
         void ArmarioIlustrado()
         {
-            tecnicoConsertando = false;
-            var torre = CarregarPixelLab("torre", true);
-            int visiveis = Mathf.Min(E.Torres, VagasNaParede);
-            // da direita (fundo) para a esquerda (frente): a torre da frente cobre a de trás
-            for (int i = 0; i < visiveis; i++)
-            {
-                var l = LugarDaTorre(i);
-                bool travado = E.Travado(i);
-                var s = travado ? TorreTravada() : torre;
-                float prof = -i * 0.01f;
-                int semente = i;
-                fila.Add((prof, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
-                Alvos.Add(new Alvo { Area = new RectInt(l.x + 14, l.y + 10, 36, 50), Tipo = "servidor:" + i });
-                if (travado)
-                {
-                    fila.Add((5, () => { if (Piscar()) tela.Texto("!", l.x + 30, l.y + 2, IsoDesenho.C("ff3b4e"), true, 2); }));
-                    if (!tecnicoConsertando) { tecnicoConsertando = true; lugarDoTecnico = new Vector2(l.x + 46, l.y + 66); }
-                }
-            }
-            // a partir da 8ª torre, uma placa em cima da última com o total (abre a loja de Compute)
-            if (E.Torres > VagasNaParede)
-            {
-                var l = LugarDaTorre(VagasNaParede - 1);
-                Placas.Add(new Placa { Setor = "Compute", Nome = E.Torres + " torres", Pos = new Vector2Int(l.x + 32, l.y + 6), Cor = IsoGui.Cyan });
-            }
-            var ultima = LugarDaTorre(Mathf.Clamp(E.Torres - 1, 0, VagasNaParede - 1));
-            pontoDaTorre = new Vector2Int(ultima.x + 32, ultima.y + 34);
-
-            // onde entra a próxima torre (contorno da base no piso); com a parede cheia, o botão fica na frente da fila
-            if (E.Torres < VagasNaParede) MarcadorDaTorre(LugarDaTorre(E.Torres));
-            else Marcador = new Vector2Int(ultima.x + 40, ultima.y + 62);
-
-            // mesa (da ilustração): clique rende, como qualquer equipamento
-            Alvos.Add(new Alvo { Area = new RectInt(244, 128, 90, 108), Tipo = "equipamento" });
-
-            var caneca = CarregarPixelLab("caneca");
-            if (caneca != null)
-            {
-                fila.Add((1, () => DesenharSprite(caneca, 308 - caneca.w / 2, 176 - caneca.h)));
-                Alvos.Add(new Alvo { Area = new RectInt(308 - caneca.w / 2 - 3, 176 - caneca.h - 3, caneca.w + 6, caneca.h + 6), Tipo = "cafe" });
-            }
+            TorresNaParede(61, 7, true);
+            Alvos.Add(new Alvo { Area = new RectInt(244, 128, 90, 108), Tipo = "equipamento" });   // mesa da ilustração
+            Caneca("caneca", new Vector2Int(308, 176));
             pontoDoVentilador = new Vector2Int(318, 112);
             var ventilador = CarregarPixelLab("ventilador");
             if (ventilador != null && E.Nivel(Catalogo.Ventilador) > 0)
@@ -173,24 +259,98 @@ namespace IdleDataCenter.Gerente
             var filtro = CarregarPixelLab("filtro_linha");
             if (filtro != null && E.Nivel(Catalogo.FiltroDeLinha) > 0)
                 fila.Add((2, () => DesenharSprite(filtro, pontoDoFiltro.x - filtro.w / 2, pontoDoFiltro.y - filtro.h + 2)));
-
-            PessoasIlustradas();
+            pontoDoChamado = new Vector2Int(286, 112);
         }
 
-        /// <summary>Contorno tracejado da base da próxima torre: os quatro cantos da base na imagem da torre espelhada.</summary>
-        void MarcadorDaTorre(Vector2Int l)
+        // ---------------- Salinha (Sysadmin) ----------------
+
+        const int RacksNaSalinha = 3, TorresNaSalinha = 4, NoBreaksNaSalinha = 2;
+
+        void SalinhaIlustrada()
         {
-            var a = l + new Vector2Int(16, 49); var b = l + new Vector2Int(30, 41); var c = l + new Vector2Int(47, 49); var e = l + new Vector2Int(33, 57);
-            fila.Add((-1, () =>
+            // parede da esquerda, da frente para o fundo: as torres que vieram do armário e depois os racks (o primeiro
+            // rack fica junto da planta, no fundo)
+            TorresNaParede(52, TorresNaSalinha, false);
+            Racks(148);
+
+            // embaixo da janela, entre a planta e a porta: os no-breaks (espelhados: o visor fica virado para a sala)
+            var nobreak = CarregarPixelLab("nobreak", true);
+            int nNoBreaks = Mathf.Min(E.Nivel(Catalogo.NoBreak), NoBreaksNaSalinha);
+            for (int i = 0; i < NoBreaksNaSalinha; i++)
             {
-                var cor = Piscar(0.5f) ? IsoDesenho.C("ffb458") : IsoDesenho.C("d49335");
-                foreach (var (p, q) in new[] { (a, b), (b, c), (c, e), (e, a) })
-                {
-                    int n = Mathf.Max(Mathf.Abs(q.x - p.x), Mathf.Abs(q.y - p.y));
-                    for (int i = 0; i <= n; i += 3) tela.Pixel(Mathf.RoundToInt(Mathf.Lerp(p.x, q.x, (float)i / n)), Mathf.RoundToInt(Mathf.Lerp(p.y, q.y, (float)i / n)), cor);
-                }
-            }));
-            Marcador = new Vector2Int((a.x + c.x) / 2, (b.y + e.y) / 2);
+                var l = NaParedeDireita(nobreak, 211 + i * 20);   // a sombra no pé da imagem atrapalha medir a base: passo fixo
+                if (i == 0) pontoDoNoBreak = l + new Vector2Int(nobreak.w / 2, nobreak.h / 2);
+                if (i >= nNoBreaks) continue;
+                int semente = i + 20;
+                fila.Add((0.5f + i * 0.01f, () => DesenharSprite(nobreak, l.x, l.y, semente)));
+            }
+            // ar-condicionado no alto da parede da direita, sobre a mesa
+            var ar = CarregarPixelLab("ar_condicionado");
+            pontoDoAr = new Vector2Int(330, 112);
+            if (ar != null && E.Nivel(Catalogo.ArCondicionado) > 0)
+                fila.Add((1, () => DesenharSprite(ar, pontoDoAr.x - ar.w / 2, pontoDoAr.y - ar.h / 2)));
+
+            Alvos.Add(new Alvo { Area = new RectInt(270, 140, 80, 85), Tipo = "equipamento" });   // mesa da ilustração
+            Caneca("caneca_p", new Vector2Int(338, 180));
+            pontoDoChamado = new Vector2Int(302, 124);
+        }
+
+        /// <summary>
+        /// Racks 42U na parede da esquerda, do fundo (coluna xFundo) para a frente. Um rack a cada VagasNoRack servidores 1U
+        /// (o primeiro aparece vazio assim que o rack é comprado); os LEDs acendem conforme o rack enche. Racks com
+        /// servidor travado ficam com os LEDs vermelhos.
+        /// </summary>
+        void Racks(float xFundo)
+        {
+            var rack = CarregarPixelLab("rack", true);
+            var b = BaseDe(rack);
+            int passo = LarguraNaEsquerda(rack) + 2;
+            Vector2Int Lugar(int i) => NaParedeEsquerda(rack, xFundo - i * passo);
+            int vagas = Catalogo.VagasNoRack;
+            int racks = E.TemRack ? Mathf.Clamp(Mathf.CeilToInt(E.ServidoresRack / (float)vagas), 1, RacksNaSalinha) : 0;
+            bool travado = false;
+            for (int s = E.Torres; s < E.TotalServidores; s++) travado |= E.Travado(s);
+            for (int i = 0; i < racks; i++)
+            {
+                var l = Lugar(i);
+                // o último rack mostra todos os servidores que sobram (mais de 3 racks cheios não cabem na salinha)
+                int nesse = i == racks - 1 ? E.ServidoresRack - i * vagas : vagas;
+                float cheio = Mathf.Clamp01(nesse / (float)vagas);
+                bool quebrado = travado && i == 0;
+                var s = quebrado ? Travada("rack", true) : rack;
+                fila.Add((-1.5f + i * 0.01f, () => DesenharRack(s, l, cheio, !quebrado)));
+                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack" });
+                if (quebrado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente);
+            }
+            if (E.ServidoresRack > RacksNaSalinha * vagas)
+            {
+                var l = Lugar(RacksNaSalinha - 1);
+                Placas.Add(new Placa { Setor = "Compute", Nome = E.ServidoresRack + " servidores 1U", Pos = l + new Vector2Int(b.frente.x, 4), Cor = IsoGui.Cyan });
+            }
+            // marcador: o lugar do primeiro rack (antes de comprar), o lugar do próximo rack quando o atual enche, ou o rack
+            // que recebe o próximo servidor
+            int proximo = E.TemRack ? Mathf.Min(E.ServidoresRack / vagas, RacksNaSalinha - 1) : 0;
+            if (proximo >= racks) ContornoDaBase(rack, Lugar(proximo));
+            else Marcador = Lugar(proximo) + new Vector2Int(b.frente.x, 6);
+            pontoDoRack = Lugar(Mathf.Max(0, Mathf.Min(proximo, racks - 1))) + new Vector2Int(b.frente.x, rack.h / 2);
+        }
+
+        /// <summary>Rack com os LEDs acesos de cima para baixo até 'cheio' (0 a 1); os outros ficam apagados.</summary>
+        void DesenharRack(SpriteIso s, Vector2Int l, float cheio, bool piscar)
+        {
+            tela.Imagem(s.px, s.w, s.h, l.x, l.y);
+            if (s.leds.Count == 0) return;
+            // altura dos LEDs: os acesos vão do mais alto até a fração 'cheio' da coluna
+            int topo = int.MaxValue, fundo = 0;
+            foreach (int i in s.leds) { topo = Mathf.Min(topo, i / s.w); fundo = Mathf.Max(fundo, i / s.w); }
+            float corte = topo + (fundo - topo + 1) * cheio;
+            bool apagaAgora = piscar && Mathf.Sin(t * 5f + l.x) > 0.6f;
+            var apagado = new Color32(30, 40, 30, 255);
+            foreach (int i in s.leds)
+            {
+                bool aceso = i / s.w < corte && !apagaAgora;
+                if (!aceso) tela.Pixel(l.x + i % s.w, l.y + i / s.w, apagado);
+            }
         }
 
         // ---------------- Pessoas ----------------
@@ -213,33 +373,38 @@ namespace IdleDataCenter.Gerente
 
         void PessoasIlustradas()
         {
-            // corredor na frente das torres e da cadeira: o técnico vai e volta ao longo de gx
-            float gx = PosicaoAndando(1.3f, 3.2f, 0f, 0.55f, out bool voltando);
+            // corredor na frente das paredes e da cadeira: o técnico vai e volta ao longo de gx; o estagiário anda mais à
+            // frente, no sentido contrário
+            bool salinha = E.Cargo == 1;
+            string tecnico = "tecnico" + Sala.tamanho, estagiario = "estagiario" + Sala.tamanho;
+            float gyTecnico = salinha ? 3.2f : 2.9f, gyEstagiario = salinha ? 4.2f : 3.55f;
+            bool voltando;
+            float gx = salinha ? PosicaoAndando(1.6f, 4.0f, 0f, 0.5f, out voltando) : PosicaoAndando(1.3f, 3.2f, 0f, 0.55f, out voltando);
+            int pulo = Mathf.RoundToInt(Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * (salinha ? 6f : 8f));
             if (tecnicoConsertando)
             {
-                var s = CarregarPixelLab("tecnico_nw");
-                if (s != null) PessoaIlustrada(s, "tecnico", new Vector2Int(Mathf.RoundToInt(lugarDoTecnico.x), Mathf.RoundToInt(lugarDoTecnico.y)), 0);
+                var s = CarregarPixelLab(tecnico + "_nw");
+                if (s != null) PessoaIlustrada(s, tecnico, new Vector2Int(Mathf.RoundToInt(lugarDoTecnico.x), Mathf.RoundToInt(lugarDoTecnico.y)), 0);
             }
             else if (t - ultimaCompraEm < 1.5f)
             {
                 // comemora a compra: pulinhos olhando para a frente
-                var s = CarregarPixelLab("tecnico_s") ?? CarregarPixelLab("tecnico_se");
-                float pulo = Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * 8f;
-                if (s != null) PessoaIlustrada(s, "tecnico", IP(gx, 2.9f), pulo);
+                var s = CarregarPixelLab(tecnico + "_s") ?? CarregarPixelLab(tecnico + "_se");
+                if (s != null) PessoaIlustrada(s, tecnico, IP(gx, gyTecnico), pulo);
             }
             else
             {
-                var s = QuadroDaPessoa("tecnico", voltando, true, 0f);
-                if (s != null) PessoaIlustrada(s, "tecnico", IP(gx, 2.9f), 0);
+                var s = QuadroDaPessoa(tecnico, voltando, true, 0f);
+                if (s != null) PessoaIlustrada(s, tecnico, IP(gx, gyTecnico), 0);
             }
 
             if (E.TemEstagiario)
             {
-                // o estagiário anda mais à frente, no sentido contrário
-                float gxE = PosicaoAndando(1.5f, 3.0f, 0.9f, 0.45f, out bool volta);
-                pontoDoEstagiario = IP(gxE, 3.55f);
-                var s = QuadroDaPessoa("estagiario", volta, true, 0.37f);
-                if (s != null) PessoaIlustrada(s, "estagiario", pontoDoEstagiario, 0);
+                bool volta;
+                float gxE = salinha ? PosicaoAndando(1.9f, 3.8f, 0.9f, 0.45f, out volta) : PosicaoAndando(1.5f, 3.0f, 0.9f, 0.45f, out volta);
+                pontoDoEstagiario = IP(gxE, gyEstagiario);
+                var s = QuadroDaPessoa(estagiario, volta, true, 0.37f);
+                if (s != null) PessoaIlustrada(s, estagiario, pontoDoEstagiario, 0);
             }
         }
 
@@ -248,9 +413,10 @@ namespace IdleDataCenter.Gerente
         {
             // os pés pela pose parada: os quadros da caminhada dividem a mesma tela, então a pessoa não pula a cada passo
             int pes = Pes(CarregarPixelLab(quem + "_se") ?? s);
+            int sombra = s.w > 90 ? 9 : 6;
             fila.Add((10 + p.y * 0.001f, () =>
             {
-                tela.Ret(p.x - 9, p.y - 1, 18, 3, new Color32(20, 20, 40, 90));
+                tela.Ret(p.x - sombra, p.y - 1, sombra * 2, 3, new Color32(20, 20, 40, 90));
                 tela.Imagem(s.px, s.w, s.h, p.x - s.w / 2, p.y - pes - Mathf.RoundToInt(z));
             }));
         }
@@ -262,9 +428,12 @@ namespace IdleDataCenter.Gerente
             switch (id)
             {
                 case Catalogo.Servidor: case Catalogo.Ssd: case Catalogo.Ventoinha: case Catalogo.PastaTermica: return pontoDaTorre;
+                case Catalogo.Rack: case Catalogo.Servidor1U: case Catalogo.CabosOrganizados: case Catalogo.Firmware: return pontoDoRack;
                 case Catalogo.FiltroDeLinha: return pontoDoFiltro + new Vector2Int(0, -6);
                 case Catalogo.Ventilador: return pontoDoVentilador;
-                case Catalogo.Estagiario: return pontoDoEstagiario + new Vector2Int(0, -40);
+                case Catalogo.NoBreak: return pontoDoNoBreak;
+                case Catalogo.ArCondicionado: return pontoDoAr;
+                case Catalogo.Estagiario: return pontoDoEstagiario + new Vector2Int(0, -30);
                 default: return null;
             }
         }
@@ -291,7 +460,7 @@ namespace IdleDataCenter.Gerente
         {
             if (!E.TemChamado) return;
             float bob = Mathf.Sin(t * 4) * 2;
-            var p = new Vector2Int(286, Mathf.RoundToInt(112 + bob));
+            var p = new Vector2Int(pontoDoChamado.x, Mathf.RoundToInt(pontoDoChamado.y + bob));
             string[] papel =
             {
                 "yyyyyyyyy.", "yWWWWWyyyy", "yyyyyyyyyy", "yWWWWWWWyy", "yyyyyyyyyy", "yWWWWWyyyy", "yyyyyyyyyy", "yWWWWWWWyy", "yyyyyyyyyy",
