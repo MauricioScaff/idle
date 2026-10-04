@@ -113,7 +113,9 @@ namespace IdleDataCenter.Gerente
             {
                 var c = px[i];
                 if (c.a == 0 || leds.Contains(i)) continue;
-                px[i] = new Color32((byte)Mathf.Lerp(c.r, 196, 0.22f), (byte)Mathf.Lerp(c.g, 176, 0.22f), (byte)Mathf.Lerp(c.b, 112, 0.22f), c.a);
+                // amarela mais o que é claro (plástico bege); o metal escuro do rack só um pouco
+                float k = 0.25f * Mathf.Clamp((c.r + c.g + c.b) / 540f, 0.15f, 1f);
+                px[i] = new Color32((byte)Mathf.Lerp(c.r, 196, k), (byte)Mathf.Lerp(c.g, 176, k), (byte)Mathf.Lerp(c.b, 112, k), c.a);
             }
             s = new SpriteIso { px = px, w = o.w, h = o.h, frente = o.frente };
             s.leds.AddRange(o.leds);
