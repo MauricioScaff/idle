@@ -1037,6 +1037,79 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.TemConquista(Catalogo.ConquistaDns));
         }
 
+        // ---------- Contratos de clientes ----------
+
+        static Economia ComContrato(double uptime)
+        {
+            var e = Nova(1000);
+            e.Estado.cargo = 1;
+            e.Estado.proximoEvento = 1e9;
+            e.Estado.proximoChamado = 1e9;
+            e.Estado.uptime = uptime;
+            e.Avancar(0);
+            return e;
+        }
+
+        [Test]
+        public void ClienteSoPedeOQueOUptimeEntrega()
+        {
+            var e = ComContrato(0.9962);
+            var p = e.ProporContrato();
+            Assert.IsNotNull(p);
+            Assert.AreEqual(0.995, p.sla, 1e-9, "o maior SLA abaixo do uptime de agora");
+            Assert.IsTrue(e.TemPropostaDeContrato);
+            e.Estado.uptime = 0.97;
+            e.RecusarContrato();
+            Assert.IsNull(e.ProporContrato(), "abaixo de 98% ninguém quer contrato");
+        }
+
+        [Test]
+        public void ContratoRendeEnquantoValeEPagaPremioNoFim()
+        {
+            var e = ComContrato(0.9999);
+            var p = e.ProporContrato();
+            double antes = e.ReceitaPorSegundo;
+            Assert.IsTrue(e.AceitarContrato());
+            Assert.IsFalse(e.TemPropostaDeContrato);
+            Assert.AreEqual(antes * (1 + p.bonus), e.ReceitaPorSegundo, 1e-9);
+            double premio = 0;
+            e.ContratoEncerrado += (c, v) => premio = v;
+            for (int i = 0; i < p.duracao + 1; i++) e.Avancar(1);
+            Assert.AreEqual(0, e.Contratos.Count);
+            Assert.Greater(premio, 0);
+            Assert.AreEqual(1, e.Estado.contratosCumpridos);
+        }
+
+        [Test]
+        public void UptimeAbaixoDoSlaQuebraOContratoComMulta()
+        {
+            var e = ComContrato(0.9999);
+            e.ProporContrato();
+            e.AceitarContrato();
+            double valor = 0;
+            e.ContratoEncerrado += (c, v) => valor = v;
+            double dinheiro = e.Dinheiro;
+            e.Estado.uptime = 0.97;
+            e.Avancar(1);
+            Assert.AreEqual(0, e.Contratos.Count);
+            Assert.Less(valor, 0, "multa");
+            Assert.Less(e.Dinheiro, dinheiro + e.ReceitaPorSegundo);
+        }
+
+        [Test]
+        public void PropostaSemRespostaVenceEDoisContratosNoMaximo()
+        {
+            var e = ComContrato(0.9999);
+            e.ProporContrato();
+            for (int i = 0; i < Catalogo.TempoParaAceitar; i++) e.Avancar(1);
+            Assert.IsFalse(e.TemPropostaDeContrato, "venceu");
+            e.ProporContrato(); e.AceitarContrato();
+            e.ProporContrato(); e.AceitarContrato();
+            e.ProporContrato();
+            Assert.IsFalse(e.PodeAceitarContrato, "já tem dois");
+            Assert.IsFalse(e.AceitarContrato());
+        }
+
         // ---------- Offline ----------
 
         [Test]

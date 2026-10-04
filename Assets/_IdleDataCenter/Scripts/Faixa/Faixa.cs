@@ -54,6 +54,8 @@ namespace IdleDataCenter
             economia.ChamadoApareceu += c => { if (c.prioridade <= 2) { Avisar("Chamado P" + c.prioridade + ": " + c.texto, 4f, c.prioridade == 1 ? Laranja : Amarelo); Sons.Tique(); } };
             economia.EventoComecou += def => { Avisar(def.Nome + "!", 4f, def.Id == Catalogo.EventoCliente || def.Id == Catalogo.EventoBlackFriday ? Amarelo : Laranja); Sons.Alerta(); };
             economia.EventoTerminou += (def, valor) => { if (valor > 0) Avisar(def.Nome + ": +R$ " + Formatar(valor), 3f, VerdeClaro); else if (valor < 0) Avisar(def.Nome + ": -R$ " + Formatar(-valor), 3f, Vermelho); };
+            economia.ContratoProposto += c => Avisar("Proposta: " + c.cliente + " (abra o gerente)", 4f, Amarelo);
+            economia.ContratoEncerrado += (c, valor) => { if (valor > 0) Avisar("Contrato cumprido: +R$ " + Formatar(valor), 3f, VerdeClaro); else { Avisar("Contrato quebrado: -R$ " + Formatar(-valor), 3f, Vermelho); Sons.Alerta(); } };
             economia.Conquistou += c => Avisar("Conquista: " + c.Nome + " (+1%)", 3f, Amarelo);
             economia.AtaqueBloqueado += (def, quem) => Avisar(quem + " bloqueou " + def.Nome, 3f, VerdeClaro);
             economia.HardwareEnvelheceu += garantia => Avisar(garantia ? "Garantia venceu: refresh!" : "Hardware no fim da vida", 4f, Laranja);

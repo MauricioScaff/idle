@@ -254,7 +254,8 @@ namespace IdleDataCenter.Simulacao
                                    * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1)
                                    * FatorEvento
                                    * FatorSla
-                                   * FatorConquistas;
+                                   * FatorConquistas
+                                   * FatorContratos;
 
         // ---------------- Prestígio: certificações e desafio ----------------
 
@@ -440,6 +441,7 @@ namespace IdleDataCenter.Simulacao
             ChecarConquistas();
             AvancarEvento(segundos);
             AvancarUptime(segundos);
+            AvancarContratos(segundos);
             AvancarIdade(segundos);
             AvancarQuedaDeEnergia(segundos);
             AvancarPaneRegional(segundos);
@@ -906,6 +908,7 @@ namespace IdleDataCenter.Simulacao
                 Estado.cafeRestante = 0;
                 Estado.cafeRecarga = 0;
                 LimparChamadosOffline();
+                LimparPropostaOffline();
             }
             if (fora >= Catalogo.SegundosMinimosOffline)
             {

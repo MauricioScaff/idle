@@ -47,6 +47,12 @@ namespace IdleDataCenter.Simulacao
         public double helpDeskTrabalho;        // quanto a equipe já trabalhou no chamado da vez
         public int chamadosAtendidos, chamadosP1;
         public int cafesTomados;
+
+        // Contratos de clientes (ver Contratos.cs): a proposta na mesa (cliente vazio = nenhuma) e os ativos
+        public Contrato proposta = new Contrato();
+        public List<Contrato> contratos = new List<Contrato>();
+        public double proximaProposta = -1;
+        public int contratosCumpridos;
         public double chamadoRestante;        // saves antigos: o chamado único (vira um P3 na fila)
         public string chamadoTexto = "";
 

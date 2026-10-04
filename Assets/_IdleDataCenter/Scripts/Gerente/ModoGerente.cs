@@ -169,6 +169,7 @@ namespace IdleDataCenter.Gerente
             DesenharSala();
             Hud();
             PainelHelpDesk();
+            PainelContratos();
             CartaoAtencao();
             Barra();
             if (!Tutorial() && Time.unscaledTime < avisoAte) Aviso(aviso);
