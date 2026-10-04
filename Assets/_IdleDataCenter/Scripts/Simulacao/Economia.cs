@@ -440,6 +440,7 @@ namespace IdleDataCenter.Simulacao
             AvancarCafeEChamados(segundos);
             AvancarEvento(segundos);
             AvancarUptime(segundos);
+            AvancarIdade(segundos);
             AvancarQuedaDeEnergia(segundos);
             AvancarPaneRegional(segundos);
 
@@ -452,7 +453,7 @@ namespace IdleDataCenter.Simulacao
                 if (Travado(s)) continue;
                 if ((EhTorre(s) ? s : s - Torres) >= Catalogo.ServidoresQueTravam) continue;
                 double mtbf = EhTorre(s) ? Catalogo.MtbfServidorTorre : Catalogo.MtbfServidor1U;
-                if (sorteio.NextDouble() < segundos * mult / mtbf) Travar(s);
+                if (sorteio.NextDouble() < segundos * mult * FatorIdade / mtbf) Travar(s);   // hardware velho trava mais
             }
 
             // Disco: um queimado de cada vez; o técnico troca sozinho (ou o hot-spare entra). Antes do storage, quem queima é o

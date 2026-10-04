@@ -1293,5 +1293,36 @@ namespace IdleDataCenter.Testes
             e.ComecarEvento(Catalogo.EventoRato);
             Assert.AreEqual(1, e.Travamentos.Count);
         }
+
+        // ---------- Ciclo de vida do hardware ----------
+
+        [Test]
+        public void ServidoresEnvelhecemETravamMaisForaDaGarantia()
+        {
+            var e = Nova();
+            Assert.AreEqual(1, e.FatorIdade, 1e-9);
+            bool avisou = false;
+            e.HardwareEnvelheceu += garantia => avisou = garantia;
+            e.Estado.idadeServidores = Catalogo.FimDaGarantia - 1;
+            e.Avancar(2);
+            Assert.IsTrue(e.ForaDaGarantia);
+            Assert.IsTrue(avisou);
+            Assert.AreEqual(Catalogo.FalhasForaDaGarantia, e.FatorIdade, 1e-9);
+            e.Estado.idadeServidores = Catalogo.FimDaVida;
+            Assert.AreEqual(Catalogo.FalhasNoFimDaVida, e.FatorIdade, 1e-9);
+        }
+
+        [Test]
+        public void RefreshZeraAIdadeECustaMinutosDeReceita()
+        {
+            var e = Nova(10000);
+            Assert.IsFalse(e.FazerRefresh(), "na garantia não precisa");
+            e.Estado.idadeServidores = Catalogo.FimDaGarantia;
+            double custo = e.CustoDoRefresh;
+            Assert.AreEqual(Catalogo.RefreshMinimo, custo, 1e-9, "receita pequena: preço mínimo");
+            Assert.IsTrue(e.FazerRefresh());
+            Assert.AreEqual(0, e.IdadeDosServidores, 1e-9);
+            Assert.AreEqual(10000 - custo, e.Dinheiro, 1e-9);
+        }
     }
 }

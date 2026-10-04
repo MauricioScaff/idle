@@ -32,6 +32,7 @@ namespace IdleDataCenter.Testes
                 if (barata != null) e.Comprar(barata.Id);
                 var script = Catalogo.Automacoes.Where(a => e.PodeEscrever(a.Id)).OrderBy(a => a.Custo).FirstOrDefault();
                 if (script != null && barata == null) e.EscreverAutomacao(script.Id);
+                if (barata == null && e.PodeFazerRefresh) e.FazerRefresh();   // como o jogador quando o cartão pede
                 if (e.PodePromover) { e.Promover(); promocoes[e.Cargo] = t; }
                 if (e.PodeFazerIpo) { e.FazerIpo(); ipo = t; }
                 if (e.Estado.backupsRestaurados > 0 && primeiroBackup < 0) primeiroBackup = t;

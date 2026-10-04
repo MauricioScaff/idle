@@ -55,6 +55,7 @@ namespace IdleDataCenter
             economia.EventoComecou += def => { Avisar(def.Nome + "!", 4f, def.Id == Catalogo.EventoCliente || def.Id == Catalogo.EventoBlackFriday ? Amarelo : Laranja); Sons.Alerta(); };
             economia.EventoTerminou += (def, valor) => { if (valor > 0) Avisar(def.Nome + ": +R$ " + Formatar(valor), 3f, VerdeClaro); else if (valor < 0) Avisar(def.Nome + ": -R$ " + Formatar(-valor), 3f, Vermelho); };
             economia.AtaqueBloqueado += (def, quem) => Avisar(quem + " bloqueou " + def.Nome, 3f, VerdeClaro);
+            economia.HardwareEnvelheceu += garantia => Avisar(garantia ? "Garantia venceu: refresh!" : "Hardware no fim da vida", 4f, Laranja);
             economia.ChamadoEncerrado += bonus => { if (bonus <= 0) Avisar("O chamado foi embora", 1.5f, Laranja); };
             economia.QuedaDeEnergia += dc => { Avisar("Queda de energia no DC-0" + (dc + 1) + "!", 3f, Vermelho); Sons.Alerta(); };
             economia.EnergiaVoltou += (dc, sozinho) => { Avisar("DC-0" + (dc + 1) + " religado", 2f, VerdeClaro); Sons.Conserto(); };

@@ -40,6 +40,7 @@ namespace IdleDataCenter.Gerente
             E.EventoComecou += AoComecarEvento;
             E.EventoTerminou += AoTerminarEvento;
             E.AtaqueBloqueado += (def, quem) => Notificar(quem + " bloqueou um ataque de " + def.Nome.ToLower() + ".", 4);
+            E.HardwareEnvelheceu += garantia => Notificar(garantia ? "A garantia dos servidores venceu: vão travar 2x mais. Faça o refresh no cartão à direita." : "Servidores no fim da vida: travam 3x mais. Hora do refresh!", 8);
             E.ChamadoEncerrado += bonus => { if (bonus <= 0) Notificar("O chamado foi embora sem resposta."); };
         }
 

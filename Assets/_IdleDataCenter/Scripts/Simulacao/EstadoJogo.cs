@@ -56,6 +56,9 @@ namespace IdleDataCenter.Simulacao
         // Uptime da última hora (0 a 1): ver Uptime.cs. Começa em 99%: os noves do SLA se conquistam
         public double uptime = 0.99;
 
+        // Idade das torres e servidores 1U em segundos de jogo (ver Hardware.cs); o refresh zera
+        public double idadeServidores;
+
         // Arquiteto: queda de energia num datacenter (índice do DC extra, -1 = nenhuma)
         public int quedaDc = -1;
         public double quedaSegundos;

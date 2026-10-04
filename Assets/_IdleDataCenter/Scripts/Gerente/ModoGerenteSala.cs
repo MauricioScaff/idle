@@ -78,6 +78,7 @@ namespace IdleDataCenter.Gerente
                 if (s == 0 && E.DiscoQueimado && E.NivelStorage == 0) return a.Nome + ": HD queimou, clique para trocar";
             }
             if (a.Tipo == "storage" && E.DiscoQueimado) return a.Nome + ": disco queimou, clique para trocar";
+            if ((a.Tipo.StartsWith("servidor:") || a.Tipo == "rack") && E.ForaDaGarantia) return a.Nome + (E.FimDaVida ? " (fim de vida)" : " (fora da garantia)");
             if (a.Tipo == "rack" && E.Travamentos.Any(t => t.servidor >= E.Torres)) return a.Nome + ": um travou, clique";
             return a.Nome;
         }
@@ -352,6 +353,12 @@ namespace IdleDataCenter.Gerente
             else if (E.DiscoQueimado) Alerta(r, "Disco queimou", E.NivelStorage > 0 ? "No storage" : "HD da torre", "Trocar disco", faixa.TrocarDisco);
             else if (E.Travamentos.Count > 0) Alerta(r, "Servidor travou", "O técnico vai consertar", "Reiniciar", Resolver);
             else if (E.TemEvento) AlertaDoEvento(r);
+            else if (E.ForaDaGarantia && (E.PodeFazerRefresh || E.FimDaVida))
+                Alerta(r, E.FimDaVida ? "Fim de vida" : "Fora da garantia", "Servidores travam " + Numero(E.FatorIdade) + "x mais", "Refresh " + Dinheiro(E.CustoDoRefresh), () =>
+                {
+                    if (E.FazerRefresh()) { Notificar("Refresh feito: servidores novos, na garantia de novo.", 5); Sons.Promocao(); }
+                    else Notificar("Falta dinheiro para o refresh.");
+                });
             else if (E.TemChamado)
                 Alerta(r, "Chamado urgente", Cortar(E.TextoDoChamado, 30), "Atender " + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "s", () => AtenderChamado(new Vector2(r.center.x, r.y)), Ouro);
             else ProximaCompra(r);

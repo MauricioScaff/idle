@@ -100,6 +100,26 @@ namespace IdleDataCenter.Gerente
             return sprites[chave] = s;
         }
 
+        /// <summary>
+        /// Hardware fora da garantia: o plástico e a pintura amarelam um pouco (os LEDs ficam como estão). Cache por sprite.
+        /// </summary>
+        static SpriteIso Envelhecido(SpriteIso o)
+        {
+            string chave = "velho|" + o.GetHashCode();
+            if (sprites.TryGetValue(chave, out var s)) return s;
+            var px = (Color32[])o.px.Clone();
+            var leds = new HashSet<int>(o.leds);
+            for (int i = 0; i < px.Length; i++)
+            {
+                var c = px[i];
+                if (c.a == 0 || leds.Contains(i)) continue;
+                px[i] = new Color32((byte)Mathf.Lerp(c.r, 196, 0.22f), (byte)Mathf.Lerp(c.g, 176, 0.22f), (byte)Mathf.Lerp(c.b, 112, 0.22f), c.a);
+            }
+            s = new SpriteIso { px = px, w = o.w, h = o.h, frente = o.frente };
+            s.leds.AddRange(o.leds);
+            return sprites[chave] = s;
+        }
+
         /// <summary>Linha mais baixa com pixel opaco: onde ficam os pés da pessoa no quadro.</summary>
         static int Pes(SpriteIso s)
         {
@@ -206,6 +226,7 @@ namespace IdleDataCenter.Gerente
                 var l = Lugar(i);
                 bool travado = E.Travado(i) || HdDaTorreQueimado(i);
                 var s = travado ? Travada(nome, true) : torre;
+                if (E.ForaDaGarantia) s = Envelhecido(s);
                 int semente = i;
                 fila.Add((-i * 0.01f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));   // a da frente cobre a de trás
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = "servidor:" + i, Px = s.px, Prof = -i * 0.01f, Nome = "Servidor torre " + (i + 1) });
@@ -339,6 +360,7 @@ namespace IdleDataCenter.Gerente
                 float cheio = Mathf.Clamp01(nesse / (float)vagas);
                 bool quebrado = travado && i == 0;
                 var s = quebrado ? Travada(nome, true) : rack;
+                if (E.ForaDaGarantia) s = Envelhecido(s);
                 fila.Add((-1.5f + i * 0.01f, () => DesenharRack(s, l, cheio, !quebrado)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack", Px = s.px, Prof = -1.5f + i * 0.01f, Nome = "Rack 42U: " + E.ServidoresRack + " servidores 1U" });
                 if (quebrado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente, true);
@@ -417,6 +439,7 @@ namespace IdleDataCenter.Gerente
                 float cheio = Mathf.Clamp01(nesse / (float)vagas);
                 bool quebrado = travado1u && i == 0;
                 var s = quebrado ? Travada("rack" + equip, false) : rack;
+                if (E.ForaDaGarantia) s = Envelhecido(s);
                 float prof = -8 + l.x * 0.001f;
                 fila.Add((prof, () => DesenharRack(s, l, cheio, !quebrado)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack", Px = s.px, Prof = prof, Nome = "Rack 42U: " + E.ServidoresRack + " servidores 1U" });
@@ -442,6 +465,7 @@ namespace IdleDataCenter.Gerente
                 x += LarguraNaDireita(torre) + 2;
                 bool travado = E.Travado(i) || HdDaTorreQueimado(i);
                 var s = travado ? Travada("torre" + Sala.tamanho, false) : torre;
+                if (E.ForaDaGarantia) s = Envelhecido(s);
                 int semente = i;
                 fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, torre.w, torre.h), Tipo = "servidor:" + i, Px = s.px, Prof = -8 + l.x * 0.001f, Nome = "Servidor torre " + (i + 1) });

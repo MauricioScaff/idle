@@ -268,6 +268,8 @@ namespace IdleDataCenter
                 Alerta(r, E.Travamentos.Count == 1 ? "Servidor travou" : E.Travamentos.Count + " servidores travados", "O técnico vai consertar", "Reiniciar", () => faixa.Reiniciar(servidor));
             }
             else if (E.TemEvento) AlertaDoEvento(r);
+            else if (E.ForaDaGarantia && (E.PodeFazerRefresh || E.FimDaVida))
+                Alerta(r, E.FimDaVida ? "Fim de vida" : "Fora da garantia", "Travam " + E.FatorIdade + "x mais", "Refresh R$ " + Faixa.Formatar(E.CustoDoRefresh), () => { if (E.FazerRefresh()) Sons.Promocao(); });
             else if (E.TemChamado)
                 Alerta(r, "Chamado urgente", E.TextoDoChamado, "Atender " + Mathf.CeilToInt((float)E.SegundosDoChamado) + "s", () => faixa.AtenderChamado(), Ouro);
             else ProximaCompra(r);
