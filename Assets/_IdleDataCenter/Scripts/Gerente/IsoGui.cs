@@ -29,12 +29,12 @@ namespace IdleDataCenter.Gerente
         }
 
         // ---------------- Texto ----------------
-        // Letra: Pixelify Sans (licença OFL, Resources/Fontes). A "escala" antiga (altura da maiúscula = 5 × escala)
+        // Letra: Silkscreen (licença OFL, Resources/Fontes; OFL-Silkscreen.txt). A "escala" antiga (altura da maiúscula = 5 × escala)
         // vira um tamanho de fonte com maiúsculas da mesma altura, então os layouts continuam valendo.
         // O texto é desenhado já no tamanho da tela (fora da matriz do GUI), para a fonte ser rasterizada nítida.
 
         const float TamanhoPorEscala = 7f;          // tamanho da fonte por unidade de escala
-        const float TopoDaMaiuscula = 0.19f;        // do topo da linha até o topo da maiúscula, em fração do tamanho
+        const float TopoDaMaiuscula = 0.30f;        // do topo da linha até o topo da maiúscula, em fração do tamanho
 
         static Font fonte;
         static GUIStyle estilo;
@@ -44,7 +44,7 @@ namespace IdleDataCenter.Gerente
             get
             {
                 if (estilo != null) return estilo;
-                fonte = Resources.Load<Font>("Fontes/PixelifySans");
+                fonte = Resources.Load<Font>("Fontes/Silkscreen-Regular");
                 estilo = new GUIStyle { font = fonte, alignment = TextAnchor.UpperLeft, wordWrap = false, clipping = TextClipping.Overflow, richText = false };
                 estilo.padding = new RectOffset(0, 0, 0, 0);
                 estilo.margin = new RectOffset(0, 0, 0, 0);
