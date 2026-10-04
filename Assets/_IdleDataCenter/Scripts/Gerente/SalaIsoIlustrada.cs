@@ -23,15 +23,21 @@ namespace IdleDataCenter.Gerente
         /// </summary>
         class Ilustracao
         {
-            public string nome, tamanho;   // tamanho: sufixo dos sprites de pessoas e torres nessa escala ("" ou "_p")
+            public string nome;
+            public string tamanho;   // sufixo das pessoas e torres nessa escala ("", "_p" ou "_m")
+            public string equip;     // sufixo de racks e no-breaks nessa escala ("" ou "_m")
             public Vector2 fundo, esquerda, direita;
             public int casas;
         }
 
+        /// <summary>Uma por cargo. O DevOps usa a sala de racks até ganhar a sua; do SRE em diante, o data center.</summary>
         static readonly Ilustracao[] Ilustracoes =
         {
-            new Ilustracao { nome = "armario", tamanho = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },
-            new Ilustracao { nome = "salinha", tamanho = "_p", fundo = new Vector2(199, 143), esquerda = new Vector2(47, 219), direita = new Vector2(351, 219), casas = 6 },
+            new Ilustracao { nome = "armario", tamanho = "", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },
+            new Ilustracao { nome = "salinha", tamanho = "_p", equip = "", fundo = new Vector2(199, 143), esquerda = new Vector2(47, 219), direita = new Vector2(351, 219), casas = 6 },
+            new Ilustracao { nome = "racks", tamanho = "_m", equip = "_m", fundo = new Vector2(200, 122), esquerda = new Vector2(42, 200), direita = new Vector2(357, 200), casas = 8 },
+            new Ilustracao { nome = "racks", tamanho = "_m", equip = "_m", fundo = new Vector2(200, 122), esquerda = new Vector2(42, 200), direita = new Vector2(357, 200), casas = 8 },
+            new Ilustracao { nome = "dc", tamanho = "_m", equip = "_m", fundo = new Vector2(200, 105), esquerda = new Vector2(30, 190), direita = new Vector2(371, 190), casas = 10 },
         };
 
         PixelCanvas telaIlustrada;
@@ -39,8 +45,8 @@ namespace IdleDataCenter.Gerente
         SpriteIso fundoIlustrado;
         int cargoIlustrado = -1;
 
-        bool TemIlustracao => E.Cargo < Ilustracoes.Length;
-        Ilustracao Sala => Ilustracoes[E.Cargo];
+        bool TemIlustracao => true;
+        Ilustracao Sala => Ilustracoes[Mathf.Min(E.Cargo, Ilustracoes.Length - 1)];
 
         /// <summary>Ponto do piso: gx corre ao longo da parede da direita, gy ao longo da da esquerda (em casas).</summary>
         Vector2Int IP(float gx, float gy, float z = 0)
@@ -70,7 +76,15 @@ namespace IdleDataCenter.Gerente
                     for (int x = 0; x < tex.width; x++) e[y * tex.width + x] = px[y * tex.width + (tex.width - 1 - x)];
                 px = e;
             }
-            return sprites[chave] = Preparar(px, tex.width, tex.height);
+            s = Preparar(px, tex.width, tex.height);
+            // os LEDs do PixelLab são de um verde mais escuro que o da arte antiga: qualquer verde bem mais forte que o resto
+            s.leds.Clear();
+            for (int i = 0; i < px.Length; i++)
+            {
+                var c = px[i];
+                if (c.a > 0 && c.g > 110 && c.g > c.r + 40 && c.g > c.b + 40) s.leds.Add(i);
+            }
+            return sprites[chave] = s;
         }
 
         /// <summary>O mesmo sprite com os LEDs em vermelho: é assim que um servidor travado aparece.</summary>
@@ -158,7 +172,7 @@ namespace IdleDataCenter.Gerente
             tela.Imagem(fundoIlustrado.px, fundoIlustrado.w, fundoIlustrado.h, 0, 0);
 
             tecnicoConsertando = false;
-            if (E.Cargo == 0) ArmarioIlustrado(); else SalinhaIlustrada();
+            if (E.Cargo == 0) ArmarioIlustrado(); else if (E.Cargo == 1) SalinhaIlustrada(); else SalaGrandeIlustrada();
             PessoasIlustradas();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
             foreach (var (_, desenhar) in fila) desenhar();
@@ -223,7 +237,7 @@ namespace IdleDataCenter.Gerente
         {
             var b = BaseDe(s);
             var a = l + b.esquerda; var c = l + b.fundo; var e = l + b.direita; var f = l + b.frente;
-            fila.Add((-2, () =>
+            fila.Add((-9, () =>   // no piso: embaixo de tudo
             {
                 var cor = Piscar(0.5f) ? IsoDesenho.C("ffb458") : IsoDesenho.C("d49335");
                 foreach (var (p, q) in new[] { (a, c), (c, e), (e, f), (f, a) })
@@ -271,7 +285,7 @@ namespace IdleDataCenter.Gerente
             // parede da esquerda, da frente para o fundo: as torres que vieram do armário e depois os racks (o primeiro
             // rack fica junto da planta, no fundo)
             TorresNaParede(52, TorresNaSalinha, false);
-            Racks(148);
+            Racks(148, RacksNaSalinha);
 
             // embaixo da janela, entre a planta e a porta: os no-breaks (espelhados: o visor fica virado para a sala)
             var nobreak = CarregarPixelLab("nobreak", true);
@@ -300,14 +314,15 @@ namespace IdleDataCenter.Gerente
         /// (o primeiro aparece vazio assim que o rack é comprado); os LEDs acendem conforme o rack enche. Racks com
         /// servidor travado ficam com os LEDs vermelhos.
         /// </summary>
-        void Racks(float xFundo)
+        void Racks(float xFundo, int maximo, bool marcar = true)
         {
-            var rack = CarregarPixelLab("rack", true);
+            string nome = "rack" + Sala.equip;
+            var rack = CarregarPixelLab(nome, true);
             var b = BaseDe(rack);
             int passo = LarguraNaEsquerda(rack) + 2;
             Vector2Int Lugar(int i) => NaParedeEsquerda(rack, xFundo - i * passo);
             int vagas = Catalogo.VagasNoRack;
-            int racks = E.TemRack ? Mathf.Clamp(Mathf.CeilToInt(E.ServidoresRack / (float)vagas), 1, RacksNaSalinha) : 0;
+            int racks = E.TemRack ? Mathf.Clamp(Mathf.CeilToInt(E.ServidoresRack / (float)vagas), 1, maximo) : 0;
             bool travado = false;
             for (int s = E.Torres; s < E.TotalServidores; s++) travado |= E.Travado(s);
             for (int i = 0; i < racks; i++)
@@ -317,22 +332,203 @@ namespace IdleDataCenter.Gerente
                 int nesse = i == racks - 1 ? E.ServidoresRack - i * vagas : vagas;
                 float cheio = Mathf.Clamp01(nesse / (float)vagas);
                 bool quebrado = travado && i == 0;
-                var s = quebrado ? Travada("rack", true) : rack;
+                var s = quebrado ? Travada(nome, true) : rack;
                 fila.Add((-1.5f + i * 0.01f, () => DesenharRack(s, l, cheio, !quebrado)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack" });
                 if (quebrado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente);
             }
-            if (E.ServidoresRack > RacksNaSalinha * vagas)
+            if (E.ServidoresRack > maximo * vagas)
             {
-                var l = Lugar(RacksNaSalinha - 1);
+                var l = Lugar(maximo - 1);
                 Placas.Add(new Placa { Setor = "Compute", Nome = E.ServidoresRack + " servidores 1U", Pos = l + new Vector2Int(b.frente.x, 4), Cor = IsoGui.Cyan });
             }
             // marcador: o lugar do primeiro rack (antes de comprar), o lugar do próximo rack quando o atual enche, ou o rack
             // que recebe o próximo servidor
-            int proximo = E.TemRack ? Mathf.Min(E.ServidoresRack / vagas, RacksNaSalinha - 1) : 0;
-            if (proximo >= racks) ContornoDaBase(rack, Lugar(proximo));
-            else Marcador = Lugar(proximo) + new Vector2Int(b.frente.x, 6);
+            int proximo = E.TemRack ? Mathf.Min(E.ServidoresRack / vagas, maximo - 1) : 0;
+            if (marcar && proximo >= racks) ContornoDaBase(rack, Lugar(proximo));
+            else if (marcar) Marcador = Lugar(proximo) + new Vector2Int(b.frente.x, 6);
             pontoDoRack = Lugar(Mathf.Max(0, Mathf.Min(proximo, racks - 1))) + new Vector2Int(b.frente.x, rack.h / 2);
+        }
+
+        // ---------------- Sala de racks (Analista), DevOps e data center (SRE em diante) ----------------
+
+        /// <summary>
+        /// Cor dos LEDs por tipo de máquina nas fileiras: na vida real tudo isso é servidor de rack, então o rack é o mesmo
+        /// e a cor diz o que ele faz.
+        /// </summary>
+        static readonly Color32 LedRackCheio = new Color32(110, 200, 70, 255), LedHypervisor = new Color32(190, 120, 255, 255),
+            LedCi = new Color32(255, 210, 80, 255), LedContainers = new Color32(80, 160, 255, 255), LedK8s = new Color32(70, 230, 230, 255),
+            LedPico = new Color32(255, 150, 50, 255), LedBalanceador = new Color32(240, 240, 255, 255), LedQuebrado = new Color32(255, 70, 80, 255);
+
+        static SpriteIso ComLeds(string nome, Color32 cor)
+        {
+            string chave = "pl/" + nome + "|leds" + cor.r + "," + cor.g + "," + cor.b;
+            if (sprites.TryGetValue(chave, out var s)) return s;
+            var o = CarregarPixelLab(nome);
+            var px = (Color32[])o.px.Clone();
+            foreach (int i in o.leds) px[i] = cor;
+            s = new SpriteIso { px = px, w = o.w, h = o.h, frente = o.frente };
+            s.leds.AddRange(o.leds);
+            return sprites[chave] = s;
+        }
+
+        /// <summary>
+        /// Trechos livres do pé da parede da direita em cada sala grande (sem portas): equipamentos da parede, em ordem.
+        /// Fileiras: profundidade (gy) de cada fileira de racks no piso técnico, do fundo para a frente.
+        /// </summary>
+        (float de, float ate)[] TrechosDaParede => E.Cargo >= 4 ? new[] { (206f, 268f), (300f, 366f) } : new[] { (264f, 352f) };
+        float[] Fileiras => E.Cargo >= 4 ? new[] { 2.6f, 4.5f, 6.4f, 8.3f } : new[] { 2.6f, 4.6f, 6.6f };
+        const float InicioDaFileira = 2.2f;
+
+        void SalaGrandeIlustrada()
+        {
+            int cargo = E.Cargo;
+            string equip = Sala.equip;
+
+            // parede da direita: racks 1U, no-breaks e as torres antigas, cada um no próximo trecho livre
+            var trechos = TrechosDaParede;
+            int trecho = 0;
+            float x = trechos[0].de;
+            bool Cabe(int largura)
+            {
+                while (trecho < trechos.Length && x + largura > trechos[trecho].ate) { trecho++; if (trecho < trechos.Length) x = trechos[trecho].de; }
+                return trecho < trechos.Length;
+            }
+
+            // racks 1U (até 2), no-breaks (até 3) e torres (até 4), todos com a frente virada para a sala
+            var rack = CarregarPixelLab("rack" + equip);
+            int vagas = Catalogo.VagasNoRack;
+            int racks1u = E.TemRack ? Mathf.Clamp(Mathf.CeilToInt(E.ServidoresRack / (float)vagas), 1, 2) : 0;
+            bool travado1u = false;
+            for (int s = E.Torres; s < E.TotalServidores; s++) travado1u |= E.Travado(s);
+            for (int i = 0; i < racks1u && Cabe(LarguraNaDireita(rack)); i++)
+            {
+                var l = NaParedeDireita(rack, x);
+                x += LarguraNaDireita(rack) + 2;
+                int nesse = i == racks1u - 1 ? E.ServidoresRack - i * vagas : vagas;
+                float cheio = Mathf.Clamp01(nesse / (float)vagas);
+                bool quebrado = travado1u && i == 0;
+                var s = quebrado ? Travada("rack" + equip, false) : rack;
+                float prof = -8 + l.x * 0.001f;
+                fila.Add((prof, () => DesenharRack(s, l, cheio, !quebrado)));
+                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack" });
+                if (quebrado) Quebrado(l + new Vector2Int(BaseDe(rack).frente.x, 0), l + BaseDe(rack).frente);
+                if (i == 0) pontoDoRack = l + new Vector2Int(rack.w / 2, rack.h / 2);
+            }
+            var nobreak = CarregarPixelLab("nobreak" + equip, true);
+            for (int i = 0; i < Mathf.Min(E.Nivel(Catalogo.NoBreak), 3) && Cabe(9); i++)
+            {
+                var l = NaParedeDireita(nobreak, x);
+                x += 11;
+                if (i == 0) pontoDoNoBreak = l + new Vector2Int(nobreak.w / 2, nobreak.h / 2);
+                int semente = i + 20;
+                fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(nobreak, l.x, l.y, semente)));
+            }
+            var torre = CarregarPixelLab("torre" + Sala.tamanho);
+            var bt = BaseDe(torre);
+            for (int i = 0; i < Mathf.Min(E.Torres, 4) && Cabe(LarguraNaDireita(torre)); i++)
+            {
+                var l = NaParedeDireita(torre, x);
+                x += LarguraNaDireita(torre) + 2;
+                bool travado = E.Travado(i);
+                var s = travado ? Travada("torre" + Sala.tamanho, false) : torre;
+                int semente = i;
+                fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
+                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, torre.w, torre.h), Tipo = "servidor:" + i });
+                if (travado) Quebrado(l + new Vector2Int(bt.frente.x, 0), l + bt.frente);
+                pontoDaTorre = l + new Vector2Int(torre.w / 2, torre.h / 2);
+            }
+
+            // piso técnico: uma fileira por tipo de máquina (no Analista, os racks cheios ocupam todas)
+            var fileiras = Fileiras;
+            int f = 0;
+            List<Vector2Int> Fileira() => f < fileiras.Length ? LugaresNaFileira(fileiras[f++]) : new List<Vector2Int>();
+            var lugaresRacks = Fileira();
+            if (cargo == 2) while (f < fileiras.Length) lugaresRacks.AddRange(Fileira());
+            string principal = cargo == 2 ? Catalogo.RackCheio : cargo == 3 ? Catalogo.Containers : Catalogo.NoKubernetes;
+
+            var rackCheio = ComLeds("rack" + equip, LedRackCheio);
+            for (int i = 0; i < Mathf.Min(lugaresRacks.Count, E.RacksCheios); i++) MaquinaNaFileira(rackCheio, lugaresRacks[i], "equipamento");
+            if (principal == Catalogo.RackCheio) MarcarProxima(lugaresRacks, E.RacksCheios);
+            if (lugaresRacks.Count > 0) pontoDoRackCheio = lugaresRacks[Mathf.Clamp(E.RacksCheios - 1, 0, lugaresRacks.Count - 1)];
+
+            if (cargo >= 3)
+            {
+                // virtualização: hypervisors (roxo) e o servidor de CI (amarelo)
+                var lugares = Fileira();
+                int k = 0;
+                for (int i = 0; i < Mathf.Min(3, E.NivelHypervisor) && k < lugares.Count; i++, k++) MaquinaNaFileira(ComLeds("rack" + equip, LedHypervisor), lugares[k], "equipamento");
+                if (E.TemCi && k < lugares.Count) MaquinaNaFileira(ComLeds("rack" + equip, LedCi), lugares[k++], "containers");
+                if (lugares.Count > 0) pontoDoHypervisor = lugares[0];
+
+                // containers (azul; o primeiro fica vermelho com o deploy quebrado)
+                var hosts = Fileira();
+                for (int i = 0; i < Mathf.Min(hosts.Count, E.HostsContainers); i++)
+                {
+                    bool quebrado = i == 0 && E.DeployQuebrado;
+                    MaquinaNaFileira(ComLeds("rack" + equip, quebrado ? LedQuebrado : LedContainers), hosts[i], "containers", quebrado);
+                }
+                if (principal == Catalogo.Containers) MarcarProxima(hosts, E.HostsContainers);
+                if (hosts.Count > 0) pontoDosContainers = hosts[Mathf.Clamp(E.HostsContainers - 1, 0, hosts.Count - 1)];
+            }
+            if (cargo >= 4)
+            {
+                // o cluster: nós Kubernetes (ciano; laranja num pico sem escala) e o balanceador na ponta
+                var nos = Fileira();
+                bool pico = E.EmPico && !E.PicoFoiEscalado;
+                int vagasK8s = nos.Count - (E.TemBalanceador ? 1 : 0);
+                for (int i = 0; i < Mathf.Min(vagasK8s, E.NosKubernetes); i++) MaquinaNaFileira(ComLeds("rack" + equip, pico ? LedPico : LedK8s), nos[i], "k8s");
+                if (E.TemBalanceador && nos.Count > 0) MaquinaNaFileira(ComLeds("rack" + equip, LedBalanceador), nos[nos.Count - 1], "equipamento");
+                if (principal == Catalogo.NoKubernetes) MarcarProxima(nos, E.NosKubernetes, vagasK8s);
+                if (nos.Count > 0) pontoDosNos = nos[Mathf.Clamp(E.NosKubernetes - 1, 0, nos.Count - 1)];
+            }
+
+            // canto do escritório (Analista) ou do NOC (SRE em diante), que já vem na ilustração
+            if (cargo >= 4)
+            {
+                Alvos.Add(new Alvo { Area = new RectInt(37, 148, 58, 58), Tipo = "noc" });
+                pontoDoChamado = new Vector2Int(62, 140);
+            }
+            else
+            {
+                Alvos.Add(new Alvo { Area = new RectInt(52, 150, 75, 58), Tipo = "equipamento" });
+                Caneca("caneca_m", new Vector2Int(112, 163));
+                pontoDoChamado = new Vector2Int(86, 140);
+            }
+        }
+
+        Vector2Int pontoDoRackCheio, pontoDoHypervisor, pontoDosContainers, pontoDosNos;
+
+        /// <summary>Cantos de cima das imagens dos racks de uma fileira em gy, um encostado no outro ao longo de gx.</summary>
+        List<Vector2Int> LugaresNaFileira(float gy)
+        {
+            var rack = CarregarPixelLab("rack" + Sala.equip);
+            var b = BaseDe(rack);
+            var passo = b.frente - b.esquerda;   // a face com os servidores corre ao longo de gx
+            var inicio = IP(InicioDaFileira, gy) - b.fundo;
+            float largura = (IP(Sala.casas - 0.3f, gy).x - IP(InicioDaFileira, gy).x);
+            int n = Mathf.Max(0, Mathf.FloorToInt(largura / Mathf.Max(1, passo.x)));
+            var lugares = new List<Vector2Int>();
+            for (int i = 0; i < n; i++) lugares.Add(inicio + passo * i);
+            return lugares;
+        }
+
+        /// <summary>Uma máquina numa fileira (profundidade pela linha da tela: quem está mais embaixo fica na frente).</summary>
+        void MaquinaNaFileira(SpriteIso s, Vector2Int l, string clique, bool quebrado = false)
+        {
+            fila.Add((-5 + (l.y + s.h) * 0.01f + l.x * 0.0001f, () => DesenharRack(s, l, 1, !quebrado)));
+            Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = clique });
+            if (quebrado) Quebrado(l + new Vector2Int(BaseDe(s).frente.x, 0), l + BaseDe(s).frente);
+        }
+
+        /// <summary>Contorno no próximo lugar livre da fileira do equipamento principal (ou o botão na frente, com ela cheia).</summary>
+        void MarcarProxima(List<Vector2Int> lugares, int ocupados, int limite = -1)
+        {
+            if (lugares.Count == 0) return;
+            if (limite < 0) limite = lugares.Count;
+            var rack = CarregarPixelLab("rack" + Sala.equip);
+            if (ocupados < limite) ContornoDaBase(rack, lugares[ocupados]);
+            else Marcador = lugares[limite - 1] + BaseDe(rack).frente + new Vector2Int(0, 6);
         }
 
         /// <summary>Rack com os LEDs acesos de cima para baixo até 'cheio' (0 a 1); os outros ficam apagados.</summary>
@@ -377,10 +573,14 @@ namespace IdleDataCenter.Gerente
             // frente, no sentido contrário
             bool salinha = E.Cargo == 1;
             string tecnico = "tecnico" + Sala.tamanho, estagiario = "estagiario" + Sala.tamanho;
-            float gyTecnico = salinha ? 3.2f : 2.9f, gyEstagiario = salinha ? 4.2f : 3.55f;
+            // nas salas grandes os dois andam no corredor da frente, cada um numa metade
+            bool grande = E.Cargo >= 2;
+            float frente = Sala.casas - 0.45f;
+            float gyTecnico = grande ? frente : salinha ? 3.2f : 2.9f, gyEstagiario = grande ? frente : salinha ? 4.2f : 3.55f;
             bool voltando;
-            float gx = salinha ? PosicaoAndando(1.6f, 4.0f, 0f, 0.5f, out voltando) : PosicaoAndando(1.3f, 3.2f, 0f, 0.55f, out voltando);
-            int pulo = Mathf.RoundToInt(Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * (salinha ? 6f : 8f));
+            float gx = grande ? PosicaoAndando(2.4f, Sala.casas * 0.55f, 0f, 0.5f, out voltando)
+                : salinha ? PosicaoAndando(1.6f, 4.0f, 0f, 0.5f, out voltando) : PosicaoAndando(1.3f, 3.2f, 0f, 0.55f, out voltando);
+            int pulo = Mathf.RoundToInt(Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * (grande ? 4f : salinha ? 6f : 8f));
             if (tecnicoConsertando)
             {
                 var s = CarregarPixelLab(tecnico + "_nw");
@@ -401,7 +601,8 @@ namespace IdleDataCenter.Gerente
             if (E.TemEstagiario)
             {
                 bool volta;
-                float gxE = salinha ? PosicaoAndando(1.9f, 3.8f, 0.9f, 0.45f, out volta) : PosicaoAndando(1.5f, 3.0f, 0.9f, 0.45f, out volta);
+                float gxE = grande ? PosicaoAndando(Sala.casas * 0.6f, Sala.casas - 0.8f, 0.9f, 0.45f, out volta)
+                    : salinha ? PosicaoAndando(1.9f, 3.8f, 0.9f, 0.45f, out volta) : PosicaoAndando(1.5f, 3.0f, 0.9f, 0.45f, out volta);
                 pontoDoEstagiario = IP(gxE, gyEstagiario);
                 var s = QuadroDaPessoa(estagiario, volta, true, 0.37f);
                 if (s != null) PessoaIlustrada(s, estagiario, pontoDoEstagiario, 0);
@@ -413,7 +614,7 @@ namespace IdleDataCenter.Gerente
         {
             // os pés pela pose parada: os quadros da caminhada dividem a mesma tela, então a pessoa não pula a cada passo
             int pes = Pes(CarregarPixelLab(quem + "_se") ?? s);
-            int sombra = s.w > 90 ? 9 : 6;
+            int sombra = s.w > 90 ? 9 : s.w > 60 ? 6 : 4;
             fila.Add((10 + p.y * 0.001f, () =>
             {
                 tela.Ret(p.x - sombra, p.y - 1, sombra * 2, 3, new Color32(20, 20, 40, 90));
@@ -433,6 +634,10 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.Ventilador: return pontoDoVentilador;
                 case Catalogo.NoBreak: return pontoDoNoBreak;
                 case Catalogo.ArCondicionado: return pontoDoAr;
+                case Catalogo.RackCheio: case Catalogo.PisoElevado: return pontoDoRackCheio + new Vector2Int(10, 10);
+                case Catalogo.Hypervisor: case Catalogo.Link10G: return pontoDoHypervisor + new Vector2Int(10, 10);
+                case Catalogo.Containers: case Catalogo.ServidorCi: case Catalogo.ImagensEnxutas: case Catalogo.CacheRedis: return pontoDosContainers + new Vector2Int(10, 10);
+                case Catalogo.NoKubernetes: case Catalogo.Balanceador: case Catalogo.ServiceMesh: return pontoDosNos + new Vector2Int(10, 10);
                 case Catalogo.Estagiario: return pontoDoEstagiario + new Vector2Int(0, -30);
                 default: return null;
             }
