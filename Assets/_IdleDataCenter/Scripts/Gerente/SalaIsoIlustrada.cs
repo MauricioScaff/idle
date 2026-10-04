@@ -13,7 +13,8 @@ namespace IdleDataCenter.Gerente
     /// direita, o filtro de linha no chão na frente da mesa e a caneca em cima dela.
     /// Salinha: na parede da esquerda os racks no fundo e as torres na frente; os no-breaks embaixo da janela (a porta e a
     /// mesa ocupam o resto da parede da direita) e o ar-condicionado no alto, sobre a mesa.
-    /// A salinha é maior, então tudo nela é desenhado menor: as pessoas e as torres usam a versão reduzida ("_p").
+    /// Da salinha em diante a ilustração foi dobrada (Scale2x, com as linhas finas redesenhadas com 1 px): as pessoas e as
+    /// torres entram no tamanho original e racks, no-breaks e ar-condicionado na versão 1,5x ("_g").
     /// </summary>
     public partial class SalaIso
     {
@@ -24,8 +25,8 @@ namespace IdleDataCenter.Gerente
         class Ilustracao
         {
             public string nome;
-            public string tamanho;   // sufixo das pessoas e torres nessa escala ("", "_p" ou "_m")
-            public string equip;     // sufixo de racks e no-breaks nessa escala ("" ou "_m")
+            public string equip;     // sufixo de racks, no-breaks e ar-condicionado nessa escala ("" ou "_g", 1,5x)
+            public int escala = 1;   // pixels da arte por pixel da ilustração original (as salas maiores foram dobradas)
             public Vector2 fundo, esquerda, direita;
             public int casas;
         }
@@ -33,11 +34,11 @@ namespace IdleDataCenter.Gerente
         /// <summary>Uma por cargo. O DevOps usa a sala de racks até ganhar a sua; do SRE em diante, o data center.</summary>
         static readonly Ilustracao[] Ilustracoes =
         {
-            new Ilustracao { nome = "armario", tamanho = "", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },
-            new Ilustracao { nome = "salinha", tamanho = "_p", equip = "", fundo = new Vector2(199, 143), esquerda = new Vector2(47, 219), direita = new Vector2(351, 219), casas = 6 },
-            new Ilustracao { nome = "racks", tamanho = "_m", equip = "_m", fundo = new Vector2(200, 122), esquerda = new Vector2(42, 200), direita = new Vector2(357, 200), casas = 8 },
-            new Ilustracao { nome = "racks", tamanho = "_m", equip = "_m", fundo = new Vector2(200, 122), esquerda = new Vector2(42, 200), direita = new Vector2(357, 200), casas = 8 },
-            new Ilustracao { nome = "dc", tamanho = "_m", equip = "_m", fundo = new Vector2(200, 105), esquerda = new Vector2(30, 190), direita = new Vector2(371, 190), casas = 10 },
+            new Ilustracao { nome = "armario", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },
+            new Ilustracao { nome = "salinha_hd", equip = "_g", escala = 2, fundo = new Vector2(398, 286), esquerda = new Vector2(94, 438), direita = new Vector2(702, 438), casas = 6 },
+            new Ilustracao { nome = "racks_hd", equip = "_g", escala = 2, fundo = new Vector2(400, 244), esquerda = new Vector2(84, 400), direita = new Vector2(714, 400), casas = 8 },
+            new Ilustracao { nome = "racks_hd", equip = "_g", escala = 2, fundo = new Vector2(400, 244), esquerda = new Vector2(84, 400), direita = new Vector2(714, 400), casas = 8 },
+            new Ilustracao { nome = "dc_hd", equip = "_g", escala = 2, fundo = new Vector2(400, 210), esquerda = new Vector2(60, 380), direita = new Vector2(742, 380), casas = 10 },
         };
 
         PixelCanvas telaIlustrada;
@@ -217,7 +218,7 @@ namespace IdleDataCenter.Gerente
         /// </summary>
         Vector2Int? TorresNaParede(float x0, int vagas, bool marcar)
         {
-            string nome = "torre" + Sala.tamanho;
+            string nome = "torre";
             var torre = CarregarPixelLab(nome, true);
             int passo = LarguraNaEsquerda(torre) + 2;
             Vector2Int Lugar(int i) => NaParedeEsquerda(torre, x0 + i * passo);
@@ -254,7 +255,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Alerta piscando sobre o que quebrou e o técnico indo consertar (o primeiro quebrado chama o técnico).</summary>
         void Quebrado(Vector2Int topo, Vector2Int frente, bool ladoGx)
         {
-            fila.Add((5, () => { if (Piscar()) tela.Texto("!", topo.x - 2, topo.y - 2, IsoDesenho.C("ff3b4e"), true, 2); }));
+            fila.Add((5, () => { if (Piscar()) tela.Texto("!", topo.x - 2, topo.y - 2, IsoDesenho.C("ff3b4e"), true, Sala.escala + 1); }));
             if (!tecnicoConsertando) { tecnicoConsertando = true; (lugarDoConserto, olharDoConserto) = NaFrenteDe(frente, ladoGx); }
         }
 
@@ -305,21 +306,21 @@ namespace IdleDataCenter.Gerente
 
         // ---------------- Salinha (Sysadmin) ----------------
 
-        const int RacksNaSalinha = 3, TorresNaSalinha = 4, NoBreaksNaSalinha = 2;
+        const int RacksNaSalinha = 3, TorresNaSalinha = 5, NoBreaksNaSalinha = 2;
 
         void SalinhaIlustrada()
         {
             // parede da esquerda, da frente para o fundo: as torres que vieram do armário e depois os racks (o primeiro
             // rack fica junto da planta, no fundo)
-            TorresNaParede(52, TorresNaSalinha, false);
-            Racks(148, RacksNaSalinha);
+            TorresNaParede(104, TorresNaSalinha, false);
+            Racks(300, RacksNaSalinha);
 
             // embaixo da janela, entre a planta e a porta: os no-breaks (espelhados: o visor fica virado para a sala)
-            var nobreak = CarregarPixelLab("nobreak", true);
+            var nobreak = CarregarPixelLab("nobreak" + Sala.equip, true);
             int nNoBreaks = Mathf.Min(E.Nivel(Catalogo.NoBreak), NoBreaksNaSalinha);
             for (int i = 0; i < NoBreaksNaSalinha; i++)
             {
-                var l = NaParedeDireita(nobreak, 211 + i * 20);   // a sombra no pé da imagem atrapalha medir a base: passo fixo
+                var l = NaParedeDireita(nobreak, 422 + i * 30);   // a sombra no pé da imagem atrapalha medir a base: passo fixo
                 if (i == 0) pontoDoNoBreak = l + new Vector2Int(nobreak.w / 2, nobreak.h / 2);
                 if (i >= nNoBreaks) continue;
                 int semente = i + 20;
@@ -327,15 +328,15 @@ namespace IdleDataCenter.Gerente
                 Ronda(l + BaseDe(nobreak).frente, false);
             }
             // ar-condicionado no alto da parede da direita, sobre a mesa
-            var ar = CarregarPixelLab("ar_condicionado");
-            pontoDoAr = new Vector2Int(330, 112);
+            var ar = CarregarPixelLab("ar_condicionado" + Sala.equip);
+            pontoDoAr = new Vector2Int(660, 222);
             if (ar != null && E.Nivel(Catalogo.ArCondicionado) > 0)
                 fila.Add((1, () => DesenharSprite(ar, pontoDoAr.x - ar.w / 2, pontoDoAr.y - ar.h / 2)));
 
-            Alvos.Add(new Alvo { Area = new RectInt(270, 140, 80, 85), Tipo = "equipamento", Prof = -20, Nome = "Mesa do técnico" });   // mesa da ilustração (atrás de tudo que fica em cima dela)
-            Caneca("caneca_p", new Vector2Int(338, 180));
-            BackupNaMesa(new Vector2Int(322, 186), new Vector2Int(283, 162));
-            pontoDoChamado = new Vector2Int(302, 124);
+            Alvos.Add(new Alvo { Area = new RectInt(540, 280, 160, 170), Tipo = "equipamento", Prof = -20, Nome = "Mesa do técnico" });   // mesa da ilustração (atrás de tudo que fica em cima dela)
+            Caneca("caneca", new Vector2Int(676, 360));
+            BackupNaMesa(new Vector2Int(644, 372), new Vector2Int(566, 324));
+            pontoDoChamado = new Vector2Int(604, 248);
         }
 
         /// <summary>
@@ -408,7 +409,7 @@ namespace IdleDataCenter.Gerente
         /// Trechos livres do pé da parede da direita em cada sala grande (sem portas): equipamentos da parede, em ordem.
         /// Fileiras: profundidade (gy) de cada fileira de racks no piso técnico, do fundo para a frente.
         /// </summary>
-        (float de, float ate)[] TrechosDaParede => E.Cargo >= 4 ? new[] { (206f, 268f), (300f, 366f) } : new[] { (264f, 352f) };
+        (float de, float ate)[] TrechosDaParede => E.Cargo >= 4 ? new[] { (412f, 536f), (600f, 732f) } : new[] { (528f, 704f) };
         float[] Fileiras => E.Cargo >= 4 ? new[] { 2.6f, 4.5f, 6.4f, 8.3f } : new[] { 2.6f, 4.6f, 6.6f };
         const float InicioDaFileira = 2.2f;
 
@@ -450,23 +451,23 @@ namespace IdleDataCenter.Gerente
                 if (i == 0) pontoDoRack = l + new Vector2Int(rack.w / 2, rack.h / 2);
             }
             var nobreak = CarregarPixelLab("nobreak" + equip, true);
-            for (int i = 0; i < Mathf.Min(E.Nivel(Catalogo.NoBreak), 3) && Cabe(9); i++)
+            for (int i = 0; i < Mathf.Min(E.Nivel(Catalogo.NoBreak), 3) && Cabe(26); i++)
             {
                 var l = NaParedeDireita(nobreak, x);
-                x += 11;
+                x += 30;
                 if (i == 0) pontoDoNoBreak = l + new Vector2Int(nobreak.w / 2, nobreak.h / 2);
                 int semente = i + 20;
                 fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(nobreak, l.x, l.y, semente)));
                 Ronda(l + BaseDe(nobreak).frente, false);
             }
-            var torre = CarregarPixelLab("torre" + Sala.tamanho);
+            var torre = CarregarPixelLab("torre");
             var bt = BaseDe(torre);
             for (int i = 0; i < Mathf.Min(E.Torres, 4) && Cabe(LarguraNaDireita(torre)); i++)
             {
                 var l = NaParedeDireita(torre, x);
                 x += LarguraNaDireita(torre) + 2;
                 bool travado = E.Travado(i) || HdDaTorreQueimado(i);
-                var s = travado ? Travada("torre" + Sala.tamanho, false) : torre;
+                var s = travado ? Travada("torre", false) : torre;
                 if (E.ForaDaGarantia) s = Envelhecido(s);
                 int semente = i;
                 fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
@@ -490,9 +491,9 @@ namespace IdleDataCenter.Gerente
             {
                 bool queimado = i == 0 && E.DiscoQueimado;
                 MaquinaNaFileira(ComLeds("rack" + equip, queimado ? LedQuebrado : LedStorage), lugaresRacks[naPonta], "storage", "Storage", queimado);
-                if (i == 0) pontoDoStorage = lugaresRacks[naPonta] + new Vector2Int(10, 10);
+                if (i == 0) pontoDoStorage = lugaresRacks[naPonta] + new Vector2Int(20, 20);
             }
-            if (E.Nivel(Catalogo.Backup) > 0 && naPonta < lugaresRacks.Count) { pontoDaFita = lugaresRacks[naPonta] + new Vector2Int(10, 10); MaquinaNaFileira(ComLeds("rack" + equip, LedFita), lugaresRacks[naPonta++], "equipamento", "Biblioteca de fitas (backup)"); }
+            if (E.Nivel(Catalogo.Backup) > 0 && naPonta < lugaresRacks.Count) { pontoDaFita = lugaresRacks[naPonta] + new Vector2Int(20, 20); MaquinaNaFileira(ComLeds("rack" + equip, LedFita), lugaresRacks[naPonta++], "equipamento", "Biblioteca de fitas (backup)"); }
             if (naPonta > 0) lugaresRacks.RemoveRange(0, naPonta);
 
             var rackCheio = ComLeds("rack" + equip, LedRackCheio);
@@ -534,15 +535,15 @@ namespace IdleDataCenter.Gerente
             // canto do escritório (Analista) ou do NOC (SRE em diante), que já vem na ilustração
             if (cargo >= 4)
             {
-                Alvos.Add(new Alvo { Area = new RectInt(37, 148, 58, 58), Tipo = "noc", Prof = -20, Nome = "NOC" });
-                pontoDoChamado = new Vector2Int(62, 140);
+                Alvos.Add(new Alvo { Area = new RectInt(74, 296, 116, 116), Tipo = "noc", Prof = -20, Nome = "NOC" });
+                pontoDoChamado = new Vector2Int(124, 280);
             }
             else
             {
-                Alvos.Add(new Alvo { Area = new RectInt(52, 150, 75, 58), Tipo = "equipamento", Prof = -20, Nome = "Mesa do técnico" });
-                Caneca("caneca_m", new Vector2Int(112, 163));
-                BackupNaMesa(new Vector2Int(81, 179), new Vector2Int(64, 171));
-                pontoDoChamado = new Vector2Int(86, 140);
+                Alvos.Add(new Alvo { Area = new RectInt(104, 300, 150, 116), Tipo = "equipamento", Prof = -20, Nome = "Mesa do técnico" });
+                Caneca("caneca", new Vector2Int(224, 326));
+                BackupNaMesa(new Vector2Int(162, 358), new Vector2Int(128, 342));
+                pontoDoChamado = new Vector2Int(172, 280);
             }
         }
 
@@ -646,7 +647,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Uma pessoa na sala: onde está (em casas), para onde vai e o que está fazendo.</summary>
         class Trabalhador
         {
-            public string quem;                    // prefixo dos sprites ("tecnico_m")
+            public string quem;                    // prefixo dos sprites ("tecnico")
             public Color32? camisa;                // engenheiros: o técnico com outra camisa
             public Vector2 pos;
             public readonly List<Vector2> caminho = new List<Vector2>();
@@ -678,7 +679,7 @@ namespace IdleDataCenter.Gerente
             : (new Vector2(2.0f, 9.6f), "nw");   // na frente do NOC, fora das fileiras
 
         /// <summary>Velocidade de quem anda, em casas por segundo (casas menores nas salas grandes).</summary>
-        float Velocidade => E.Cargo == 0 ? 0.55f : E.Cargo == 1 ? 0.75f : 1.0f;
+        float Velocidade => E.Cargo == 0 ? 0.55f : E.Cargo == 1 ? 0.5f : E.Cargo <= 3 ? 0.6f : 0.7f;
 
         /// <summary>Ponto da tela (pixel da ilustração) para casas: o inverso de IP.</summary>
         Vector2 Grade(Vector2 p)
@@ -727,7 +728,7 @@ namespace IdleDataCenter.Gerente
             ultimoT = t;
             if (salaDasPessoas != E.Cargo) { pessoas.Clear(); salaDasPessoas = E.Cargo; }
 
-            string tecnico = "tecnico" + Sala.tamanho;
+            string tecnico = "tecnico";
             var quemTem = new List<string> { "tecnico" };
             if (E.TemEstagiario) quemTem.Add("estagiario");
             for (int i = 0; i < (E.Cargo >= 2 ? Mathf.Min(E.Cargo - 1, 3) : 0); i++) quemTem.Add("engenheiro" + i);
@@ -738,7 +739,7 @@ namespace IdleDataCenter.Gerente
                 if (!pessoas.TryGetValue(chave, out var p))
                 {
                     p = new Trabalhador { fase = (float)sorteioDasPessoas.NextDouble() };
-                    p.quem = chave == "estagiario" ? "estagiario" + Sala.tamanho : tecnico;
+                    p.quem = chave == "estagiario" ? "estagiario" : tecnico;
                     if (chave.StartsWith("engenheiro")) p.camisa = CamisasDosEngenheiros[chave[chave.Length - 1] - '0'];
                     // começa no lugar de trabalho (técnico) ou num ponto de ronda
                     if (chave == "tecnico") { p.pos = Mesa.lugar; p.olhar = Mesa.olhar; p.naMesa = true; p.paradaAte = t + 8 + (float)sorteioDasPessoas.NextDouble() * 15; }
@@ -856,7 +857,7 @@ namespace IdleDataCenter.Gerente
             {
                 // comemora a compra: pulinhos olhando para a frente
                 s = CarregarPixelLab(p.quem + "_s") ?? Pose(p.quem, "se", false, p.fase);
-                pulo = Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * (E.Cargo >= 2 ? 4f : E.Cargo == 1 ? 6f : 8f);
+                pulo = Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * 8f;
             }
             else s = Pose(p.quem, p.olhar, andando, p.fase);
             if (s == null) return;
@@ -931,10 +932,10 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.Backup: return pontoDaFita;
                 case Catalogo.HdExterno: return pontoDoHd;
                 case Catalogo.Nas: return pontoDoNas;
-                case Catalogo.RackCheio: case Catalogo.PisoElevado: return pontoDoRackCheio + new Vector2Int(10, 10);
-                case Catalogo.Hypervisor: case Catalogo.Link10G: return pontoDoHypervisor + new Vector2Int(10, 10);
-                case Catalogo.Containers: case Catalogo.ServidorCi: case Catalogo.ImagensEnxutas: case Catalogo.CacheRedis: return pontoDosContainers + new Vector2Int(10, 10);
-                case Catalogo.NoKubernetes: case Catalogo.Balanceador: case Catalogo.ServiceMesh: return pontoDosNos + new Vector2Int(10, 10);
+                case Catalogo.RackCheio: case Catalogo.PisoElevado: return pontoDoRackCheio + new Vector2Int(20, 20);
+                case Catalogo.Hypervisor: case Catalogo.Link10G: return pontoDoHypervisor + new Vector2Int(20, 20);
+                case Catalogo.Containers: case Catalogo.ServidorCi: case Catalogo.ImagensEnxutas: case Catalogo.CacheRedis: return pontoDosContainers + new Vector2Int(20, 20);
+                case Catalogo.NoKubernetes: case Catalogo.Balanceador: case Catalogo.ServiceMesh: return pontoDosNos + new Vector2Int(20, 20);
                 case Catalogo.Estagiario: return pontoDoEstagiario + new Vector2Int(0, -30);
                 default: return null;
             }
@@ -949,11 +950,11 @@ namespace IdleDataCenter.Gerente
             var centro = lugar.Value;
             for (int i = 0; i < 16; i++)
             {
-                float ang = i * 0.449f + i * i * 0.07f, raio = 4 + idade * (26 + (i % 4) * 7);
-                var p = new Vector2Int(centro.x + Mathf.RoundToInt(Mathf.Cos(ang) * raio), centro.y + Mathf.RoundToInt(Mathf.Sin(ang) * raio * 0.6f - idade * 14));
+                float ang = i * 0.449f + i * i * 0.07f, raio = (4 + idade * (26 + (i % 4) * 7)) * Sala.escala;
+                var p = new Vector2Int(centro.x + Mathf.RoundToInt(Mathf.Cos(ang) * raio), centro.y + Mathf.RoundToInt(Mathf.Sin(ang) * raio * 0.6f - idade * 14 * Sala.escala));
                 var cor = i % 3 == 0 ? IsoDesenho.C("fdf6e3") : IsoDesenho.C("ffd65c");
                 cor.a = (byte)(255 * (1 - idade / 1.2f));
-                tela.Ret(p.x, p.y, 2, 2, cor);
+                tela.Ret(p.x, p.y, 2 * Sala.escala, 2 * Sala.escala, cor);
             }
         }
 
@@ -967,16 +968,17 @@ namespace IdleDataCenter.Gerente
             {
                 "yyyyyyyyy.", "yWWWWWyyyy", "yyyyyyyyyy", "yWWWWWWWyy", "yyyyyyyyyy", "yWWWWWyyyy", "yyyyyyyyyy", "yWWWWWWWyy", "yyyyyyyyyy",
             };
-            tela.Ret(p.x - 7, p.y - 13, 14, 13, IsoDesenho.C("1b1a2e"));
+            int k = Sala.escala;   // nas salas dobradas o papel também dobra
+            tela.Ret(p.x - 7 * k, p.y - 13 * k, 14 * k, 13 * k, IsoDesenho.C("1b1a2e"));
             for (int y = 0; y < papel.Length; y++)
                 for (int x = 0; x < papel[y].Length; x++)
-                    if (papel[y][x] != '.') tela.Pixel(p.x - 6 + x, p.y - 12 + y, IsoDesenho.C(papel[y][x] == 'y' ? "fdf6e3" : "7d82ad"));
-            tela.Ret(p.x + 3, p.y - 12, 2, 2, IsoDesenho.C(Piscar() ? "ff3b4e" : "ff7a8a"));
+                    if (papel[y][x] != '.') tela.Ret(p.x + (x - 6) * k, p.y + (y - 12) * k, k, k, IsoDesenho.C(papel[y][x] == 'y' ? "fdf6e3" : "7d82ad"));
+            tela.Ret(p.x + 3 * k, p.y - 12 * k, 2 * k, 2 * k, IsoDesenho.C(Piscar() ? "ff3b4e" : "ff7a8a"));
             float resta = (float)(E.SegundosDoChamado / Catalogo.TempoParaAtender);
-            tela.Ret(p.x - 8, p.y + 2, 16, 2, IsoDesenho.C("1b1a2e"));
-            tela.Ret(p.x - 8, p.y + 2, Mathf.RoundToInt(16 * resta), 2, IsoDesenho.C(resta > 0.3f ? "ffd65c" : "ff3b4e"));
+            tela.Ret(p.x - 8 * k, p.y + 2 * k, 16 * k, 2 * k, IsoDesenho.C("1b1a2e"));
+            tela.Ret(p.x - 8 * k, p.y + 2 * k, Mathf.RoundToInt(16 * k * resta), 2 * k, IsoDesenho.C(resta > 0.3f ? "ffd65c" : "ff3b4e"));
             Chamado = p;
-            Alvos.Add(new Alvo { Area = new RectInt(p.x - 10, p.y - 16, 20, 22), Tipo = "chamado", Prof = 100, Nome = "Chamado urgente" });
+            Alvos.Add(new Alvo { Area = new RectInt(p.x - 10 * k, p.y - 16 * k, 20 * k, 22 * k), Tipo = "chamado", Prof = 100, Nome = "Chamado urgente" });
         }
     }
 }
