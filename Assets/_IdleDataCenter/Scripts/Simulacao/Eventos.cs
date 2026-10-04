@@ -16,19 +16,27 @@ namespace IdleDataCenter.Simulacao
     {
         public const string EventoCliente = "cliente", EventoAuditoria = "auditoria", EventoInternet = "internet",
                             EventoBlackFriday = "blackfriday", EventoCafeAcabou = "cafeacabou",
-                            AtaquePhishing = "phishing", AtaqueMalware = "malware", AtaqueDdos = "ddos", AtaqueRansomware = "ransomware";
+                            AtaquePhishing = "phishing", AtaqueMalware = "malware", AtaqueDdos = "ddos", AtaqueRansomware = "ransomware",
+                            EventoSsl = "ssl", EventoDns = "dns", EventoFaxineira = "faxineira", EventoRato = "rato", EventoDeploySexta = "deploysexta",
+                            EventoReuniao = "reuniao";
 
         public static readonly IReadOnlyList<EventoDef> Eventos = new[]
         {
             new EventoDef { Id = EventoCliente, Nome = "Cliente grande", CargoMinimo = 1, Duracao = 20 },
             new EventoDef { Id = EventoAuditoria, Nome = "Auditoria", CargoMinimo = 2, Duracao = 60 },
             new EventoDef { Id = EventoInternet, Nome = "Internet caiu", CargoMaximo = 2, Duracao = 60 },
-            new EventoDef { Id = EventoBlackFriday, Nome = "Black Friday", CargoMinimo = 3, Duracao = 120 },
+            new EventoDef { Id = EventoBlackFriday, Nome = "Viralizou", CargoMinimo = 3, Duracao = 120 },   // (o pico "Black Friday" é do SRE)
             new EventoDef { Id = EventoCafeAcabou, Nome = "O café acabou", Duracao = 180 },
             new EventoDef { Id = AtaquePhishing, Nome = "Phishing", Duracao = 1, Ataque = true },
             new EventoDef { Id = AtaqueMalware, Nome = "Malware", CargoMaximo = 3, Duracao = 90, Ataque = true },
             new EventoDef { Id = AtaqueRansomware, Nome = "Ransomware", CargoMinimo = 2, Duracao = 180, Ataque = true },
             new EventoDef { Id = AtaqueDdos, Nome = "DDoS", CargoMinimo = 4, Duracao = 90, Ataque = true },
+            new EventoDef { Id = EventoSsl, Nome = "SSL expirou", CargoMinimo = 1, Duracao = 120 },
+            new EventoDef { Id = EventoDns, Nome = "É sempre o DNS", CargoMinimo = 1, Duracao = 90 },
+            new EventoDef { Id = EventoFaxineira, Nome = "Rack desligado", CargoMinimo = 1, CargoMaximo = 3, Duracao = 90 },
+            new EventoDef { Id = EventoRato, Nome = "Rato no cabo", CargoMaximo = 2, Duracao = 1 },
+            new EventoDef { Id = EventoDeploySexta, Nome = "Deploy na sexta", CargoMinimo = 3, Duracao = 20 },
+            new EventoDef { Id = EventoReuniao, Nome = "Reunião", CargoMinimo = 3, Duracao = 120 },
         };
 
         public static EventoDef BuscarEvento(string id)
@@ -49,6 +57,10 @@ namespace IdleDataCenter.Simulacao
         public const double FatorMalware = 0.7, FatorDdos = 0.5, FatorDdosBloqueado = 0.85, FatorRansomware = 0.2;
         public const double SegundosDoResgate = 300;   // o resgate custa 5 minutos de receita (sem o ataque)
         public const int BackupQueRestauraRansomware = 3;   // fita (offline): restaura na hora
+        public const double FatorSslExpirado = 0.6, FatorDnsFora = 0.5, FatorRackDesligado = 0.7;
+        public const double ChanceDoDeploySextaQuebrar = 0.5, SegundosDeBonusDoDeploySexta = 60;
+        public static readonly string[] EventosQueORunbookResolve = { EventoSsl, EventoDns, EventoFaxineira, AtaqueMalware, EventoReuniao };
+        public const double SegundosDoRunbookNoEvento = 5;
     }
 
     /// <summary>
@@ -100,13 +112,16 @@ namespace IdleDataCenter.Simulacao
                     case Catalogo.AtaqueMalware: return Catalogo.FatorMalware;
                     case Catalogo.AtaqueDdos: return Estado.eventoFase == 1 ? Catalogo.FatorDdosBloqueado : Catalogo.FatorDdos;
                     case Catalogo.AtaqueRansomware: return Catalogo.FatorRansomware;
+                    case Catalogo.EventoSsl: return Catalogo.FatorSslExpirado;
+                    case Catalogo.EventoDns: return Catalogo.FatorDnsFora;
+                    case Catalogo.EventoFaxineira: return Catalogo.FatorRackDesligado;
                     default: return 1;
                 }
             }
         }
 
         /// <summary>Sem café, o técnico demora mais para consertar.</summary>
-        public double FatorConsertoDoEvento => Estado.evento == Catalogo.EventoCafeAcabou ? Catalogo.FatorConsertoSemCafe : 1;
+        public double FatorConsertoDoEvento => Estado.evento == Catalogo.EventoCafeAcabou || Estado.evento == Catalogo.EventoReuniao ? Catalogo.FatorConsertoSemCafe : 1;
 
         public double PrecoDoCafe => Math.Max(10, ReceitaPorSegundo * Catalogo.SegundosDoPrecoDoCafe);
 
@@ -127,6 +142,12 @@ namespace IdleDataCenter.Simulacao
                     case Catalogo.AtaqueMalware: return "Renda a 70% até limpar";
                     case Catalogo.AtaqueDdos: return Estado.eventoFase == 0 ? "Tráfego falso: renda pela metade" : "IPs bloqueados: " + s + " s";
                     case Catalogo.AtaqueRansomware: return "Dados criptografados: " + s + " s";
+                    case Catalogo.EventoSsl: return "Cadeado vermelho: renda a 60%";
+                    case Catalogo.EventoDns: return "Ninguém acha o site";
+                    case Catalogo.EventoFaxineira: return "Precisava ligar o aspirador";
+                    case Catalogo.EventoRato: return "Um servidor ficou sem rede";
+                    case Catalogo.EventoDeploySexta: return "Sexta, 18h. Vai arriscar?";
+                    case Catalogo.EventoReuniao: return "Time consertando 2x mais devagar";
                     default: return "";
                 }
             }
@@ -145,6 +166,11 @@ namespace IdleDataCenter.Simulacao
                     case Catalogo.AtaqueMalware: return "Limpar";
                     case Catalogo.AtaqueDdos: return Estado.eventoFase == 0 ? "Bloquear IPs" : null;
                     case Catalogo.AtaqueRansomware: return RestauraRansomware ? "Restaurar backup" : "Resgate R$ " + Formatar(PrecoDoResgate);
+                    case Catalogo.EventoSsl: return "Renovar";
+                    case Catalogo.EventoDns: return "Reiniciar o DNS";
+                    case Catalogo.EventoFaxineira: return "Religar na tomada";
+                    case Catalogo.EventoDeploySexta: return "Fazer o deploy";
+                    case Catalogo.EventoReuniao: return "Podia ser um e-mail";
                     default: return null;
                 }
             }
@@ -159,6 +185,10 @@ namespace IdleDataCenter.Simulacao
             {
                 Estado.eventoSegundos -= segundos;
                 if (Estado.eventoSegundos <= 0) FimDoTempoDoEvento();
+                // com runbooks automáticos, os problemas de rotina (SSL, DNS, rack, malware, reunião) se resolvem sozinhos
+                else if (TemAutomacao(Catalogo.Runbooks) && Evento.Duracao - Estado.eventoSegundos >= Catalogo.SegundosDoRunbookNoEvento
+                         && Array.IndexOf(Catalogo.EventosQueORunbookResolve, Estado.evento) >= 0)
+                    EncerrarEvento(0);
                 return;
             }
             if (Estado.proximoEvento < 0) Estado.proximoEvento = Catalogo.PrimeiroEvento;
@@ -192,11 +222,11 @@ namespace IdleDataCenter.Simulacao
             Estado.eventoFase = 0;
             Estado.eventoSegundos = def.Duracao;
             EventoComecou?.Invoke(def);
-            if (def.Id == Catalogo.AtaquePhishing)
+            if (def.Id == Catalogo.AtaquePhishing || def.Id == Catalogo.EventoRato)
             {
                 // trava os primeiros servidores que estiverem de pé (os que podem travar)
                 int travados = 0;
-                for (int s = 0; s < TotalServidores && travados < Catalogo.ServidoresDoPhishing; s++)
+                for (int s = 0; s < TotalServidores && travados < (def.Id == Catalogo.EventoRato ? 1 : Catalogo.ServidoresDoPhishing); s++)
                     if (!Travado(s) && (EhTorre(s) ? s : s - Torres) < Catalogo.ServidoresQueTravam) { Travar(s); travados++; }
             }
         }
@@ -213,8 +243,13 @@ namespace IdleDataCenter.Simulacao
                 case Catalogo.EventoInternet when Estado.eventoFase == 0:
                     Estado.eventoFase = 1;
                     return true;
-                case Catalogo.AtaqueMalware:
+                case Catalogo.AtaqueMalware: case Catalogo.EventoSsl: case Catalogo.EventoDns: case Catalogo.EventoFaxineira: case Catalogo.EventoReuniao:
                     EncerrarEvento(0);
+                    return true;
+                case Catalogo.EventoDeploySexta:
+                    // a aposta: às vezes dá certo e paga, às vezes quebra o deploy no fim de semana
+                    if (sorteio.NextDouble() < Catalogo.ChanceDoDeploySextaQuebrar) { if (HostsContainers > 0) QuebrarDeploy(); EncerrarEvento(0); }
+                    else EncerrarEvento(ReceitaPorSegundo * Catalogo.SegundosDeBonusDoDeploySexta);
                     return true;
                 case Catalogo.AtaqueDdos when Estado.eventoFase == 0:
                     Estado.eventoFase = 1;

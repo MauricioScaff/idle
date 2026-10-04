@@ -42,6 +42,9 @@ namespace IdleDataCenter.Simulacao
                     case Catalogo.AtaqueDdos: fora += Estado.eventoFase == 1 ? 0.15 : 0.5; break;
                     case Catalogo.AtaqueMalware: fora += 0.3; break;
                     case Catalogo.AtaqueRansomware: fora += 0.8; break;
+                    case Catalogo.EventoSsl: fora += 0.4; break;
+                    case Catalogo.EventoDns: fora += 0.5; break;
+                    case Catalogo.EventoFaxineira: fora += 0.3; break;
                 }
                 return Math.Min(1, fora);
             }

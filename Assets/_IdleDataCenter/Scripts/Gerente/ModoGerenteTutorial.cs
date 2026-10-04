@@ -56,12 +56,18 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.EventoCliente: Notificar("Um cliente grande quer pagar o dobro por 90 s! Aceite no cartão à direita, mas nada pode travar.", 7); break;
                 case Catalogo.EventoAuditoria: Notificar("Auditoria em 60 s! Deixe tudo funcionando para ganhar um bônus.", 7); break;
                 case Catalogo.EventoInternet: Notificar("A internet do bairro caiu: renda pela metade por 60 s. Ligue o 4G do celular!", 7); break;
-                case Catalogo.EventoBlackFriday: Notificar("Black Friday! Renda x1,5 por 2 minutos.", 6); break;
+                case Catalogo.EventoBlackFriday: Notificar("Um app de cliente viralizou! Renda x1,5 por 2 minutos.", 6); break;
                 case Catalogo.EventoCafeAcabou: Notificar("O café acabou e o técnico ficou lento. Compre café no cartão à direita.", 7); break;
                 case Catalogo.AtaquePhishing: Notificar((E.TemEstagiario ? "O estagiário" : "Alguém") + " clicou num link de phishing: servidores travaram! Compre segurança na loja.", 7); break;
                 case Catalogo.AtaqueMalware: Notificar("Malware na rede: renda a 70%. Clique em Limpar no cartão à direita.", 7); break;
                 case Catalogo.AtaqueDdos: Notificar("Ataque DDoS: tráfego falso derrubando a renda. Bloqueie os IPs!", 7); break;
                 case Catalogo.AtaqueRansomware: Notificar(E.RestauraRansomware ? "Ransomware criptografou os dados! Restaure do backup no cartão à direita." : "Ransomware criptografou os dados! Sem backup em fita, é pagar o resgate ou esperar.", 8); break;
+                case Catalogo.EventoSsl: Notificar("O certificado SSL expirou: o site está com cadeado vermelho e os clientes fugindo. Renove!", 7); break;
+                case Catalogo.EventoDns: Notificar("Ninguém acha o site. Não é a rede, não é o servidor... é sempre o DNS.", 7); break;
+                case Catalogo.EventoFaxineira: Notificar("A faxineira desligou o rack da tomada para ligar o aspirador. Religue!", 7); break;
+                case Catalogo.EventoRato: Notificar("Um rato roeu o cabo de rede: um servidor ficou fora do ar.", 6); break;
+                case Catalogo.EventoDeploySexta: Notificar("Sexta-feira, 18h, alguém quer subir uma versão nova. Arrisca o deploy?", 7); break;
+                case Catalogo.EventoReuniao: Notificar("O time está numa reunião que podia ser um e-mail: tudo conserta mais devagar.", 7); break;
             }
             Sons.Alerta();
         }
@@ -74,6 +80,8 @@ namespace IdleDataCenter.Gerente
                 Notificar("Algo travou: o cliente cancelou e cobrou " + Dinheiro(-valor) + " de multa.", 6);
             else if (def.Id == Catalogo.EventoCafeAcabou) Notificar("Café novo na mesa: o técnico voltou ao normal.", 4);
             else if (def.Id == Catalogo.AtaqueRansomware) Notificar(valor < 0 ? "Resgate pago: " + Dinheiro(-valor) + ". Backup em fita evita isso." : "Dados de volta: o ransomware acabou.", 6);
+            else if (def.Id == Catalogo.EventoDeploySexta)
+                Notificar(valor > 0 ? "O deploy de sexta deu certo: +" + Dinheiro(valor) + ". Desta vez." : E.DeployQuebrado ? "Deu ruim: o deploy de sexta quebrou. Rollback!" : "O deploy ficou para segunda. Sábado em paz.", 6);
             if (valor > 0) Sons.Promocao();
         }
 

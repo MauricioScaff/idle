@@ -1250,5 +1250,48 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual("99,995%", Economia.FormatarUptime(0.99995));
             Assert.AreEqual("97,3%", Economia.FormatarUptime(0.973));
         }
+
+        // ---------- Eventos de humor de TI ----------
+
+        [Test]
+        public void SslExpiradoCortaARendaAteRenovar()
+        {
+            var e = Nova();
+            e.Estado.cargo = 1;
+            e.ComecarEvento(Catalogo.EventoSsl);
+            Assert.AreEqual(Catalogo.FatorSslExpirado, e.FatorEvento, 1e-9);
+            Assert.IsTrue(e.AgirNoEvento(), "renovar");
+            Assert.IsFalse(e.TemEvento);
+        }
+
+        [Test]
+        public void DeployNaSextaAsVezesPagaAsVezesQuebra()
+        {
+            var sorte = Nova(1000);
+            sorte.Estado.cargo = 3;
+            DefinirNivel(sorte, Catalogo.Containers, 1);
+            double ganho = 0;
+            sorte.EventoTerminou += (def, valor) => ganho = valor;
+            sorte.ComecarEvento(Catalogo.EventoDeploySexta);
+            sorte.AgirNoEvento();
+            Assert.Greater(ganho, 0, "deu certo");
+            Assert.IsFalse(sorte.DeployQuebrado);
+
+            var azar = Nova(1000, sorteio: 0);
+            azar.Estado.cargo = 3;
+            DefinirNivel(azar, Catalogo.Containers, 1);
+            azar.ComecarEvento(Catalogo.EventoDeploySexta);
+            azar.AgirNoEvento();
+            Assert.IsTrue(azar.DeployQuebrado, "quebrou na sexta");
+        }
+
+        [Test]
+        public void RatoNoCaboDerrubaUmServidor()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 2);
+            e.ComecarEvento(Catalogo.EventoRato);
+            Assert.AreEqual(1, e.Travamentos.Count);
+        }
     }
 }
