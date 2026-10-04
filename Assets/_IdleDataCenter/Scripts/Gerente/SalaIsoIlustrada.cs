@@ -609,15 +609,76 @@ namespace IdleDataCenter.Gerente
                 var s = QuadroDaPessoa(estagiario, volta, true, 0.37f);
                 if (s != null) PessoaIlustrada(s, estagiario, pontoDoEstagiario, 0);
             }
+
+            if (grande) EngenheirosNosCorredores(tecnico);
         }
 
-        /// <summary>Pessoa com os pés no ponto p (sombra no chão; z levanta o corpo, para os pulos).</summary>
-        void PessoaIlustrada(SpriteIso s, string quem, Vector2Int p, float z)
+        /// <summary>Cor da camisa de cada engenheiro de campo (o técnico com outra camisa).</summary>
+        static readonly Color32[] CamisasDosEngenheiros = { new Color32(232, 140, 60, 255), new Color32(150, 110, 200, 255), new Color32(200, 70, 80, 255) };
+
+        /// <summary>
+        /// Da sala de racks em diante, engenheiros de campo andam pelos corredores entre as fileiras (um a mais por cargo,
+        /// até três). Ficam na mesma profundidade das máquinas: a fileira da frente cobre quem está atrás dela.
+        /// </summary>
+        void EngenheirosNosCorredores(string tecnico)
+        {
+            var fileiras = Fileiras;
+            var rack = CarregarPixelLab("rack" + Sala.equip);
+            float profundidade = rack != null ? (BaseDe(rack).direita.x - BaseDe(rack).frente.x) / ((Sala.fundo.x - Sala.esquerda.x) / Sala.casas) : 0.66f;
+            int n = Mathf.Min(E.Cargo - 1, 3, fileiras.Length - 1);
+            for (int i = 0; i < n; i++)
+            {
+                // meio do corredor entre a fileira i e a seguinte
+                float gy = (fileiras[i] + profundidade + fileiras[i + 1]) / 2f;
+                float gx = PosicaoAndando(InicioDaFileira + 0.2f, Sala.casas - 0.5f, 0.6f + i * 0.31f, 0.4f + i * 0.05f, out bool volta);
+                var s = QuadroDaPessoa(tecnico, volta, true, 0.6f + i);
+                if (s == null) continue;
+                PessoaIlustrada(Recolorido(s, CamisasDosEngenheiros[i]), tecnico, IP(gx, gy), 0, true);
+            }
+        }
+
+        /// <summary>
+        /// O quadro com a camisa trocada: pixels azul-esverdeados vivos do tronco (a calça jeans é mais escura e fica
+        /// mais embaixo) ganham a cor nova, mantendo o claro e o escuro de cada um.
+        /// </summary>
+        static SpriteIso Recolorido(SpriteIso o, Color32 cor)
+        {
+            string chave = "camisa|" + o.GetHashCode() + "|" + cor.r + "," + cor.g + "," + cor.b;
+            if (sprites.TryGetValue(chave, out var s)) return s;
+            int topo = 0;
+            while (topo < o.h - 1 && !LinhaTemPixel(o, topo)) topo++;
+            int pes = Pes(o), altura = pes - topo;
+            var px = (Color32[])o.px.Clone();
+            for (int y = topo + (int)(altura * 0.3f); y < topo + (int)(altura * 0.66f); y++)
+                for (int x = 0; x < o.w; x++)
+                {
+                    var c = px[y * o.w + x];
+                    if (c.a == 0) continue;
+                    Color.RGBToHSV(c, out float h, out float sat, out float v);
+                    if (h < 0.45f || h > 0.6f || sat < 0.3f || v < 0.35f) continue;
+                    float k = Mathf.Clamp(v / 0.75f, 0.4f, 1.3f);
+                    px[y * o.w + x] = new Color32((byte)Mathf.Min(255, cor.r * k), (byte)Mathf.Min(255, cor.g * k), (byte)Mathf.Min(255, cor.b * k), c.a);
+                }
+            s = new SpriteIso { px = px, w = o.w, h = o.h, frente = o.frente };
+            return sprites[chave] = s;
+        }
+
+        static bool LinhaTemPixel(SpriteIso s, int y)
+        {
+            for (int x = 0; x < s.w; x++) if (s.px[y * s.w + x].a > 0) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Pessoa com os pés no ponto p (sombra no chão; z levanta o corpo, para os pulos). Entre as máquinas (entreMaquinas)
+        /// ela entra na mesma ordem de profundidade das fileiras; senão fica por cima de tudo.
+        /// </summary>
+        void PessoaIlustrada(SpriteIso s, string quem, Vector2Int p, float z, bool entreMaquinas = false)
         {
             // os pés pela pose parada: os quadros da caminhada dividem a mesma tela, então a pessoa não pula a cada passo
             int pes = Pes(CarregarPixelLab(quem + "_se") ?? s);
             int sombra = s.w > 90 ? 9 : s.w > 60 ? 6 : 4;
-            fila.Add((10 + p.y * 0.001f, () =>
+            fila.Add((entreMaquinas ? -5 + p.y * 0.01f : 10 + p.y * 0.001f, () =>
             {
                 tela.Ret(p.x - sombra, p.y - 1, sombra * 2, 3, new Color32(20, 20, 40, 90));
                 tela.Imagem(s.px, s.w, s.h, p.x - s.w / 2, p.y - pes - Mathf.RoundToInt(z));
