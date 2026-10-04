@@ -27,6 +27,11 @@ namespace IdleDataCenter.Ferramentas
                 Salvar(sala, 1.3f, SalaIso.Vista.Sala, nome + "_sala.png");
                 if (economia.NoCampus) Salvar(sala, 1.3f, SalaIso.Vista.Campus, nome + "_campus.png");
                 if (economia.NoMundo) Salvar(sala, 1.3f, SalaIso.Vista.Mundo, nome + "_mundo.png");
+                if (economia.Cargo >= 2)
+                {
+                    Salvar(sala, 1.3f, SalaIso.Vista.Dados, nome + "_dados.png");
+                    Salvar(sala, 1.3f, SalaIso.Vista.Rede, nome + "_rede.png");
+                }
             }
         }
 

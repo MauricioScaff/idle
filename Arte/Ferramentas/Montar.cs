@@ -9,7 +9,12 @@ public static class Montar
     public const int CW = 32, CH = 16;
 
     public class Porta { public char parede; public double u0, u1; public int altura; public int moldura, painel, luz, macaneta; public bool dupla; }
-    public class Movel { public string nome; public int x, y, w, h; public char parede; public double u; public double escala; }
+    public class Movel { public string nome, origem; public int x, y, w, h; public char parede; public double u; public double escala; public int[] trocas; }   // trocas: pares de cores (de, para)
+
+    /// Uma ilustração de onde se recortam móveis: os pixels, o losango do piso (fundo, esquerda, direita) e as cores do
+    /// fundo (paredes e piso), que não fazem parte dos móveis.
+    public class Base { public string nome; public int[] px; public int w, h; public double ofx, ofy, oex, oey, odx, ody; public int[] fundo; }
+    public static readonly Dictionary<string, Base> Bases = new Dictionary<string, Base>();
 
     public class Sala
     {
@@ -20,9 +25,6 @@ public static class Montar
         public int faixa = 0, faixaSombra = 0; public double faixaAltura;
         public List<Porta> portas = new List<Porta>();
         public List<Movel> moveis = new List<Movel>();
-        // ilustração de origem (para recortar os móveis): fundo, esquerda, direita do piso e casas
-        public double ofx, ofy, oex, oey, odx, ody; public int on;
-        public int[] fundoOrig;   // cores do fundo da ilustração (paredes e piso) que não fazem parte dos móveis
         // resultado
         public int W, H, Bx, By;
     }
@@ -49,7 +51,7 @@ public static class Montar
         return unchecked((int)0xFF000000) | (r << 16) | (g << 8) | bl;
     }
 
-    public static int[] Desenhar(Sala s, int[] orig, int ow, int oh)
+    public static int[] Desenhar(Sala s)
     {
         int n = s.n;
         double w = s.espessura;
@@ -145,7 +147,7 @@ public static class Montar
             }
 
         // móveis recortados da ilustração
-        foreach (var m in s.moveis) ColarMovel(s, m, orig, ow, oh, saida, id, W, H);
+        foreach (var m in s.moveis) ColarMovel(s, m, Bases[m.origem ?? s.nome], saida, id, W, H);
         return saida;
     }
 
@@ -243,7 +245,7 @@ public static class Montar
 
     // ---------------- móveis ----------------
 
-    static double PeOrig(Sala s, char parede, double x)
+    static double PeOrig(Base s, char parede, double x)
     {
         // y do pé da parede da ilustração original na coluna x
         if (parede == 'E') return s.oey + (s.ofy - s.oey) * (x - s.oex) / (s.ofx - s.oex);
@@ -255,8 +257,9 @@ public static class Montar
         return Math.Abs(((a >> 16) & 255) - ((b >> 16) & 255)) + Math.Abs(((a >> 8) & 255) - ((b >> 8) & 255)) + Math.Abs((a & 255) - (b & 255));
     }
 
-    static void ColarMovel(Sala s, Movel m, int[] orig, int ow, int oh, int[] tela, int[] id, int W, int H)
+    static void ColarMovel(Sala s, Movel m, Base b, int[] tela, int[] id, int W, int H)
     {
+        int[] orig = b.px; int ow = b.w, oh = b.h;
         // recorte: tira o fundo da ilustração (paredes, piso e as linhas do pé das paredes) que encosta na borda do
         // retângulo; o que tem cor de fundo mas fica cercado pelo móvel (assento, tampo da mesa) continua
         var rec = new int[m.w * m.h];
@@ -267,15 +270,16 @@ public static class Montar
                 int ox = m.x + x, oy = m.y + y;
                 if (ox < 0 || oy < 0 || ox >= ow || oy >= oh) { candidato[y * m.w + x] = true; continue; }
                 int c = orig[oy * ow + ox];
+                if (m.trocas != null) for (int t = 0; t + 1 < m.trocas.Length; t += 2) if (Dist(c, m.trocas[t]) < 40) { c = m.trocas[t + 1]; break; }
                 rec[y * m.w + x] = c;
                 if (((c >> 24) & 255) < 128) { candidato[y * m.w + x] = true; continue; }
                 bool fundo = false;
-                foreach (int f in s.fundoOrig) if (Dist(c, f) < 10) { fundo = true; break; }
+                foreach (int f in b.fundo) if (Dist(c, f) < 10) { fundo = true; break; }
                 bool escura = ((c >> 16) & 255) + ((c >> 8) & 255) + (c & 255) < 60;
                 if (!fundo && escura)
                 {
-                    double pe = ox <= s.ofx ? PeOrig(s, 'E', ox) : PeOrig(s, 'D', ox);
-                    fundo = Math.Abs(oy - pe) <= 1.5 || Math.Abs(ox - s.ofx) < 1;
+                    double pe = ox <= b.ofx ? PeOrig(b, 'E', ox) : PeOrig(b, 'D', ox);
+                    fundo = Math.Abs(oy - pe) <= 1.5 || Math.Abs(ox - b.ofx) < 1;
                 }
                 candidato[y * m.w + x] = fundo;
             }
@@ -307,10 +311,10 @@ public static class Montar
 
         // ponto de referência: o pé da parede embaixo da borda esquerda do recorte (ou o canto do fundo)
         double rxo, ryo, rxn, ryn;
-        if (m.parede == 'C') { rxo = s.ofx; ryo = s.ofy; rxn = s.Bx; ryn = s.By; }
+        if (m.parede == 'C') { rxo = b.ofx; ryo = b.ofy; rxn = s.Bx; ryn = s.By; }
         else
         {
-            rxo = m.x; ryo = PeOrig(s, m.parede, m.x);
+            rxo = m.x; ryo = PeOrig(b, m.parede, m.x);
             if (m.parede == 'E') { rxn = s.Bx - CW * m.u; ryn = s.By + CH * m.u; }
             else { rxn = s.Bx + CW * m.u; ryn = s.By + CH * m.u; }
         }

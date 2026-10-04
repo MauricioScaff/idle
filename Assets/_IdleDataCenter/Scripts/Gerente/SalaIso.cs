@@ -170,15 +170,17 @@ namespace IdleDataCenter.Gerente
 
         // ---------------- Desenho ----------------
 
-        public enum Vista { Sala, Campus, Mundo }
+        public enum Vista { Sala, Campus, Mundo, Dados, Rede }
 
-        /// <param name="vista">Sala (dentro do DC-01), Campus (Arquiteto em diante) ou Mundo (CTO).</param>
+        /// <param name="vista">Sala (dentro do DC-01), Campus (Arquiteto em diante), Mundo (CTO) ou uma das áreas atrás das
+        /// portas (Dados, Rede: da sala de racks em diante).</param>
         public void Desenhar(float tempo, Vista vista = Vista.Sala)
         {
             t = tempo;
             Alvos.Clear(); Placas.Clear(); fila.Clear();
-            Marcador = null; Expansao = null; Chamado = null;
+            Marcador = null; Expansao = null; Chamado = null; ItemDoMarcador = null;
             if (vista == Vista.Mundo) { DesenharMundo(); return; }
+            if (vista == Vista.Dados || vista == Vista.Rede) { DesenharArea(vista); return; }
             if (vista == Vista.Campus)
             {
                 if (cargoDosPersonagens != E.Cargo) CarregarPersonagens();

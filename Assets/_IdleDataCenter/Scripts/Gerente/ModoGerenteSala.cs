@@ -15,9 +15,12 @@ namespace IdleDataCenter.Gerente
         /// <summary>Vista escolhida; se ainda não existe no cargo, cai para a próxima mais de perto.</summary>
         SalaIso.Vista vistaEscolhida = SalaIso.Vista.Mundo;
         SalaIso.Vista VistaAtual =>
-            vistaEscolhida == SalaIso.Vista.Mundo && E.NoMundo ? SalaIso.Vista.Mundo
+            (vistaEscolhida == SalaIso.Vista.Dados || vistaEscolhida == SalaIso.Vista.Rede) && E.Cargo >= 2 ? vistaEscolhida
+            : vistaEscolhida == SalaIso.Vista.Mundo && E.NoMundo ? SalaIso.Vista.Mundo
             : vistaEscolhida != SalaIso.Vista.Sala && E.NoCampus ? SalaIso.Vista.Campus : SalaIso.Vista.Sala;
         bool MostrandoCampus => VistaAtual == SalaIso.Vista.Campus;
+        /// <summary>Dentro de uma das áreas atrás das portas (dados e backup, rede e segurança).</summary>
+        bool EmArea => VistaAtual == SalaIso.Vista.Dados || VistaAtual == SalaIso.Vista.Rede;
 
         static readonly Color Ouro = IsoGui.Cor("ffd65c"), Vermelho = IsoGui.Cor("ff5a6a"), Energia = IsoGui.Cor("ffbf3f"), Frio = IsoGui.Cor("5aa9ff");
 
@@ -89,7 +92,7 @@ namespace IdleDataCenter.Gerente
             // Pixel-perfect: a interface inteira é escalada para caber na janela (fator quebrado, ex. 1,15), então o zoom
             // da sala é escolhido em pixels de TELA (inteiro) e a textura é desenhada fora da matriz do GUI.
             // Assim cada pixel da arte vira sempre o mesmo quadrado na tela, sem pixels de tamanhos diferentes.
-            var area = VistaAtual == SalaIso.Vista.Sala ? salaIso.AreaDaSala : new RectInt(0, 0, salaIso.Largura, salaIso.Altura);
+            var area = VistaAtual == SalaIso.Vista.Sala || EmArea ? salaIso.AreaDaSala : new RectInt(0, 0, salaIso.Largura, salaIso.Altura);
             var matriz = GUI.matrix;
             float escalaGui = matriz.m00;
             int zoomTela = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(areaSala.width * escalaGui / area.width, areaSala.height * escalaGui / area.height)));
@@ -137,8 +140,15 @@ namespace IdleDataCenter.Gerente
                 if (ui.Botao(new Rect(pos.x - largura / 2, pos.y - 30, largura, 28), p.Nome, cor, Livre)) Abrir(p.Setor);
             }
 
-            // marcador de construção: compra o equipamento principal do cargo
-            string item = ItemPrincipal();
+            // nas áreas: o nome da área e o caminho de volta
+            if (EmArea)
+            {
+                ui.Texto(VistaAtual == SalaIso.Vista.Dados ? "Dados e backup" : "Rede e segurança", areaSala.x + 12, areaSala.y + 12, IsoGui.Cyan, 3);
+                if (ui.Botao(new Rect(areaSala.x + 12, areaSala.y + 44, 200, 36), "< Voltar", IsoGui.Borda, Livre)) vistaEscolhida = SalaIso.Vista.Sala;
+            }
+
+            // marcador de construção: compra o equipamento principal do cargo (ou, numa área, o próximo dela)
+            string item = salaIso.ItemDoMarcador ?? ItemPrincipal();
             if (salaIso.Marcador.HasValue && !E.NoMaximo(item))
             {
                 var pos = NaTela(salaIso.Marcador.Value);
@@ -264,6 +274,10 @@ namespace IdleDataCenter.Gerente
                 if (E.DatacenterSemEnergia == dc) { faixa.Religar(); Flutuar("Energia de volta", pos, IsoGui.Verde); return; }
             }
             else if (tipo == "chamado") { AtenderChamado(pos); return; }
+            else if (tipo == "porta:dados") { vistaEscolhida = SalaIso.Vista.Dados; Sons.Tique(); Notificar("Dados e backup: storage, fitas e o DR. A porta ou o VOLTAR leva de volta para a sala."); return; }
+            else if (tipo == "porta:rede") { vistaEscolhida = SalaIso.Vista.Rede; Sons.Tique(); Notificar("Rede e segurança: links, segurança e o SOC. A porta ou o VOLTAR leva de volta para a sala."); return; }
+            else if (tipo == "porta:sala") { vistaEscolhida = SalaIso.Vista.Sala; Sons.Tique(); return; }
+            else if (tipo.StartsWith("loja:")) { Abrir(tipo.Substring(5)); return; }
 
             double valor = E.ClicarEquipamento();
             Sons.Moeda();

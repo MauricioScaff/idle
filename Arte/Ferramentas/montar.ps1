@@ -8,10 +8,14 @@ $arte = "$PSScriptRoot\..\..\Assets\_IdleDataCenter\Resources\Arte"
 $destSalas = if ($saida) { $saida } else { "$arte\Salas" }
 $destPl = if ($saida) { $saida } else { "$arte\PixelLab" }
 
-foreach ($s in [Salas]::Todas()) {
+foreach ($b in [Salas]::Bases()) {
   $w = 0; $h = 0
-  $orig = [Dobrar]::Ler("$base\$($s.nome).png", [ref]$w, [ref]$h)
-  $px = [Montar]::Desenhar($s, $orig, $w, $h)
+  $b.px = [Dobrar]::Ler("$base\$($b.nome).png", [ref]$w, [ref]$h)
+  $b.w = $w; $b.h = $h
+  [Montar]::Bases[$b.nome] = $b
+}
+foreach ($s in [Salas]::Todas()) {
+  $px = [Montar]::Desenhar($s)
   [Dobrar]::Gravar("$destSalas\$($s.nome)_hd.png", $px, $s.W, $s.H)
   $n = $s.n; $bx = $s.Bx; $by = $s.By
   "{0}: {1}x{2} fundo=({3},{4}) esquerda=({5},{6}) direita=({7},{8}) casas={9}" -f $s.nome, $s.W, $s.H, $bx, $by, ($bx - 32 * $n), ($by + 16 * $n), ($bx + 32 * $n), ($by + 16 * $n), $n

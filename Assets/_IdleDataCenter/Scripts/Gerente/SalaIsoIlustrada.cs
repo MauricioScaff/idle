@@ -41,13 +41,21 @@ namespace IdleDataCenter.Gerente
             new Ilustracao { nome = "dc_hd", equip = "_g", escala = 2, fundo = new Vector2(400, 150), esquerda = new Vector2(16, 342), direita = new Vector2(784, 342), casas = 12 },
         };
 
+        /// <summary>As áreas atrás das portas (Analista em diante): dados e backup, rede e segurança.</summary>
+        static readonly Ilustracao AreaDados = new Ilustracao { nome = "dados_hd", equip = "_g", escala = 2, fundo = new Vector2(242, 144), esquerda = new Vector2(18, 256), direita = new Vector2(466, 256), casas = 7 };
+        static readonly Ilustracao AreaRede = new Ilustracao { nome = "rede_hd", equip = "_g", escala = 2, fundo = new Vector2(240, 142), esquerda = new Vector2(16, 254), direita = new Vector2(464, 254), casas = 7 };
+
         PixelCanvas telaIlustrada;
         IsoDesenho dIlustrada;
         SpriteIso fundoIlustrado;
-        int cargoIlustrado = -1;
+        string salaMontada;
+        Ilustracao areaAtual;   // null: a sala do cargo
 
         bool TemIlustracao => true;
-        Ilustracao Sala => Ilustracoes[Mathf.Min(E.Cargo, Ilustracoes.Length - 1)];
+        Ilustracao Sala => areaAtual ?? Ilustracoes[Mathf.Min(E.Cargo, Ilustracoes.Length - 1)];
+
+        /// <summary>O que o marcador "+ ..." compra nesta vista (null: o equipamento principal do cargo).</summary>
+        public string ItemDoMarcador { get; private set; }
 
         /// <summary>Ponto do piso: gx corre ao longo da parede da direita, gy ao longo da da esquerda (em casas).</summary>
         Vector2Int IP(float gx, float gy, float z = 0)
@@ -177,7 +185,7 @@ namespace IdleDataCenter.Gerente
 
         void MontarIlustrada()
         {
-            cargoIlustrado = E.Cargo;
+            salaMontada = Sala.nome;
             var tex = ArteGerada.Textura("Salas/" + Sala.nome);
             fundoIlustrado = Preparar(ArteGerada.PixelsDeCimaParaBaixo(tex), tex.width, tex.height);
             telaIlustrada = new PixelCanvas(tex.width, tex.height);
@@ -188,7 +196,21 @@ namespace IdleDataCenter.Gerente
 
         void DesenharIlustrada()
         {
-            if (telaIlustrada == null || cargoIlustrado != E.Cargo) MontarIlustrada();
+            areaAtual = null;
+            DesenharCena(() => { if (E.Cargo == 0) ArmarioIlustrado(); else if (E.Cargo == 1) SalinhaIlustrada(); else SalaGrandeIlustrada(); });
+        }
+
+        /// <summary>Uma das áreas atrás das portas (só existem da sala de racks em diante).</summary>
+        void DesenharArea(Vista vista)
+        {
+            areaAtual = vista == Vista.Dados ? AreaDados : AreaRede;
+            DesenharCena(vista == Vista.Dados ? (System.Action)SalaDeDados : SalaDeRede);
+        }
+
+        void DesenharCena(System.Action conteudo)
+        {
+            ItemDoMarcador = null;
+            if (telaIlustrada == null || salaMontada != Sala.nome) MontarIlustrada();
             tela = telaIlustrada; d = dIlustrada;
             desenhandoArte = true;
             tela.Limpar(new Color32(0, 0, 0, 0));
@@ -196,7 +218,7 @@ namespace IdleDataCenter.Gerente
 
             tecnicoConsertando = false;
             pontosDeRonda.Clear();
-            if (E.Cargo == 0) ArmarioIlustrado(); else if (E.Cargo == 1) SalinhaIlustrada(); else SalaGrandeIlustrada();
+            conteudo();
             PessoasIlustradas();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
             foreach (var (_, desenhar) in fila) desenhar();
@@ -485,16 +507,8 @@ namespace IdleDataCenter.Gerente
             if (cargo == 2) while (f < fileiras.Length) lugaresRacks.AddRange(Fileira());
             string principal = cargo == 2 ? Catalogo.RackCheio : cargo == 3 ? Catalogo.Containers : Catalogo.NoKubernetes;
 
-            // na ponta da primeira fileira: o storage (LEDs brancos; vermelho com disco queimado) e a biblioteca de fitas (rosa)
-            int naPonta = 0;
-            for (int i = 0; i < Mathf.Min(3, E.NivelStorage) && naPonta < lugaresRacks.Count; i++, naPonta++)
-            {
-                bool queimado = i == 0 && E.DiscoQueimado;
-                MaquinaNaFileira(ComLeds("rack" + equip, queimado ? LedQuebrado : LedStorage), lugaresRacks[naPonta], "storage", "Storage", queimado);
-                if (i == 0) pontoDoStorage = lugaresRacks[naPonta] + new Vector2Int(20, 20);
-            }
-            if (E.Nivel(Catalogo.Backup) > 0 && naPonta < lugaresRacks.Count) { pontoDaFita = lugaresRacks[naPonta] + new Vector2Int(20, 20); MaquinaNaFileira(ComLeds("rack" + equip, LedFita), lugaresRacks[naPonta++], "equipamento", "Biblioteca de fitas (backup)"); }
-            if (naPonta > 0) lugaresRacks.RemoveRange(0, naPonta);
+            // portas das áreas: dados e backup (direita) e rede e segurança (esquerda)
+            PortasDasAreas();
 
             var rackCheio = ComLeds("rack" + equip, LedRackCheio);
             for (int i = 0; i < Mathf.Min(lugaresRacks.Count, E.RacksCheios); i++) MaquinaNaFileira(rackCheio, lugaresRacks[i], "equipamento", "Rack cheio");
@@ -661,7 +675,7 @@ namespace IdleDataCenter.Gerente
 
         readonly Dictionary<string, Trabalhador> pessoas = new Dictionary<string, Trabalhador>();
         readonly System.Random sorteioDasPessoas = new System.Random();
-        int salaDasPessoas = -1;
+        string salaDasPessoas;
         float ultimoT = -1;
 
         /// <summary>Lugares de ronda montados no desenho: onde ficar (em casas) e para onde olhar.</summary>
@@ -707,7 +721,7 @@ namespace IdleDataCenter.Gerente
         void Rota(Trabalhador p, Vector2 destino)
         {
             p.caminho.Clear();
-            if (E.Cargo >= 2)
+            if (areaAtual == null && E.Cargo >= 2)
             {
                 // salas grandes: troca de corredor pelo corredor ao lado das fileiras
                 float lateral = InicioDaFileira - 0.6f;
@@ -716,7 +730,7 @@ namespace IdleDataCenter.Gerente
             else
             {
                 // salas pequenas: pela passagem da frente
-                float frente = E.Cargo == 0 ? 2.9f : 2.7f;
+                float frente = E.Cargo == 0 ? 2.9f : areaAtual != null ? 2.6f : 2.7f;
                 if (Mathf.Abs(p.pos.x - destino.x) > 0.05f) { p.caminho.Add(new Vector2(p.pos.x, frente)); p.caminho.Add(new Vector2(destino.x, frente)); }
             }
             p.caminho.Add(destino);
@@ -726,12 +740,17 @@ namespace IdleDataCenter.Gerente
         {
             float dt = ultimoT < 0 ? 0 : Mathf.Clamp(t - ultimoT, 0, 0.5f);
             ultimoT = t;
-            if (salaDasPessoas != E.Cargo) { pessoas.Clear(); salaDasPessoas = E.Cargo; }
+            if (salaDasPessoas != Sala.nome) { pessoas.Clear(); salaDasPessoas = Sala.nome; }
 
             string tecnico = "tecnico";
-            var quemTem = new List<string> { "tecnico" };
-            if (E.TemEstagiario) quemTem.Add("estagiario");
-            for (int i = 0; i < (E.Cargo >= 2 ? Mathf.Min(E.Cargo - 1, 3) : 0); i++) quemTem.Add("engenheiro" + i);
+            var quemTem = new List<string>();
+            if (areaAtual != null) quemTem.Add("engenheiro0");   // nas áreas, um engenheiro fazendo a ronda
+            else
+            {
+                quemTem.Add("tecnico");
+                if (E.TemEstagiario) quemTem.Add("estagiario");
+                for (int i = 0; i < (E.Cargo >= 2 ? Mathf.Min(E.Cargo - 1, 3) : 0); i++) quemTem.Add("engenheiro" + i);
+            }
             foreach (var chave in new List<string>(pessoas.Keys)) if (!quemTem.Contains(chave)) pessoas.Remove(chave);
 
             foreach (var chave in quemTem)
@@ -748,7 +767,7 @@ namespace IdleDataCenter.Gerente
                         var r = pontosDeRonda[sorteioDasPessoas.Next(pontosDeRonda.Count)];
                         p.pos = r.lugar; p.olhar = r.olhar; p.paradaAte = t + 2 + (float)sorteioDasPessoas.NextDouble() * 4;
                     }
-                    else p.pos = Mesa.lugar + new Vector2(0.8f, 0.8f);
+                    else p.pos = areaAtual != null ? new Vector2(Sala.casas / 2f, Sala.casas / 2f) : Mesa.lugar + new Vector2(0.8f, 0.8f);
                     pessoas[chave] = p;
                 }
                 if (chave == "tecnico") PensarTecnico(p); else PensarRonda(p);
@@ -862,7 +881,7 @@ namespace IdleDataCenter.Gerente
             else s = Pose(p.quem, p.olhar, andando, p.fase);
             if (s == null) return;
             if (p.camisa.HasValue) s = Recolorido(s, p.camisa.Value);
-            PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, E.Cargo >= 2);
+            PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, areaAtual == null && E.Cargo >= 2);
         }
 
         /// <summary>Cor da camisa de cada engenheiro de campo (o técnico com outra camisa).</summary>
