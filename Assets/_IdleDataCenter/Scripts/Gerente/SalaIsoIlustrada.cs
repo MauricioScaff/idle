@@ -178,6 +178,7 @@ namespace IdleDataCenter.Gerente
             foreach (var (_, desenhar) in fila) desenhar();
             FaiscasDaCompraIlustrada();
             ChamadoIlustrado();
+            DesenharDestaque();
             tela.Aplicar();
         }
 
@@ -206,7 +207,7 @@ namespace IdleDataCenter.Gerente
                 var s = travado ? Travada(nome, true) : torre;
                 int semente = i;
                 fila.Add((-i * 0.01f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));   // a da frente cobre a de trás
-                Alvos.Add(new Alvo { Area = new RectInt(l.x + b.esquerda.x - 2, l.y + 4, b.direita.x - b.esquerda.x + 4, b.frente.y - 4), Tipo = "servidor:" + i });
+                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = "servidor:" + i, Px = s.px, Prof = -i * 0.01f });
                 if (travado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente);
             }
             if (E.Torres > vagas)
@@ -255,7 +256,7 @@ namespace IdleDataCenter.Gerente
             if (caneca == null) return;
             int x = base_.x - caneca.w / 2, y = base_.y - caneca.h;
             fila.Add((1, () => DesenharSprite(caneca, x, y)));
-            Alvos.Add(new Alvo { Area = new RectInt(x - 3, y - 3, caneca.w + 6, caneca.h + 6), Tipo = "cafe" });
+            Alvos.Add(new Alvo { Area = new RectInt(x, y, caneca.w, caneca.h), Tipo = "cafe", Px = caneca.px, Prof = 1 });
         }
 
         // ---------------- Armário (Técnico) ----------------
@@ -263,7 +264,7 @@ namespace IdleDataCenter.Gerente
         void ArmarioIlustrado()
         {
             TorresNaParede(61, 7, true);
-            Alvos.Add(new Alvo { Area = new RectInt(244, 128, 90, 108), Tipo = "equipamento" });   // mesa da ilustração
+            Alvos.Add(new Alvo { Area = new RectInt(244, 128, 90, 108), Tipo = "equipamento", Prof = -20 });   // mesa da ilustração (atrás de tudo que fica em cima dela)
             Caneca("caneca", new Vector2Int(308, 176));
             pontoDoVentilador = new Vector2Int(318, 112);
             var ventilador = CarregarPixelLab("ventilador");
@@ -304,7 +305,7 @@ namespace IdleDataCenter.Gerente
             if (ar != null && E.Nivel(Catalogo.ArCondicionado) > 0)
                 fila.Add((1, () => DesenharSprite(ar, pontoDoAr.x - ar.w / 2, pontoDoAr.y - ar.h / 2)));
 
-            Alvos.Add(new Alvo { Area = new RectInt(270, 140, 80, 85), Tipo = "equipamento" });   // mesa da ilustração
+            Alvos.Add(new Alvo { Area = new RectInt(270, 140, 80, 85), Tipo = "equipamento", Prof = -20 });   // mesa da ilustração (atrás de tudo que fica em cima dela)
             Caneca("caneca_p", new Vector2Int(338, 180));
             pontoDoChamado = new Vector2Int(302, 124);
         }
@@ -334,7 +335,7 @@ namespace IdleDataCenter.Gerente
                 bool quebrado = travado && i == 0;
                 var s = quebrado ? Travada(nome, true) : rack;
                 fila.Add((-1.5f + i * 0.01f, () => DesenharRack(s, l, cheio, !quebrado)));
-                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack" });
+                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack", Px = s.px, Prof = -1.5f + i * 0.01f });
                 if (quebrado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente);
             }
             if (E.ServidoresRack > maximo * vagas)
@@ -411,7 +412,7 @@ namespace IdleDataCenter.Gerente
                 var s = quebrado ? Travada("rack" + equip, false) : rack;
                 float prof = -8 + l.x * 0.001f;
                 fila.Add((prof, () => DesenharRack(s, l, cheio, !quebrado)));
-                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack" });
+                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack", Px = s.px, Prof = prof });
                 if (quebrado) Quebrado(l + new Vector2Int(BaseDe(rack).frente.x, 0), l + BaseDe(rack).frente);
                 if (i == 0) pontoDoRack = l + new Vector2Int(rack.w / 2, rack.h / 2);
             }
@@ -434,7 +435,7 @@ namespace IdleDataCenter.Gerente
                 var s = travado ? Travada("torre" + Sala.tamanho, false) : torre;
                 int semente = i;
                 fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
-                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, torre.w, torre.h), Tipo = "servidor:" + i });
+                Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, torre.w, torre.h), Tipo = "servidor:" + i, Px = s.px, Prof = -8 + l.x * 0.001f });
                 if (travado) Quebrado(l + new Vector2Int(bt.frente.x, 0), l + bt.frente);
                 pontoDaTorre = l + new Vector2Int(torre.w / 2, torre.h / 2);
             }
@@ -486,12 +487,12 @@ namespace IdleDataCenter.Gerente
             // canto do escritório (Analista) ou do NOC (SRE em diante), que já vem na ilustração
             if (cargo >= 4)
             {
-                Alvos.Add(new Alvo { Area = new RectInt(37, 148, 58, 58), Tipo = "noc" });
+                Alvos.Add(new Alvo { Area = new RectInt(37, 148, 58, 58), Tipo = "noc", Prof = -20 });
                 pontoDoChamado = new Vector2Int(62, 140);
             }
             else
             {
-                Alvos.Add(new Alvo { Area = new RectInt(52, 150, 75, 58), Tipo = "equipamento" });
+                Alvos.Add(new Alvo { Area = new RectInt(52, 150, 75, 58), Tipo = "equipamento", Prof = -20 });
                 Caneca("caneca_m", new Vector2Int(112, 163));
                 pontoDoChamado = new Vector2Int(86, 140);
             }
@@ -516,8 +517,9 @@ namespace IdleDataCenter.Gerente
         /// <summary>Uma máquina numa fileira (profundidade pela linha da tela: quem está mais embaixo fica na frente).</summary>
         void MaquinaNaFileira(SpriteIso s, Vector2Int l, string clique, bool quebrado = false)
         {
-            fila.Add((-5 + (l.y + s.h) * 0.01f + l.x * 0.0001f, () => DesenharRack(s, l, 1, !quebrado)));
-            Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = clique });
+            float prof = -5 + (l.y + s.h) * 0.01f + l.x * 0.0001f;
+            fila.Add((prof, () => DesenharRack(s, l, 1, !quebrado)));
+            Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = clique, Px = s.px, Prof = prof });
             if (quebrado) Quebrado(l + new Vector2Int(BaseDe(s).frente.x, 0), l + BaseDe(s).frente);
         }
 
@@ -679,7 +681,7 @@ namespace IdleDataCenter.Gerente
             tela.Ret(p.x - 8, p.y + 2, 16, 2, IsoDesenho.C("1b1a2e"));
             tela.Ret(p.x - 8, p.y + 2, Mathf.RoundToInt(16 * resta), 2, IsoDesenho.C(resta > 0.3f ? "ffd65c" : "ff3b4e"));
             Chamado = p;
-            Alvos.Add(new Alvo { Area = new RectInt(p.x - 10, p.y - 16, 20, 22), Tipo = "chamado" });
+            Alvos.Add(new Alvo { Area = new RectInt(p.x - 10, p.y - 16, 20, 22), Tipo = "chamado", Prof = 100 });
         }
     }
 }

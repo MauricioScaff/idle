@@ -11,7 +11,7 @@ namespace IdleDataCenter.Gerente
         SalaIso salaIso;
         float proximoQuadroSala, proximaRenda;
         Rect retSala;
-        int zoomSala = 2;
+        float zoomSala = 2;   // pixels do GUI por pixel da arte (na tela é sempre um número inteiro)
         /// <summary>Vista escolhida; se ainda não existe no cargo, cai para a próxima mais de perto.</summary>
         SalaIso.Vista vistaEscolhida = SalaIso.Vista.Mundo;
         SalaIso.Vista VistaAtual =>
@@ -68,27 +68,42 @@ namespace IdleDataCenter.Gerente
         void DesenharSala()
         {
             if (salaIso == null || salaIso.Textura == null) AtualizarSala();
-            // zoom inteiro pelo tamanho da sala de verdade (não da tela toda): salas pequenas ficam bem perto
+            // Pixel-perfect: a interface inteira é escalada para caber na janela (fator quebrado, ex. 1,15), então o zoom
+            // da sala é escolhido em pixels de TELA (inteiro) e a textura é desenhada fora da matriz do GUI.
+            // Assim cada pixel da arte vira sempre o mesmo quadrado na tela, sem pixels de tamanhos diferentes.
             var area = VistaAtual == SalaIso.Vista.Sala ? salaIso.AreaDaSala : new RectInt(0, 0, salaIso.Largura, salaIso.Altura);
-            zoomSala = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(areaSala.width / area.width, areaSala.height / area.height)));
-            float ox = Mathf.Round(areaSala.center.x - (area.x + area.width / 2f) * zoomSala);
-            float oy = Mathf.Round(areaSala.center.y - (area.y + area.height / 2f) * zoomSala);
-            retSala = new Rect(ox, oy, salaIso.Largura * zoomSala, salaIso.Altura * zoomSala);
-            GUI.DrawTexture(retSala, salaIso.Textura, ScaleMode.StretchToFill);
+            var matriz = GUI.matrix;
+            float escalaGui = matriz.m00;
+            int zoomTela = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(areaSala.width * escalaGui / area.width, areaSala.height * escalaGui / area.height)));
+            zoomSala = zoomTela / escalaGui;
+            Vector3 centro = matriz.MultiplyPoint3x4(new Vector3(areaSala.center.x, areaSala.center.y, 0));
+            float sx = Mathf.Round(centro.x - (area.x + area.width / 2f) * zoomTela), sy = Mathf.Round(centro.y - (area.y + area.height / 2f) * zoomTela);
+            GUI.matrix = Matrix4x4.identity;
+            GUI.DrawTexture(new Rect(sx, sy, salaIso.Largura * zoomTela, salaIso.Altura * zoomTela), salaIso.Textura, ScaleMode.StretchToFill);
+            GUI.matrix = matriz;
+            // o mesmo retângulo nas coordenadas do GUI (para cliques, placas e efeitos)
+            var inv = matriz.inverse;
+            Vector3 canto = inv.MultiplyPoint3x4(new Vector3(sx, sy, 0));
+            retSala = new Rect(canto.x, canto.y, salaIso.Largura * zoomSala, salaIso.Altura * zoomSala);
 
             Vida();
 
-            // equipamentos clicáveis (destaque sob o cursor)
+            // equipamentos clicáveis: só o que está sob o cursor (pelo desenho do objeto, o da frente ganha). Objetos com
+            // pixels ganham um contorno no próprio desenho; os outros, o retângulo
             var mouse = Event.current.mousePosition;
-            foreach (var alvo in salaIso.Alvos)
+            int sob = Livre && retSala.Contains(mouse) ? salaIso.AlvoEm((mouse - retSala.position) / zoomSala) : -1;
+            salaIso.DestaqueTipo = null;
+            if (sob >= 0)
             {
+                var alvo = salaIso.Alvos[sob];
                 var r = NaTela(alvo.Area);
-                if (Livre && r.Contains(mouse))
+                if (alvo.Px != null) { salaIso.DestaqueTipo = alvo.Tipo; salaIso.DestaquePos = alvo.Area.position; }
+                else
                 {
                     ui.Ret(new Rect(r.x, r.y, r.width, 2), IsoGui.Cyan); ui.Ret(new Rect(r.x, r.yMax - 2, r.width, 2), IsoGui.Cyan);
                     ui.Ret(new Rect(r.x, r.y, 2, r.height), IsoGui.Cyan); ui.Ret(new Rect(r.xMax - 2, r.y, 2, r.height), IsoGui.Cyan);
                 }
-                if (Livre && GUI.Button(r, GUIContent.none, GUIStyle.none)) ClicarNaSala(alvo.Tipo, new Vector2(r.center.x, r.y));
+                if (GUI.Button(new Rect(mouse.x - 1, mouse.y - 1, 2, 2), GUIContent.none, GUIStyle.none)) ClicarNaSala(alvo.Tipo, new Vector2(r.center.x, r.y));
             }
 
             // placas dos setores: abrem a loja na aba do setor

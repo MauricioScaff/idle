@@ -35,7 +35,52 @@ namespace IdleDataCenter.Gerente
             }
         }
 
-        public struct Alvo { public RectInt Area; public string Tipo; }
+        /// <summary>
+        /// Algo clicável na sala. Com Px (os pixels do objeto, do tamanho de Area), o clique e o destaque seguem o desenho
+        /// dele e não o retângulo; Prof decide quem está na frente quando dois se sobrepõem.
+        /// </summary>
+        public struct Alvo { public RectInt Area; public string Tipo; public Color32[] Px; public float Prof; }
+
+        /// <summary>
+        /// O alvo sob um ponto da tela da sala (pixels do canvas), ou -1. Objetos com pixels só contam onde têm pixel
+        /// opaco; entre os que acertam, ganha o da frente (maior Prof).
+        /// </summary>
+        public int AlvoEm(Vector2 p)
+        {
+            int px = Mathf.FloorToInt(p.x), py = Mathf.FloorToInt(p.y), melhor = -1;
+            float prof = float.MinValue;
+            for (int i = 0; i < Alvos.Count; i++)
+            {
+                var a = Alvos[i];
+                int x = px - a.Area.x, y = py - a.Area.y;
+                if (x < 0 || y < 0 || x >= a.Area.width || y >= a.Area.height) continue;
+                if (a.Px != null && a.Px[y * a.Area.width + x].a == 0) continue;
+                if (melhor < 0 || a.Prof > prof) { melhor = i; prof = a.Prof; }
+            }
+            return melhor;
+        }
+
+        /// <summary>O alvo sob o cursor: no próximo desenho ganha um contorno em volta do próprio desenho.</summary>
+        public string DestaqueTipo;
+        public Vector2Int DestaquePos;
+
+        /// <summary>Contorno ciano de 1 pixel por fora do desenho do alvo em destaque (só alvos com pixels).</summary>
+        void DesenharDestaque()
+        {
+            if (DestaqueTipo == null) return;
+            foreach (var a in Alvos)
+            {
+                if (a.Px == null || a.Tipo != DestaqueTipo || a.Area.position != DestaquePos) continue;
+                var cor = IsoDesenho.C("41d7f5");
+                int w = a.Area.width, h = a.Area.height;
+                bool Opaco(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && a.Px[y * w + x].a > 0;
+                for (int y = -1; y <= h; y++)
+                    for (int x = -1; x <= w; x++)
+                        if (!Opaco(x, y) && (Opaco(x - 1, y) || Opaco(x + 1, y) || Opaco(x, y - 1) || Opaco(x, y + 1)))
+                            tela.Pixel(a.Area.x + x, a.Area.y + y, cor);
+                return;
+            }
+        }
         public struct Placa { public string Setor, Nome; public Vector2Int Pos; public Color Cor; }
 
         readonly Economia E;
