@@ -75,6 +75,7 @@ namespace IdleDataCenter.Gerente
             "Melhorias", "Tudo o que dá para comprar, de todos os setores",
             "Carreira", "Metas para a próxima promoção",
             "Prestigio", "Certificações: bônus que passam de uma empresa para a outra",
+            "Conquistas", "Cada uma dá +1% de renda, para sempre",
             "Vender", "A empresa é vendida e uma nova começa",
             "Campus", "Prédios novos, fibra entre eles, CDN e geradores",
             "Mundo", "Regiões, cabos submarinos, energia verde e nuvem de IA",
@@ -88,7 +89,7 @@ namespace IdleDataCenter.Gerente
 
         /// <summary>As abas da LOJA: um setor por aba (as que o cargo ainda não tem ficam de fora) e "Tudo" no fim.</summary>
         static readonly string[] AbasDaLoja = { "Compute", "Energia", "Refrigeracao", "Storage", "Seguranca", "Rede", "NOC", "Equipe", "Campus", "Mundo", "Melhorias" };
-        static readonly string[] AbasDaCarreira = { "Carreira", "Prestigio" };
+        static readonly string[] AbasDaCarreira = { "Carreira", "Conquistas", "Prestigio" };
         string ultimaAbaLoja = "Compute";
 
         static string NomeDaAba(string id)
@@ -132,6 +133,7 @@ namespace IdleDataCenter.Gerente
             var conteudo = new Rect(modal.x, modal.y + 34, modal.width, modal.height - 34);   // o que antes começava logo abaixo do título
 
             if (janela == "Carreira") { Carreira(conteudo); return; }
+            if (janela == "Conquistas") { TelaConquistas(conteudo); return; }
             if (janela == "Prestigio") { TelaPrestigio(conteudo); return; }
             if (janela == "Vender") { TelaVender(conteudo); return; }
             if (janela == "NOC") NocAcoes(conteudo);

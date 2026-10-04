@@ -11,6 +11,7 @@ namespace IdleDataCenter.Gerente
     {
         float festaDesde = -10;
         string festaCargo = "", festaTitulo = "Promovido!", festaTexto = "";
+        int conquistasJuntas;
 
         static readonly string[] Dicas =
         {
@@ -34,6 +35,17 @@ namespace IdleDataCenter.Gerente
                 festaTexto = "A renda deles dobrou." + (E.ProximoMarco(id) > 0 ? " Próximo marco: " + E.ProximoMarco(id) + "." : " Todos os marcos!");
             };
             E.Promoveu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Promovido!"; festaCargo = E.CargoAtual.Nome; festaTexto = "A sala cresceu. Novos setores e equipamentos na loja."; };
+            E.Conquistou += c =>
+            {
+                // várias de uma vez (um save antigo que já tinha feito muita coisa): uma festa só
+                bool junto = Time.unscaledTime - festaDesde < 1 && festaTitulo.StartsWith("Conquista");
+                conquistasJuntas = junto ? conquistasJuntas + 1 : 1;
+                festaDesde = Time.unscaledTime;
+                festaTitulo = junto ? "Conquistas!" : "Conquista!";
+                festaCargo = junto ? conquistasJuntas + " de uma vez" : c.Nome;
+                festaTexto = junto ? "+" + conquistasJuntas + "% de renda, para sempre. Veja na Carreira." : c.Descricao + ". +1% de renda, para sempre.";
+                if (!junto) Sons.Promocao();
+            };
             E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A empresa está na bolsa"; festaTexto = "De técnico de TI num armário a CTO de uma nuvem global."; };
             E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Vendida!"; festaCargo = "+" + c + " certificações"; festaTexto = "Uma empresa nova começa no armário, com os bônus."; };
             E.ChamadoApareceu += c => { if (c.prioridade <= 2) { Notificar("Chamado P" + c.prioridade + ": " + c.texto + "! Atenda no painel do help desk, à esquerda.", 6); if (c.prioridade == 1) Sons.Alerta(); } };

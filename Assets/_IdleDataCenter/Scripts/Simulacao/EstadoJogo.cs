@@ -46,6 +46,7 @@ namespace IdleDataCenter.Simulacao
         public List<ChamadoAberto> chamados = new List<ChamadoAberto>();   // a fila do help desk (ver HelpDesk.cs)
         public double helpDeskTrabalho;        // quanto a equipe já trabalhou no chamado da vez
         public int chamadosAtendidos, chamadosP1;
+        public int cafesTomados;
         public double chamadoRestante;        // saves antigos: o chamado único (vira um P3 na fila)
         public string chamadoTexto = "";
 
@@ -89,6 +90,7 @@ namespace IdleDataCenter.Simulacao
         public int empresasVendidas;
         public List<NivelMelhoria> bonus = new List<NivelMelhoria>();
         public List<string> trofeus = new List<string>();   // um por empresa vendida (cargo em que vendeu, ou "IPO")
+        public List<string> conquistas = new List<string>();   // ids das conquistas (ver Conquistas.cs): +1% de renda cada
     }
 
     [Serializable]

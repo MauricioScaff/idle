@@ -433,7 +433,7 @@ namespace IdleDataCenter.Gerente
             }
             if (E.Escrevendo) ui.Barra(new Rect(rAuto.x + 10, rAuto.yMax - 14, rAuto.width - 20, 10), E.ProgressoEscrita, IsoGui.Roxo);
             x += largura + espaco;
-            if (BotaoIcone(new Rect(x, y, largura, altura), "Carreira", IsoGui.Roxo, Subir, 4, janela == "Carreira" || janela == "Prestigio" || janela == "Vender")) Abrir("Carreira");
+            if (BotaoIcone(new Rect(x, y, largura, altura), "Carreira", IsoGui.Roxo, Subir, 4, janela == "Carreira" || janela == "Conquistas" || janela == "Prestigio" || janela == "Vender")) Abrir("Carreira");
             if (deploy)
             {
                 x += largura + espaco;

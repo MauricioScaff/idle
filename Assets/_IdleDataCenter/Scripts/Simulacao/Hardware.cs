@@ -46,6 +46,7 @@ namespace IdleDataCenter.Simulacao
             if (!PodeFazerRefresh) return false;
             Estado.dinheiro -= CustoDoRefresh;
             Estado.idadeServidores = 0;
+            Conquistar(Catalogo.ConquistaRefresh);
             return true;
         }
     }

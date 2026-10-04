@@ -214,12 +214,15 @@ namespace IdleDataCenter.Simulacao
                 // bloqueado: avisa quem bloqueou (o item de segurança mais alto)
                 string quem = "A segurança";
                 foreach (var idSeg in Catalogo.LinhaDeSeguranca) if (Nivel(idSeg) > 0) quem = Catalogo.Buscar(idSeg).Nome;
+                Conquistar(Catalogo.ConquistaBloqueou);
                 AgendarProximoEvento();
                 AtaqueBloqueado?.Invoke(def, quem);
                 return;
             }
             Estado.evento = def.Id;
             Estado.eventoFase = 0;
+            // os eventos de humor de TI viram conquista na primeira vez
+            if (def.Id == Catalogo.EventoDns || def.Id == Catalogo.EventoFaxineira || def.Id == Catalogo.EventoRato || def.Id == Catalogo.EventoReuniao || def.Id == Catalogo.EventoSsl) Conquistar(def.Id);
             Estado.eventoSegundos = def.Duracao;
             EventoComecou?.Invoke(def);
             if (def.Id == Catalogo.AtaquePhishing || def.Id == Catalogo.EventoRato)
@@ -249,13 +252,13 @@ namespace IdleDataCenter.Simulacao
                 case Catalogo.EventoDeploySexta:
                     // a aposta: às vezes dá certo e paga, às vezes quebra o deploy no fim de semana
                     if (sorteio.NextDouble() < Catalogo.ChanceDoDeploySextaQuebrar) { if (HostsContainers > 0) QuebrarDeploy(); EncerrarEvento(0); }
-                    else EncerrarEvento(ReceitaPorSegundo * Catalogo.SegundosDeBonusDoDeploySexta);
+                    else { Conquistar(Catalogo.ConquistaDeploySexta); EncerrarEvento(ReceitaPorSegundo * Catalogo.SegundosDeBonusDoDeploySexta); }
                     return true;
                 case Catalogo.AtaqueDdos when Estado.eventoFase == 0:
                     Estado.eventoFase = 1;
                     return true;
                 case Catalogo.AtaqueRansomware:
-                    if (RestauraRansomware) { Estado.backupsRestaurados++; EncerrarEvento(0); return true; }
+                    if (RestauraRansomware) { Estado.backupsRestaurados++; Conquistar(Catalogo.ConquistaRansomware); EncerrarEvento(0); return true; }
                     double resgate = PrecoDoResgate;
                     if (Estado.dinheiro < resgate) return false;
                     EncerrarEvento(-resgate);   // EncerrarEvento desconta o valor negativo

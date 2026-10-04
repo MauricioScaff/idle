@@ -253,7 +253,8 @@ namespace IdleDataCenter.Simulacao
                                    * (1 + Nivel(Catalogo.Observabilidade) * Catalogo.BonusObservabilidade)
                                    * (CafeAtivo ? Catalogo.MultiplicadorCafe : 1)
                                    * FatorEvento
-                                   * FatorSla;
+                                   * FatorSla
+                                   * FatorConquistas;
 
         // ---------------- Prestígio: certificações e desafio ----------------
 
@@ -436,6 +437,7 @@ namespace IdleDataCenter.Simulacao
             AvancarPico(segundos);
             AvancarCafe(segundos);
             AvancarChamados(segundos);
+            ChecarConquistas();
             AvancarEvento(segundos);
             AvancarUptime(segundos);
             AvancarIdade(segundos);
@@ -607,6 +609,7 @@ namespace IdleDataCenter.Simulacao
         public bool VenderEmpresa(string novoDesafio = "")
         {
             if (!PodeVender) return false;
+            Conquistar(Catalogo.ConquistaExit);
             int ganhas = CertificacoesDaVenda;
             var p = Prestigio;
             p.certificacoes += ganhas;
@@ -707,6 +710,7 @@ namespace IdleDataCenter.Simulacao
             if (!PodeTomarCafe) return false;
             Estado.cafeRestante = Catalogo.DuracaoCafe + NivelCertificacao(Catalogo.ScrumCafe) * 10;
             Estado.cafeRecarga = Catalogo.RecargaCafe;
+            Estado.cafesTomados++;
             return true;
         }
 

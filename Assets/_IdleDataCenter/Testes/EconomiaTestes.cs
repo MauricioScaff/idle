@@ -519,6 +519,7 @@ namespace IdleDataCenter.Testes
         public void PicoSemEscalarViolaOSlaECobraMulta()
         {
             var e = NoSre(1000000);
+            e.Avancar(0);   // as conquistas do cargo entram antes de medir a receita
             e.ComecarPico();
             double receita = e.ReceitaPorSegundo;
             double multa = -1;
@@ -1003,6 +1004,39 @@ namespace IdleDataCenter.Testes
             Assert.IsFalse(e.TemChamado);
         }
 
+        // ---------- Conquistas ----------
+
+        [Test]
+        public void ConquistaDaBonusEPassaParaAProximaEmpresa()
+        {
+            var e = Nova();
+            int avisos = 0;
+            e.Conquistou += c => avisos++;
+            DefinirNivel(e, Catalogo.Servidor, 1);
+            e.Avancar(0);
+            Assert.IsTrue(e.TemConquista("hello"), "duas torres");
+            Assert.AreEqual(1 + Catalogo.BonusPorConquista * e.NumeroDeConquistas, e.FatorConquistas, 1e-9);
+            Assert.IsFalse(e.Conquistar("hello"), "só uma vez");
+            Assert.AreEqual(e.NumeroDeConquistas, avisos);
+
+            e.Estado.cargo = Catalogo.CargoParaVender;
+            e.Estado.totalGanho = 4e6;
+            int antes = e.NumeroDeConquistas;
+            Assert.IsTrue(e.VenderEmpresa());
+            Assert.IsTrue(e.TemConquista("hello"), "conquista fica no prestígio");
+            Assert.IsTrue(e.TemConquista(Catalogo.ConquistaExit));
+            Assert.Greater(e.NumeroDeConquistas, antes);
+        }
+
+        [Test]
+        public void EventoDeHumorViraConquista()
+        {
+            var e = Nova();
+            e.Estado.cargo = 3;
+            e.ComecarEvento(Catalogo.EventoDns);
+            Assert.IsTrue(e.TemConquista(Catalogo.ConquistaDns));
+        }
+
         // ---------- Offline ----------
 
         [Test]
@@ -1162,11 +1196,12 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova(1000);
             e.Estado.cargo = 2;
+            e.Avancar(0);   // as conquistas do cargo entram antes de medir a receita
             double resultado = 0;
             e.EventoTerminou += (def, valor) => resultado = valor;
             e.ComecarEvento(Catalogo.EventoAuditoria);
             e.Avancar(61);
-            Assert.AreEqual(Catalogo.SegundosDeBonusDaAuditoria, resultado, 1e-9);
+            Assert.AreEqual(Catalogo.SegundosDeBonusDaAuditoria * e.FatorConquistas, resultado, 1e-9);
 
             DefinirNivel(e, Catalogo.Servidor, 1);   // duas torres: com uma travada ainda há receita para a multa
             e.ComecarEvento(Catalogo.EventoAuditoria);
