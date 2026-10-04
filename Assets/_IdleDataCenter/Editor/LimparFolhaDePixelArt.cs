@@ -56,6 +56,46 @@ namespace IdleDataCenter.Ferramentas
             UnityEditor.AssetDatabase.Refresh();
         }
 
+        /// <summary>Multiplica o tamanho final de todas as peças (2 = o dobro de resolução).</summary>
+        public static float Multiplicador = 1;
+        /// <summary>Média das cores da célula em vez da cor do centro (bordas mais suaves).</summary>
+        public static bool Suave;
+
+        /// <summary>Gera as três versões das peças do armário e dos personagens para comparar a qualidade (pasta -saida).</summary>
+        public static void CompararQualidade()
+        {
+            string saida = null;
+            foreach (var a in Environment.GetCommandLineArgs()) if (a.StartsWith("-saida=")) saida = a.Substring(7);
+            string pasta = Path.Combine(Path.GetFullPath(Path.Combine(Application.dataPath, "..")), "Arte", "Isometrico");
+            var folhas = new[]
+            {
+                ("server-closet-objects-v1.png", 3.25f, "torre@44, torre_travada@45, mesa_crt@74, cadeira@56, planta@40, caneca@12, filtro_linha@26, ventilador@36, caixas@44, prateleira@50, roteador@26, lixeira@30"),
+                ("server-closet-characters-v1.png", 2.9f, "tecnico_parado, tecnico_andar_a, tecnico_andar_b, tecnico_conserta, tecnico_comemora"),
+            };
+            foreach (var (modo, mult, suave) in new[] { ("A", 1f, false), ("B", 1f, true), ("C", 2f, false) })
+            {
+                Multiplicador = mult; Suave = suave;
+                foreach (var (arquivo, escala, nomes) in folhas)
+                    Processar(Path.Combine(pasta, arquivo), Path.Combine(saida, modo), nomes.Split(',').Select(n => n.Trim()).ToArray(), escala);
+            }
+            Multiplicador = 1; Suave = false;
+        }
+
+        /// <summary>Média das cores (fora o fundo) de uma célula inteira.</summary>
+        static Color32 Media(Func<int, int, Color32> P, bool[] fundo, int w, int h, int cx, int cy, float cel)
+        {
+            int r = Mathf.Max(1, Mathf.FloorToInt(cel / 2 - 0.25f));
+            long sr = 0, sg = 0, sb = 0; int n = 0;
+            for (int y = cy - r; y <= cy + r; y++)
+                for (int x = cx - r; x <= cx + r; x++)
+                {
+                    if (x < 0 || y < 0 || x >= w || y >= h || fundo[y * w + x]) continue;
+                    var c = P(x, y); sr += c.r; sg += c.g; sb += c.b; n++;
+                }
+            if (n == 0) return P(cx, cy);
+            return new Color32((byte)(sr / n), (byte)(sg / n), (byte)(sb / n), 255);
+        }
+
         public static void Processar(string folha, string saida, string[] nomes, float escalaFixa = 0)
         {
             var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -108,6 +148,7 @@ namespace IdleDataCenter.Ferramentas
                     else if (nomes[i].Contains("#") && valor > 0) fator = valor / (c.Largura / escala);
                     else if (valor > 0) fator = valor;
                 }
+                fator *= Multiplicador;
                 if (fator > 0 && Math.Abs(fator - 1) > 0.001f) { cel = escala / fator; ocx = c.x0; ocy = c.y0; }
                 // reduz: um pixel de saída por célula da grade, com a cor do centro da célula
                 int gx0 = Mathf.FloorToInt((c.x0 - ocx) / cel) - 1, gy0 = Mathf.FloorToInt((c.y0 - ocy) / cel) - 1;
@@ -120,7 +161,7 @@ namespace IdleDataCenter.Ferramentas
                         int cx = Mathf.RoundToInt(ocx + (gx0 + gx + 0.5f) * cel), cy = Mathf.RoundToInt(ocy + (gy0 + gy + 0.5f) * cel);
                         var cor = new Color32(0, 0, 0, 0);
                         if (cx >= c.x0 - 2 && cx <= c.x1 + 2 && cy >= c.y0 - 2 && cy <= c.y1 + 2 && cx >= 0 && cy >= 0 && cx < w && cy < h && !fundo[cy * w + cx])
-                            cor = Moda(P, fundo, w, h, cx, cy, Mathf.Max(1, Mathf.FloorToInt(cel / 3)));
+                            cor = Suave ? Media(P, fundo, w, h, cx, cy, cel) : Moda(P, fundo, w, h, cx, cy, Mathf.Max(1, Mathf.FloorToInt(cel / 3)));
                         saidaPx[(sh - 1 - gy) * sw + gx] = cor;
                     }
                 TirarFranja(saidaPx, sw, sh);
