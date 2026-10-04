@@ -222,13 +222,14 @@ namespace IdleDataCenter.Simulacao
         public double FatorEnergia => Sobrecarga ? CapacidadeKw / ConsumoKw : 1;
 
         // Temperatura
-        public double Temperatura =>
+        /// <summary>O ar-condicionado esfria até um limite: a sala nunca fica abaixo de TemperaturaMinima.</summary>
+        public double Temperatura => Math.Max(Catalogo.TemperaturaMinima,
             Catalogo.TemperaturaAmbiente + ConsumoKw * Catalogo.GrausPorKw * (NaSalaDeRacks ? Catalogo.FatorCalorSalaDeRacks : 1)
             - Nivel(Catalogo.ArCondicionado) * Catalogo.GrausPorArCondicionado
             - (NaSalaDeRacks ? Catalogo.GrausArDePrecisao : 0)
             - (NaSalaVirtualizada ? Catalogo.GrausSalaVirtualizada : 0)
             - (NoDataCenter ? Catalogo.GrausDataCenter : 0)
-            - SomaDoAlvo(Catalogo.AlvoGraus);
+            - SomaDoAlvo(Catalogo.AlvoGraus));
         public bool Quente => Temperatura > Catalogo.TemperaturaQuente;
         public double FatorTemperatura =>
             Temperatura > Catalogo.TemperaturaCritica ? 0.3 : Quente ? 0.6 : 1;

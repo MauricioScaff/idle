@@ -168,6 +168,7 @@ namespace IdleDataCenter.Simulacao
 
         // --- Temperatura (°C) ---
         public const double TemperaturaAmbiente = 22;
+        public const double TemperaturaMinima = 18;   // o ar-condicionado não deixa a sala mais fria que isso
         public const double GrausPorKw = 5;
         public const double GrausPorArCondicionado = 6;
         public const double TemperaturaQuente = 32;    // acima: desempenho cai e travam mais

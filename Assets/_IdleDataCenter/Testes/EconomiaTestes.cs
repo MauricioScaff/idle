@@ -263,7 +263,8 @@ namespace IdleDataCenter.Testes
             double kw = e.CapacidadeKw;
             e.Estado.cargo = 2;
             Assert.AreEqual(kw + Catalogo.CapacidadeSalaDeRacksKw, e.CapacidadeKw, 1e-9);
-            double esperada = Catalogo.TemperaturaAmbiente + e.ConsumoKw * Catalogo.GrausPorKw * Catalogo.FatorCalorSalaDeRacks - Catalogo.GrausArDePrecisao;
+            double esperada = System.Math.Max(Catalogo.TemperaturaMinima,
+                Catalogo.TemperaturaAmbiente + e.ConsumoKw * Catalogo.GrausPorKw * Catalogo.FatorCalorSalaDeRacks - Catalogo.GrausArDePrecisao);
             Assert.AreEqual(esperada, e.Temperatura, 1e-9);
         }
 
@@ -1017,6 +1018,16 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.Servidor, 19);   // 20 torres
             e.Avancar(1);
             Assert.AreEqual(Catalogo.ServidoresQueTravam, e.Travamentos.Count);
+        }
+
+        [Test]
+        public void ArCondicionadoNaoDeixaASalaAbaixoDoMinimo()
+        {
+            var e = Nova();
+            e.Estado.cargo = 2;
+            DefinirNivel(e, Catalogo.ArCondicionado, 20);
+            DefinirNivel(e, Catalogo.Ventilador, 12);
+            Assert.AreEqual(Catalogo.TemperaturaMinima, e.Temperatura, 1e-9);
         }
 
         [Test]
