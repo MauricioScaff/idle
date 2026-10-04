@@ -172,6 +172,7 @@ namespace IdleDataCenter.Gerente
             tela.Imagem(fundoIlustrado.px, fundoIlustrado.w, fundoIlustrado.h, 0, 0);
 
             tecnicoConsertando = false;
+            pontosDeRonda.Clear();
             if (E.Cargo == 0) ArmarioIlustrado(); else if (E.Cargo == 1) SalinhaIlustrada(); else SalaGrandeIlustrada();
             PessoasIlustradas();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
@@ -208,7 +209,8 @@ namespace IdleDataCenter.Gerente
                 int semente = i;
                 fila.Add((-i * 0.01f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));   // a da frente cobre a de trás
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = "servidor:" + i, Px = s.px, Prof = -i * 0.01f, Nome = "Servidor torre " + (i + 1) });
-                if (travado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente);
+                if (travado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente, true);
+                Ronda(l + b.frente, true);
             }
             if (E.Torres > vagas)
             {
@@ -227,10 +229,10 @@ namespace IdleDataCenter.Gerente
         }
 
         /// <summary>Alerta piscando sobre o que quebrou e o técnico indo consertar (o primeiro quebrado chama o técnico).</summary>
-        void Quebrado(Vector2Int topo, Vector2Int frente)
+        void Quebrado(Vector2Int topo, Vector2Int frente, bool ladoGx)
         {
             fila.Add((5, () => { if (Piscar()) tela.Texto("!", topo.x - 2, topo.y - 2, IsoDesenho.C("ff3b4e"), true, 2); }));
-            if (!tecnicoConsertando) { tecnicoConsertando = true; lugarDoTecnico = new Vector2(frente.x + 12, frente.y + 8); }
+            if (!tecnicoConsertando) { tecnicoConsertando = true; (lugarDoConserto, olharDoConserto) = NaFrenteDe(frente, ladoGx); }
         }
 
         /// <summary>Contorno tracejado da base de um objeto no lugar l: onde entra a próxima compra do equipamento principal.</summary>
@@ -299,6 +301,7 @@ namespace IdleDataCenter.Gerente
                 if (i >= nNoBreaks) continue;
                 int semente = i + 20;
                 fila.Add((0.5f + i * 0.01f, () => DesenharSprite(nobreak, l.x, l.y, semente)));
+                Ronda(l + BaseDe(nobreak).frente, false);
             }
             // ar-condicionado no alto da parede da direita, sobre a mesa
             var ar = CarregarPixelLab("ar_condicionado");
@@ -338,7 +341,8 @@ namespace IdleDataCenter.Gerente
                 var s = quebrado ? Travada(nome, true) : rack;
                 fila.Add((-1.5f + i * 0.01f, () => DesenharRack(s, l, cheio, !quebrado)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack", Px = s.px, Prof = -1.5f + i * 0.01f, Nome = "Rack 42U: " + E.ServidoresRack + " servidores 1U" });
-                if (quebrado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente);
+                if (quebrado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente, true);
+                Ronda(l + b.frente, true);
             }
             if (E.ServidoresRack > maximo * vagas)
             {
@@ -416,7 +420,8 @@ namespace IdleDataCenter.Gerente
                 float prof = -8 + l.x * 0.001f;
                 fila.Add((prof, () => DesenharRack(s, l, cheio, !quebrado)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, rack.w, rack.h), Tipo = "rack", Px = s.px, Prof = prof, Nome = "Rack 42U: " + E.ServidoresRack + " servidores 1U" });
-                if (quebrado) Quebrado(l + new Vector2Int(BaseDe(rack).frente.x, 0), l + BaseDe(rack).frente);
+                if (quebrado) Quebrado(l + new Vector2Int(BaseDe(rack).frente.x, 0), l + BaseDe(rack).frente, false);
+                Ronda(l + BaseDe(rack).frente, false);
                 if (i == 0) pontoDoRack = l + new Vector2Int(rack.w / 2, rack.h / 2);
             }
             var nobreak = CarregarPixelLab("nobreak" + equip, true);
@@ -427,6 +432,7 @@ namespace IdleDataCenter.Gerente
                 if (i == 0) pontoDoNoBreak = l + new Vector2Int(nobreak.w / 2, nobreak.h / 2);
                 int semente = i + 20;
                 fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(nobreak, l.x, l.y, semente)));
+                Ronda(l + BaseDe(nobreak).frente, false);
             }
             var torre = CarregarPixelLab("torre" + Sala.tamanho);
             var bt = BaseDe(torre);
@@ -439,7 +445,8 @@ namespace IdleDataCenter.Gerente
                 int semente = i;
                 fila.Add((-8 + l.x * 0.001f, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, torre.w, torre.h), Tipo = "servidor:" + i, Px = s.px, Prof = -8 + l.x * 0.001f, Nome = "Servidor torre " + (i + 1) });
-                if (travado) Quebrado(l + new Vector2Int(bt.frente.x, 0), l + bt.frente);
+                if (travado) Quebrado(l + new Vector2Int(bt.frente.x, 0), l + bt.frente, false);
+                Ronda(l + bt.frente, false);
                 pontoDaTorre = l + new Vector2Int(torre.w / 2, torre.h / 2);
             }
 
@@ -570,7 +577,8 @@ namespace IdleDataCenter.Gerente
             float prof = -5 + (l.y + s.h) * 0.01f + l.x * 0.0001f;
             fila.Add((prof, () => DesenharRack(s, l, 1, !quebrado)));
             Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = clique, Px = s.px, Prof = prof, Nome = nome });
-            if (quebrado) Quebrado(l + new Vector2Int(BaseDe(s).frente.x, 0), l + BaseDe(s).frente);
+            if (quebrado) Quebrado(l + new Vector2Int(BaseDe(s).frente.x, 0), l + BaseDe(s).frente, false);
+            Ronda(l + BaseDe(s).frente, false);
         }
 
         /// <summary>Contorno no próximo lugar livre da fileira do equipamento principal (ou o botão na frente, com ela cheia).</summary>
@@ -601,91 +609,237 @@ namespace IdleDataCenter.Gerente
             }
         }
 
-        // ---------------- Pessoas ----------------
+        // ---------------- Pessoas: rotina ----------------
+        //
+        // Ninguém anda à toa. O técnico fica na mesa (de pé, virado para o monitor) e só levanta com motivo: consertar o
+        // que quebrou, ou de vez em quando dar uma olhada num equipamento e voltar. Estagiário e engenheiros fazem ronda:
+        // vão até um equipamento, param olhando para ele alguns segundos e escolhem outro. O caminho segue os corredores
+        // (nas salas pequenas, a passagem da frente; nas grandes, o corredor ao lado das fileiras), então ninguém atravessa
+        // máquina nem móvel.
+
+        /// <summary>Uma pessoa na sala: onde está (em casas), para onde vai e o que está fazendo.</summary>
+        class Trabalhador
+        {
+            public string quem;                    // prefixo dos sprites ("tecnico_m")
+            public Color32? camisa;                // engenheiros: o técnico com outra camisa
+            public Vector2 pos;
+            public readonly List<Vector2> caminho = new List<Vector2>();
+            public string olhar = "se";            // direção parada: se, sw, ne, nw
+            public string olhandoDestino = "se";   // como fica ao chegar
+            public float paradaAte;                // até quando fica parada no destino
+            public bool naMesa;                    // técnico: está trabalhando na mesa
+            public bool consertando;
+            public float fase;
+        }
+
+        readonly Dictionary<string, Trabalhador> pessoas = new Dictionary<string, Trabalhador>();
+        readonly System.Random sorteioDasPessoas = new System.Random();
+        int salaDasPessoas = -1;
+        float ultimoT = -1;
+
+        /// <summary>Lugares de ronda montados no desenho: onde ficar (em casas) e para onde olhar.</summary>
+        readonly List<(Vector2 lugar, string olhar)> pontosDeRonda = new List<(Vector2, string)>();
+
+        /// <summary>Onde o técnico conserta o que quebrou (em casas) e para onde olha.</summary>
+        Vector2 lugarDoConserto;
+        string olharDoConserto = "nw";
+
+        /// <summary>Mesa de trabalho do técnico em cada sala (em casas) e para onde ele olha nela.</summary>
+        (Vector2 lugar, string olhar) Mesa =>
+            E.Cargo == 0 ? (new Vector2(2.0f, 1.55f), "ne")     // ao lado da cadeira, virado para o monitor
+            : E.Cargo == 1 ? (new Vector2(4.4f, 1.9f), "ne")
+            : E.Cargo <= 3 ? (new Vector2(1.85f, 6.5f), "nw")
+            : (new Vector2(2.0f, 9.6f), "nw");   // na frente do NOC, fora das fileiras
+
+        /// <summary>Velocidade de quem anda, em casas por segundo (casas menores nas salas grandes).</summary>
+        float Velocidade => E.Cargo == 0 ? 0.55f : E.Cargo == 1 ? 0.75f : 1.0f;
+
+        /// <summary>Ponto da tela (pixel da ilustração) para casas: o inverso de IP.</summary>
+        Vector2 Grade(Vector2 p)
+        {
+            var s = Sala;
+            Vector2 a = (s.direita - s.fundo) / s.casas, b = (s.esquerda - s.fundo) / s.casas, d = p - s.fundo;
+            float det = a.x * b.y - a.y * b.x;
+            return new Vector2((d.x * b.y - d.y * b.x) / det, (a.x * d.y - a.y * d.x) / det);
+        }
 
         /// <summary>
-        /// Quadro de uma pessoa do PixelLab. Indo para a direita (gx crescendo) ela olha para o sudeste; voltando, para o
-        /// noroeste. Andando, alterna os quadros da caminhada (quem_se_0..n); sem eles, usa a pose parada da direção.
+        /// O lugar na frente de um objeto, pelo canto da frente da base dele. Encostado na parede da esquerda (ladoGx), a
+        /// pessoa fica ao lado dele olhando para noroeste; na parede da direita ou numa fileira, fica na frente olhando para
+        /// nordeste.
         /// </summary>
-        SpriteIso QuadroDaPessoa(string quem, bool voltando, bool andando, float fase)
+        (Vector2 lugar, string olhar) NaFrenteDe(Vector2Int frente, bool ladoGx)
         {
-            string dir = voltando ? "nw" : "se";
-            if (andando)
+            var g = Grade(frente);
+            return ladoGx ? (g + new Vector2(0.4f, -0.2f), "nw") : (g + new Vector2(-0.2f, 0.4f), "ne");
+        }
+
+        void Ronda(Vector2Int frente, bool ladoGx) => pontosDeRonda.Add(NaFrenteDe(frente, ladoGx));
+
+        /// <summary>Caminho pelos corredores: nunca corta o meio das fileiras nem passa pelos móveis.</summary>
+        void Rota(Trabalhador p, Vector2 destino)
+        {
+            p.caminho.Clear();
+            if (E.Cargo >= 2)
             {
-                int n = 0;
-                while (n < 8 && CarregarPixelLab(quem + "_" + dir + "_" + n) != null) n++;
-                if (n > 0) return CarregarPixelLab(quem + "_" + dir + "_" + (Mathf.FloorToInt(t * 6f + fase * 10) % n));
+                // salas grandes: troca de corredor pelo corredor ao lado das fileiras
+                float lateral = InicioDaFileira - 0.6f;
+                if (Mathf.Abs(p.pos.y - destino.y) > 0.05f) { p.caminho.Add(new Vector2(lateral, p.pos.y)); p.caminho.Add(new Vector2(lateral, destino.y)); }
             }
-            return CarregarPixelLab(quem + "_" + dir);
+            else
+            {
+                // salas pequenas: pela passagem da frente
+                float frente = E.Cargo == 0 ? 2.9f : 3.2f;
+                if (Mathf.Abs(p.pos.x - destino.x) > 0.05f) { p.caminho.Add(new Vector2(p.pos.x, frente)); p.caminho.Add(new Vector2(destino.x, frente)); }
+            }
+            p.caminho.Add(destino);
         }
 
         void PessoasIlustradas()
         {
-            // corredor na frente das paredes e da cadeira: o técnico vai e volta ao longo de gx; o estagiário anda mais à
-            // frente, no sentido contrário
-            bool salinha = E.Cargo == 1;
-            string tecnico = "tecnico" + Sala.tamanho, estagiario = "estagiario" + Sala.tamanho;
-            // nas salas grandes os dois andam no corredor da frente, cada um numa metade
-            bool grande = E.Cargo >= 2;
-            float frente = Sala.casas - 0.45f;
-            float gyTecnico = grande ? frente : salinha ? 3.2f : 2.9f, gyEstagiario = grande ? frente : salinha ? 4.2f : 3.55f;
-            bool voltando;
-            float gx = grande ? PosicaoAndando(2.4f, Sala.casas * 0.55f, 0f, 0.5f, out voltando)
-                : salinha ? PosicaoAndando(1.6f, 4.0f, 0f, 0.5f, out voltando) : PosicaoAndando(1.3f, 3.2f, 0f, 0.55f, out voltando);
-            int pulo = Mathf.RoundToInt(Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * (grande ? 4f : salinha ? 6f : 8f));
+            float dt = ultimoT < 0 ? 0 : Mathf.Clamp(t - ultimoT, 0, 0.5f);
+            ultimoT = t;
+            if (salaDasPessoas != E.Cargo) { pessoas.Clear(); salaDasPessoas = E.Cargo; }
+
+            string tecnico = "tecnico" + Sala.tamanho;
+            var quemTem = new List<string> { "tecnico" };
+            if (E.TemEstagiario) quemTem.Add("estagiario");
+            for (int i = 0; i < (E.Cargo >= 2 ? Mathf.Min(E.Cargo - 1, 3) : 0); i++) quemTem.Add("engenheiro" + i);
+            foreach (var chave in new List<string>(pessoas.Keys)) if (!quemTem.Contains(chave)) pessoas.Remove(chave);
+
+            foreach (var chave in quemTem)
+            {
+                if (!pessoas.TryGetValue(chave, out var p))
+                {
+                    p = new Trabalhador { fase = (float)sorteioDasPessoas.NextDouble() };
+                    p.quem = chave == "estagiario" ? "estagiario" + Sala.tamanho : tecnico;
+                    if (chave.StartsWith("engenheiro")) p.camisa = CamisasDosEngenheiros[chave[chave.Length - 1] - '0'];
+                    // começa no lugar de trabalho (técnico) ou num ponto de ronda
+                    if (chave == "tecnico") { p.pos = Mesa.lugar; p.olhar = Mesa.olhar; p.naMesa = true; p.paradaAte = t + 8 + (float)sorteioDasPessoas.NextDouble() * 15; }
+                    else if (pontosDeRonda.Count > 0)
+                    {
+                        var r = pontosDeRonda[sorteioDasPessoas.Next(pontosDeRonda.Count)];
+                        p.pos = r.lugar; p.olhar = r.olhar; p.paradaAte = t + 2 + (float)sorteioDasPessoas.NextDouble() * 4;
+                    }
+                    else p.pos = Mesa.lugar + new Vector2(0.8f, 0.8f);
+                    pessoas[chave] = p;
+                }
+                if (chave == "tecnico") PensarTecnico(p); else PensarRonda(p);
+                Andar(p, dt);
+                DesenharPessoa(p, chave == "tecnico");
+                if (chave == "estagiario") pontoDoEstagiario = IP(p.pos.x, p.pos.y);
+            }
+        }
+
+        /// <summary>O técnico: conserta o que quebrou; senão trabalha na mesa e de vez em quando vai olhar um equipamento.</summary>
+        void PensarTecnico(Trabalhador p)
+        {
             if (tecnicoConsertando)
             {
-                var s = CarregarPixelLab(tecnico + "_nw");
-                if (s != null) PessoaIlustrada(s, tecnico, new Vector2Int(Mathf.RoundToInt(lugarDoTecnico.x), Mathf.RoundToInt(lugarDoTecnico.y)), 0);
+                // indo para outro conserto (ou ainda não foi): refaz o caminho
+                var destino = p.caminho.Count > 0 ? p.caminho[p.caminho.Count - 1] : p.pos;
+                if (!p.consertando || (destino - lugarDoConserto).sqrMagnitude > 0.01f)
+                {
+                    p.consertando = true; p.naMesa = false;
+                    Rota(p, lugarDoConserto); p.olhandoDestino = olharDoConserto;
+                }
+                p.paradaAte = t + 1;
+                return;
             }
-            else if (t - ultimaCompraEm < 1.5f)
+            if (p.consertando)
+            {
+                // consertou: volta para a mesa
+                p.consertando = false;
+                VoltarParaAMesa(p);
+                return;
+            }
+            if (p.caminho.Count > 0 || t < p.paradaAte) return;
+            if (p.naMesa && pontosDeRonda.Count > 0)
+            {
+                // levanta para dar uma olhada num equipamento
+                var r = pontosDeRonda[sorteioDasPessoas.Next(pontosDeRonda.Count)];
+                p.naMesa = false;
+                Rota(p, r.lugar); p.olhandoDestino = r.olhar;
+                p.paradaAte = float.MaxValue;   // definido ao chegar
+            }
+            else VoltarParaAMesa(p);
+        }
+
+        void VoltarParaAMesa(Trabalhador p)
+        {
+            p.naMesa = true;
+            Rota(p, Mesa.lugar); p.olhandoDestino = Mesa.olhar;
+            p.paradaAte = float.MaxValue;
+        }
+
+        /// <summary>Ronda: escolhe um equipamento, vai até ele, fica olhando alguns segundos e escolhe outro.</summary>
+        void PensarRonda(Trabalhador p)
+        {
+            if (p.caminho.Count > 0 || t < p.paradaAte || pontosDeRonda.Count == 0) return;
+            var r = pontosDeRonda[sorteioDasPessoas.Next(pontosDeRonda.Count)];
+            Rota(p, r.lugar); p.olhandoDestino = r.olhar;
+            p.paradaAte = float.MaxValue;
+        }
+
+        /// <summary>Anda pelo caminho (um eixo de cada vez); ao chegar, vira para o destino e fica parada um tempo.</summary>
+        void Andar(Trabalhador p, float dt)
+        {
+            float passo = Velocidade * dt;
+            while (p.caminho.Count > 0 && passo > 0)
+            {
+                var alvo = p.caminho[0];
+                var d = alvo - p.pos;
+                float dist = d.magnitude;
+                if (dist < 0.001f) { p.caminho.RemoveAt(0); continue; }
+                // direção na tela: gx crescendo é sudeste, gy crescendo é sudoeste
+                p.olhar = Mathf.Abs(d.x) >= Mathf.Abs(d.y) ? (d.x > 0 ? "se" : "nw") : (d.y > 0 ? "sw" : "ne");
+                if (passo >= dist) { p.pos = alvo; passo -= dist; p.caminho.RemoveAt(0); }
+                else { p.pos += d / dist * passo; passo = 0; }
+                if (p.caminho.Count == 0)
+                {
+                    p.olhar = p.olhandoDestino;
+                    if (p.paradaAte == float.MaxValue)
+                        p.paradaAte = t + (p.naMesa ? 15 + (float)sorteioDasPessoas.NextDouble() * 25 : 3 + (float)sorteioDasPessoas.NextDouble() * 4);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sprite de uma pessoa virada para uma das quatro diagonais. O PixelLab deu sudeste e noroeste; sudoeste e
+        /// nordeste são os mesmos espelhados.
+        /// </summary>
+        SpriteIso Pose(string quem, string dir, bool andando, float fase)
+        {
+            bool espelhar = dir == "sw" || dir == "ne";
+            string lado = dir == "sw" ? "se" : dir == "ne" ? "nw" : dir;
+            if (andando)
+            {
+                int n = 0;
+                while (n < 8 && CarregarPixelLab(quem + "_" + lado + "_" + n) != null) n++;
+                if (n > 0) return CarregarPixelLab(quem + "_" + lado + "_" + (Mathf.FloorToInt(t * 6f + fase * 10) % n), espelhar);
+            }
+            return CarregarPixelLab(quem + "_" + lado, espelhar);
+        }
+
+        void DesenharPessoa(Trabalhador p, bool ehTecnico)
+        {
+            bool andando = p.caminho.Count > 0;
+            SpriteIso s;
+            float pulo = 0;
+            if (ehTecnico && !andando && !p.consertando && t - ultimaCompraEm < 1.5f)
             {
                 // comemora a compra: pulinhos olhando para a frente
-                var s = CarregarPixelLab(tecnico + "_s") ?? CarregarPixelLab(tecnico + "_se");
-                if (s != null) PessoaIlustrada(s, tecnico, IP(gx, gyTecnico), pulo);
+                s = CarregarPixelLab(p.quem + "_s") ?? Pose(p.quem, "se", false, p.fase);
+                pulo = Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * (E.Cargo >= 2 ? 4f : E.Cargo == 1 ? 6f : 8f);
             }
-            else
-            {
-                var s = QuadroDaPessoa(tecnico, voltando, true, 0f);
-                if (s != null) PessoaIlustrada(s, tecnico, IP(gx, gyTecnico), 0);
-            }
-
-            if (E.TemEstagiario)
-            {
-                bool volta;
-                float gxE = grande ? PosicaoAndando(Sala.casas * 0.6f, Sala.casas - 0.8f, 0.9f, 0.45f, out volta)
-                    : salinha ? PosicaoAndando(1.9f, 3.8f, 0.9f, 0.45f, out volta) : PosicaoAndando(1.5f, 3.0f, 0.9f, 0.45f, out volta);
-                pontoDoEstagiario = IP(gxE, gyEstagiario);
-                var s = QuadroDaPessoa(estagiario, volta, true, 0.37f);
-                if (s != null) PessoaIlustrada(s, estagiario, pontoDoEstagiario, 0);
-            }
-
-            if (grande) EngenheirosNosCorredores(tecnico);
+            else s = Pose(p.quem, p.olhar, andando, p.fase);
+            if (s == null) return;
+            if (p.camisa.HasValue) s = Recolorido(s, p.camisa.Value);
+            PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, E.Cargo >= 2);
         }
 
         /// <summary>Cor da camisa de cada engenheiro de campo (o técnico com outra camisa).</summary>
         static readonly Color32[] CamisasDosEngenheiros = { new Color32(232, 140, 60, 255), new Color32(150, 110, 200, 255), new Color32(200, 70, 80, 255) };
-
-        /// <summary>
-        /// Da sala de racks em diante, engenheiros de campo andam pelos corredores entre as fileiras (um a mais por cargo,
-        /// até três). Ficam na mesma profundidade das máquinas: a fileira da frente cobre quem está atrás dela.
-        /// </summary>
-        void EngenheirosNosCorredores(string tecnico)
-        {
-            var fileiras = Fileiras;
-            var rack = CarregarPixelLab("rack" + Sala.equip);
-            float profundidade = rack != null ? (BaseDe(rack).direita.x - BaseDe(rack).frente.x) / ((Sala.fundo.x - Sala.esquerda.x) / Sala.casas) : 0.66f;
-            int n = Mathf.Min(E.Cargo - 1, 3, fileiras.Length - 1);
-            for (int i = 0; i < n; i++)
-            {
-                // meio do corredor entre a fileira i e a seguinte
-                float gy = (fileiras[i] + profundidade + fileiras[i + 1]) / 2f;
-                float gx = PosicaoAndando(InicioDaFileira + 0.2f, Sala.casas - 0.5f, 0.6f + i * 0.31f, 0.4f + i * 0.05f, out bool volta);
-                var s = QuadroDaPessoa(tecnico, volta, true, 0.6f + i);
-                if (s == null) continue;
-                PessoaIlustrada(Recolorido(s, CamisasDosEngenheiros[i]), tecnico, IP(gx, gy), 0, true);
-            }
-        }
 
         /// <summary>
         /// O quadro com a camisa trocada: pixels azul-esverdeados vivos do tronco (a calça jeans é mais escura e fica
@@ -720,7 +874,7 @@ namespace IdleDataCenter.Gerente
         }
 
         /// <summary>
-        /// Pessoa com os pés no ponto p (sombra no chão; z levanta o corpo, para os pulos). Entre as máquinas (entreMaquinas)
+        /// Trabalhador com os pés no ponto p (sombra no chão; z levanta o corpo, para os pulos). Entre as máquinas (entreMaquinas)
         /// ela entra na mesma ordem de profundidade das fileiras; senão fica por cima de tudo.
         /// </summary>
         void PessoaIlustrada(SpriteIso s, string quem, Vector2Int p, float z, bool entreMaquinas = false)
