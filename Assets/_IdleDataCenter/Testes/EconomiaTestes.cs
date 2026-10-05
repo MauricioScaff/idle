@@ -1500,5 +1500,181 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual(0, e.IdadeDosServidores, 1e-9);
             Assert.AreEqual(10000 - custo, e.Dinheiro, 1e-9);
         }
+
+        // ---------- Chefes ----------
+
+        static Economia ComMetasDoTecnico(double dinheiro = 0)
+        {
+            var e = Nova(dinheiro);
+            DefinirNivel(e, Catalogo.Servidor, 2);
+            e.Estado.totalGanho = 20000;
+            e.Estado.incidentesResolvidos = 8;
+            return e;
+        }
+
+        [Test]
+        public void ChefeSoApareceComAsMetasCumpridas()
+        {
+            var e = Nova();
+            Assert.IsFalse(e.PodeEnfrentarChefe);
+            Assert.IsFalse(e.EnfrentarChefe());
+            e = ComMetasDoTecnico();
+            Assert.IsTrue(e.PodeEnfrentarChefe);
+            Assert.AreEqual("fechamento", e.ChefeDoCargo.Id);
+            Assert.IsTrue(e.EnfrentarChefe());
+            Assert.IsTrue(e.EmLuta);
+            Assert.IsFalse(e.PodeEnfrentarChefe, "já está lutando");
+            Assert.AreEqual(0, e.Cargo, "a promoção só vem com a vitória");
+        }
+
+        [Test]
+        public void VencerOChefePromoveEPagaOPremio()
+        {
+            var e = ComMetasDoTecnico();
+            e.EnfrentarChefe();
+            bool? venceu = null;
+            e.ChefeTerminou += (c, v, p) => venceu = v;
+            e.Estado.luta.carga = e.ChefeDaLuta.Vida - 0.01;
+            double antes = e.Dinheiro;
+            e.Avancar(1);
+            Assert.AreEqual(true, venceu);
+            Assert.IsFalse(e.EmLuta);
+            Assert.AreEqual(1, e.Cargo, "promovido a Sysadmin");
+            Assert.AreEqual(1, e.Estado.chefesVencidos);
+            Assert.Greater(e.Dinheiro, antes + e.ReceitaPorSegundo * (Catalogo.SegundosDoPremioDoChefe - 5), "prêmio de dois minutos de renda");
+        }
+
+        [Test]
+        public void PerderDaExperienciaEEsperaParaTentarDeNovo()
+        {
+            var e = ComMetasDoTecnico();
+            e.EnfrentarChefe();
+            e.Estado.luta.estabilidade = 1;
+            e.Avancar(Catalogo.PrimeiroAtaque + 0.5);   // o primeiro ataque derruba
+            Assert.IsFalse(e.EmLuta);
+            Assert.AreEqual(0, e.Cargo);
+            Assert.AreEqual(1, e.Estado.derrotasNoChefe);
+            Assert.AreEqual(1 + Catalogo.BonusPorDerrota, e.FatorExperiencia, 1e-9);
+            Assert.IsFalse(e.PodeEnfrentarChefe, "espera a recarga");
+            e.Avancar(Catalogo.RecargaDoChefe);
+            Assert.IsTrue(e.PodeEnfrentarChefe);
+        }
+
+        [Test]
+        public void ChefeVenceQuandoOTempoAcaba()
+        {
+            var e = ComMetasDoTecnico();
+            e.EnfrentarChefe();
+            e.Estado.luta.decorrido = Catalogo.TempoDaLuta - 0.5;
+            e.Estado.luta.proximoAtaque = 99;
+            e.Avancar(1);
+            Assert.IsFalse(e.EmLuta);
+            Assert.AreEqual(0, e.Cargo);
+        }
+
+        [Test]
+        public void AtaqueRespeitaADefesa()
+        {
+            var e = ComMetasDoTecnico();
+            e.EnfrentarChefe();
+            var ataque = e.ChefeDaLuta.Ataques[0];
+            double esperado = ataque.Dano * (1 - e.ValorDefesa(ataque.Tipo));
+            e.Estado.luta.proximoAtaque = 0.5;
+            e.Estado.luta.estabilidade = 50;   // longe do teto de 100
+            double antes = e.Estado.luta.estabilidade;
+            e.Avancar(1);
+            Assert.AreEqual(antes + Catalogo.RegeneracaoPorSegundo - esperado, e.Estado.luta.estabilidade, 1e-6);
+            Assert.AreEqual(ataque.Texto, e.Estado.luta.ultimoAtaque);
+        }
+
+        [Test]
+        public void DecisaoAbreEmDoisTercosESemRespostaValeAPrimeira()
+        {
+            var e = ComMetasDoTecnico();
+            e.EnfrentarChefe();
+            var luta = e.Estado.luta;
+            luta.proximoAtaque = 999;
+            luta.carga = e.ChefeDaLuta.Vida * 0.35;   // passou de 2/3 da vida
+            e.Avancar(0.1);
+            Assert.IsNotNull(e.DecisaoAtual);
+            luta.estabilidade = 50;
+            e.Avancar(Catalogo.TempoParaDecidir + 0.1);
+            Assert.IsNull(e.DecisaoAtual);
+            Assert.AreEqual(1, luta.decisoesFeitas);
+            var primeira = e.ChefeDaLuta.Decisoes[0].Opcoes[0];
+            Assert.Greater(luta.estabilidade, 50 + primeira.Curar - 1, "a opção segura foi aplicada");
+        }
+
+        [Test]
+        public void OpcaoComRequisitoOuCustoPodeSerRecusada()
+        {
+            var e = ComMetasDoTecnico();
+            e.EnfrentarChefe();
+            e.Estado.luta.proximoAtaque = 999;
+            e.Estado.luta.carga = e.ChefeDaLuta.Vida * 0.7;   // passou de 1/3: segunda decisão
+            e.Estado.luta.decisoesFeitas = 1;
+            e.Avancar(0.1);
+            var d = e.DecisaoAtual;
+            Assert.AreEqual(e.ChefeDaLuta.Decisoes[1], d);
+            Assert.AreEqual("precisa de estagiário", e.FaltaParaOpcao(d.Opcoes[1]));
+            Assert.IsFalse(e.EscolherOpcao(1));
+            DefinirNivel(e, Catalogo.Estagiario, 1);
+            e.Estado.luta.estabilidade = 50;
+            Assert.IsTrue(e.EscolherOpcao(1));
+            Assert.AreEqual(80, e.Estado.luta.estabilidade, 1e-6);
+        }
+
+        [Test]
+        public void OpcaoArriscadaPodeDarErrado()
+        {
+            var e = ComMetasDoTecnico();   // o sorteio fixo em 0.9999 faz toda aposta falhar
+            e.EnfrentarChefe();
+            e.Estado.luta.decisao = 1;
+            e.Estado.luta.decisoesFeitas = 1;
+            e.Estado.luta.estabilidade = 50;
+            var arriscada = e.ChefeDaLuta.Decisoes[1].Opcoes[2];
+            Assert.IsTrue(e.EscolherOpcao(2));
+            Assert.AreEqual(50 - arriscada.DanoSeFalhar, e.Estado.luta.estabilidade, 1e-6);
+            Assert.AreEqual(arriscada.Falha, e.Estado.luta.resultado);
+        }
+
+        [Test]
+        public void DicaDaDerrotaApontaACompraDoPontoFraco()
+        {
+            var e = ComMetasDoTecnico();
+            e.Estado.cargo = 1;
+            Assert.That(new[] { Catalogo.Ventilador, Catalogo.ArCondicionado }, Does.Contain(e.MelhoriaParaDefesa(Defesa.Calor).Id), "o mais barato que esfria");
+            Assert.AreEqual(Catalogo.Estagiario, e.MelhoriaParaDefesa(Defesa.Hardware).Id);
+            DefinirNivel(e, Catalogo.Estagiario, 1);
+            Assert.IsNull(e.MelhoriaParaDefesa(Defesa.Hardware), "já tem estagiário");
+            Assert.AreEqual(Catalogo.HdExterno, e.MelhoriaParaDefesa(Defesa.Dados).Id);
+        }
+
+        [Test]
+        public void JogoFechadoCancelaALuta()
+        {
+            var e = ComMetasDoTecnico();
+            e.EnfrentarChefe();
+            e.Estado.ultimoSalvamentoUnix = 1000;
+            e.AplicarOffline(1000 + 3600);
+            Assert.IsFalse(e.EmLuta);
+            Assert.IsTrue(e.PodeEnfrentarChefe, "pode tentar de novo na hora");
+        }
+
+        [Test]
+        public void ChefeDoCtoLevaAoIpo()
+        {
+            var e = Nova();
+            e.Estado.cargo = Catalogo.Cargos.Count - 1;
+            DefinirNivel(e, Catalogo.Regiao, 3);
+            foreach (var a in Catalogo.Automacoes) e.Estado.automacoes.Add(a.Id);
+            e.Estado.totalGanho = 1e12;
+            Assert.IsTrue(e.PodeFazerIpo);
+            Assert.AreEqual("auditoria", e.ChefeDoCargo.Id);
+            Assert.IsTrue(e.EnfrentarChefe());
+            e.Estado.luta.carga = e.ChefeDaLuta.Vida;
+            e.Avancar(0.1);
+            Assert.IsTrue(e.IpoFeito);
+        }
     }
 }

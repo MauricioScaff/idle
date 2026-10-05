@@ -77,6 +77,12 @@ namespace IdleDataCenter.Simulacao
         public double paneSegundos;
         public bool ipoFeito;
 
+        // Chefes (ver Chefes.cs): a luta em andamento, a espera depois de perder e o placar
+        public LutaChefe luta = new LutaChefe();
+        public double recargaChefe;
+        public int chefesVencidos, derrotasChefe;
+        public int derrotasNoChefe;           // contra o chefe de agora: cada uma deixa a equipe mais preparada
+
         // Desafio escolhido para esta empresa (vazio = nenhum); multiplica as certificações na venda
         public string desafio = "";
 

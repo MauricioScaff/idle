@@ -17,6 +17,9 @@ namespace IdleDataCenter.Testes
         public void JogadorOciosoEvoluiNoRitmoPlanejado()
         {
             var e = new Economia(new EstadoJogo(), new Random(42));
+            var lutas = new System.Collections.Generic.List<string>();
+            double agora = 0;
+            e.ChefeTerminou += (c, venceu, _) => lutas.Add($"{c.Id}:{(venceu ? "V" : "D")}@{(int)(agora / 60)}min(def {string.Join("/", c.Ataques.Select(a => e.ValorDefesa(a.Tipo).ToString("0.00")))})");
             var promocoes = new double[Catalogo.Cargos.Count];
             var completo = new double[Catalogo.Cargos.Count];
             double primeiroBackup = -1;
@@ -26,15 +29,24 @@ namespace IdleDataCenter.Testes
 
             for (double t = 0; t < limite; t += 1)
             {
+                agora = t;
+                int cargoAntes = e.Cargo;
                 e.Avancar(1);
+                if (e.Cargo != cargoAntes) promocoes[e.Cargo] = t;   // venceu o chefe
+                if (e.IpoFeito && ipo < 0) ipo = t;
                 var sugerida = e.MelhoriaSugerida();
                 var barata = sugerida != null && e.PodeComprar(sugerida.Id) ? sugerida : null;
                 if (barata != null) e.Comprar(barata.Id);
                 var script = Catalogo.Automacoes.Where(a => e.PodeEscrever(a.Id)).OrderBy(a => a.Custo).FirstOrDefault();
                 if (script != null && barata == null) e.EscreverAutomacao(script.Id);
                 if (barata == null && e.PodeFazerRefresh) e.FazerRefresh();   // como o jogador quando o cartão pede
-                if (e.PodePromover) { e.Promover(); promocoes[e.Cargo] = t; }
-                if (e.PodeFazerIpo) { e.FazerIpo(); ipo = t; }
+                // depois de perder, segue a dica: compra o que reforça o ponto fraco
+                if (e.RecargaDoChefe > 0 && e.ChefeDoCargo != null)
+                {
+                    var reforco = e.MelhoriaParaDefesa(e.PontoFraco(e.ChefeDoCargo));
+                    if (reforco != null && e.PodeComprar(reforco.Id)) e.Comprar(reforco.Id);
+                }
+                if (e.PodeEnfrentarChefe) e.EnfrentarChefe();   // nunca escolhe nada: vale sempre a opção segura
                 if (e.Estado.backupsRestaurados > 0 && primeiroBackup < 0) primeiroBackup = t;
                 melhorUptime = Math.Max(melhorUptime, e.Uptime);
                 if (e.Sla.HasValue) segundosComSla++;
@@ -46,8 +58,9 @@ namespace IdleDataCenter.Testes
             }
 
             string H(double s) => s <= 0 ? "-" : $"{(int)(s / 3600)}h{(int)(s % 3600 / 60):00}";
+            UnityEngine.Debug.Log("CHEFES: " + string.Join(" ", lutas));
             UnityEngine.Debug.Log($"RITMO: Sysadmin {H(promocoes[1])} (completo {H(completo[1])}); Analista {H(promocoes[2])} (1º backup {H(primeiroBackup)}, completo {H(completo[2])}); " +
-                                  $"DevOps {H(promocoes[3])} (completo {H(completo[3])}); SRE {H(promocoes[4])} (completo {H(completo[4])}, {e.Estado.picosSobrevividos}/{e.Estado.picosTotal} picos); Arquiteto {H(promocoes[5])} (completo {H(completo[5])}); CTO {H(promocoes[6])} (completo {H(completo[6])}, IPO {H(ipo)}); {e.Estado.incidentesResolvidos} incidentes; " +
+                                  $"DevOps {H(promocoes[3])} (completo {H(completo[3])}); SRE {H(promocoes[4])} (completo {H(completo[4])}, {e.Estado.picosSobrevividos}/{e.Estado.picosTotal} picos); Arquiteto {H(promocoes[5])} (completo {H(completo[5])}); CTO {H(promocoes[6])} (completo {H(completo[6])}, IPO {H(ipo)}); {e.Estado.incidentesResolvidos} incidentes; chefes {e.Estado.chefesVencidos} vencidos, {e.Estado.derrotasChefe} derrotas; " +
                                   $"receita final {e.ReceitaPorSegundo:0}/s; temperatura {e.Temperatura:0} C; " +
                                   $"energia {e.ConsumoKw:0.0}/{e.CapacidadeKw:0.0} kW; banda {e.TrafegoMbps:0}/{e.BandaMbps:0} Mbps; " +
                                   $"uptime final {Economia.FormatarUptime(e.Uptime)}, melhor {Economia.FormatarUptime(melhorUptime)}, com SLA {H(segundosComSla)}");
