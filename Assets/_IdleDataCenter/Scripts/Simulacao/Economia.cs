@@ -445,7 +445,6 @@ namespace IdleDataCenter.Simulacao
             AvancarIdade(segundos);
             AvancarQuedaDeEnergia(segundos);
             AvancarPaneRegional(segundos);
-            AvancarChefe(segundos);
 
             // Novas travadas: cada servidor tem uma chance por segundo (maior com calor, menor com monitoramento)
             double mult = (Quente ? Catalogo.MultiplicadorQuente : 1) / (TemAutomacao(Catalogo.Monitoramento) ? Catalogo.FatorMtbfMonitoramento : 1)
@@ -903,7 +902,6 @@ namespace IdleDataCenter.Simulacao
             if (Estado.ultimoSalvamentoUnix <= 0) return 0; // primeiro jogo
             double fora = agoraUnix - Estado.ultimoSalvamentoUnix;
             SegundosFora = fora;
-            CancelarLutaOffline();   // ninguém luta com o jogo fechado
             // café e chamado são coisas de quem está jogando: não valem com o jogo fechado
             if (fora >= Catalogo.SegundosMinimosOffline)
             {
