@@ -33,7 +33,7 @@ namespace IdleDataCenter.Gerente
             this.faixa = faixa;
             E = economia;
             ui = new IsoGui();
-            salaIso = new SalaIso(E) { MostrarExpansao = false };
+            salaIso = new SalaIso(E) { MostrarExpansao = false, PessoasSoltas = true };
             IniciarPrimeiraHora();
 
             // avisos na barra de notícias (os sons e o save continuam por conta da faixa)

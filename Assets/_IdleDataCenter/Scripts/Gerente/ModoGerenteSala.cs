@@ -54,7 +54,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Redesenha a sala (chamado no Update, até 60 quadros por segundo: as pessoas andam lisas).</summary>
         void AtualizarSala()
         {
-            if (salaIso == null) salaIso = new SalaIso(E) { MostrarExpansao = false };
+            if (salaIso == null) salaIso = new SalaIso(E) { MostrarExpansao = false, PessoasSoltas = true };
             if (Time.unscaledTime < proximoQuadroSala) return;
             proximoQuadroSala = Time.unscaledTime + 1f / 60f;
             salaIso.Desenhar(Time.unscaledTime, VistaAtual);
@@ -101,6 +101,7 @@ namespace IdleDataCenter.Gerente
             float sx = Mathf.Round(centro.x - (area.x + area.width / 2f) * zoomTela), sy = Mathf.Round(centro.y - (area.y + area.height / 2f) * zoomTela);
             GUI.matrix = Matrix4x4.identity;
             GUI.DrawTexture(new Rect(sx, sy, salaIso.Largura * zoomTela, salaIso.Altura * zoomTela), salaIso.Textura, ScaleMode.StretchToFill);
+            PessoasSoltas(sx, sy, zoomTela);
             GUI.matrix = matriz;
             // o mesmo retângulo nas coordenadas do GUI (para cliques, placas e efeitos)
             var inv = matriz.inverse;
@@ -184,6 +185,26 @@ namespace IdleDataCenter.Gerente
         /// Sala viva: o dinheiro sobe dos equipamentos que estão rendendo, o que quebrou solta faíscas
         /// e a caneca fumega enquanto o café faz efeito.
         /// </summary>
+        static readonly Color CorDaSombra = new Color32(20, 20, 40, 90);
+        readonly List<SalaIso.Solta> soltasEmOrdem = new List<SalaIso.Solta>();
+
+        /// <summary>
+        /// As pessoas que a sala deixou fora da textura, em pixels de tela: andam um pixel da tela por vez, não um pixel
+        /// da arte (que com zoom 3 ou 4 vira um tranco). A de baixo na tela fica na frente.
+        /// </summary>
+        void PessoasSoltas(float sx, float sy, int zoom)
+        {
+            soltasEmOrdem.Clear();
+            soltasEmOrdem.AddRange(salaIso.Soltas);
+            soltasEmOrdem.Sort((a, b) => a.Pes.y.CompareTo(b.Pes.y));
+            foreach (var p in soltasEmOrdem)
+            {
+                float px = Mathf.Round(sx + p.Pes.x * zoom), py = Mathf.Round(sy + p.Pes.y * zoom);
+                GUI.DrawTexture(new Rect(px - p.Sombra * zoom, py - zoom, p.Sombra * 2 * zoom, 3 * zoom), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0, CorDaSombra, 0, 0);
+                GUI.DrawTexture(new Rect(Mathf.Round(sx + p.Canto.x * zoom), Mathf.Round(sy + p.Canto.y * zoom), p.Imagem.width * zoom, p.Imagem.height * zoom), p.Imagem, ScaleMode.StretchToFill);
+            }
+        }
+
         void Vida()
         {
             var renda = new List<Rect>();

@@ -65,6 +65,13 @@ namespace IdleDataCenter.Gerente
             return new Vector2Int(Mathf.RoundToInt(p.x), Mathf.RoundToInt(p.y - z));
         }
 
+        /// <summary>O mesmo ponto sem arredondar (para quem é desenhado fora da textura, em pixels de tela).</summary>
+        Vector2 PontoQuebrado(float gx, float gy)
+        {
+            var s = Sala;
+            return s.fundo + (s.direita - s.fundo) / s.casas * gx + (s.esquerda - s.fundo) / s.casas * gy;
+        }
+
         /// <summary>y do pé da parede da esquerda / da direita na coluna x (a primeira linha do piso fica logo abaixo).</summary>
         float PeDaParedeEsquerda(float x) => Mathf.Lerp(Sala.esquerda.y, Sala.fundo.y, (x - Sala.esquerda.x) / (Sala.fundo.x - Sala.esquerda.x));
         float PeDaParedeDireita(float x) => Mathf.Lerp(Sala.fundo.y, Sala.direita.y, (x - Sala.fundo.x) / (Sala.direita.x - Sala.fundo.x));
@@ -894,7 +901,7 @@ namespace IdleDataCenter.Gerente
             if (p.quem == "robo" && andando) pulo = Mathf.Abs(Mathf.Sin(t * 14f + p.fase * 6)) * 1.5f;   // as rodas no piso perfurado
             if (s == null) return;
             if (p.camisa.HasValue) s = Recolorido(s, p.camisa.Value);
-            PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, areaAtual == null && E.Cargo >= 2);
+            PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, areaAtual == null && E.Cargo >= 2, PontoQuebrado(p.pos.x, p.pos.y));
         }
 
         /// <summary>Cor da camisa de cada engenheiro de campo (o técnico com outra camisa).</summary>
@@ -926,6 +933,19 @@ namespace IdleDataCenter.Gerente
             return sprites[chave] = s;
         }
 
+        /// <summary>A textura de um quadro (uma por sprite, guardada), para desenhar a pessoa fora do canvas.</summary>
+        static readonly Dictionary<SpriteIso, Texture2D> texturas = new Dictionary<SpriteIso, Texture2D>();
+        static Texture2D TexturaDe(SpriteIso s)
+        {
+            if (texturas.TryGetValue(s, out var tex) && tex != null) return tex;
+            tex = new Texture2D(s.w, s.h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[s.w * s.h];
+            for (int y = 0; y < s.h; y++) System.Array.Copy(s.px, y * s.w, px, (s.h - 1 - y) * s.w, s.w);   // a textura vai de baixo para cima
+            tex.SetPixels32(px);
+            tex.Apply();
+            return texturas[s] = tex;
+        }
+
         static bool LinhaTemPixel(SpriteIso s, int y)
         {
             for (int x = 0; x < s.w; x++) if (s.px[y * s.w + x].a > 0) return true;
@@ -936,11 +956,17 @@ namespace IdleDataCenter.Gerente
         /// Trabalhador com os pés no ponto p (sombra no chão; z levanta o corpo, para os pulos). Entre as máquinas (entreMaquinas)
         /// ela entra na mesma ordem de profundidade das fileiras; senão fica por cima de tudo.
         /// </summary>
-        void PessoaIlustrada(SpriteIso s, string quem, Vector2Int p, float z, bool entreMaquinas = false)
+        void PessoaIlustrada(SpriteIso s, string quem, Vector2Int p, float z, bool entreMaquinas = false, Vector2? quebrado = null)
         {
             // os pés pela pose parada: os quadros da caminhada dividem a mesma tela, então a pessoa não pula a cada passo
             int pes = Pes(CarregarPixelLab(quem + "_se") ?? s);
             int sombra = s.w > 90 ? 9 : s.w > 60 ? 6 : 4;
+            if (PessoasSoltas && !entreMaquinas && quebrado.HasValue)
+            {
+                var q = quebrado.Value;
+                Soltas.Add(new Solta { Imagem = TexturaDe(s), Canto = new Vector2(q.x - s.w / 2, q.y - pes - z), Pes = q, Sombra = sombra });
+                return;
+            }
             fila.Add((entreMaquinas ? -5 + p.y * 0.01f : 10 + p.y * 0.001f, () =>
             {
                 tela.Ret(p.x - sombra, p.y - 1, sombra * 2, 3, new Color32(20, 20, 40, 90));

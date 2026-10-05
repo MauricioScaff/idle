@@ -100,6 +100,16 @@ namespace IdleDataCenter.Gerente
         /// <summary>Falso esconde o contorno tracejado da próxima expansão (a faixa não mostra).</summary>
         public bool MostrarExpansao = true;
 
+        /// <summary>
+        /// Verdadeiro: as pessoas que ficam por cima de tudo saem da textura e vão para Soltas, para a tela desenhá-las
+        /// em pixels de TELA (com o zoom de 3 ou 4 vezes, andar de pixel da arte em pixel da arte dá trancos).
+        /// </summary>
+        public bool PessoasSoltas;
+
+        /// <summary>Uma pessoa fora da textura: canto de cima (pixels do canvas, quebrados) e a sombra nos pés.</summary>
+        public struct Solta { public Texture2D Imagem; public Vector2 Canto, Pes; public int Sombra; }
+        public readonly List<Solta> Soltas = new List<Solta>();
+
         /// <summary>Retângulo da sala atual (paredes, piso e laje) na tela, em pixels com origem em cima à esquerda.</summary>
         public RectInt AreaDaSala
         {
@@ -177,7 +187,7 @@ namespace IdleDataCenter.Gerente
         public void Desenhar(float tempo, Vista vista = Vista.Sala)
         {
             t = tempo;
-            Alvos.Clear(); Placas.Clear(); fila.Clear();
+            Alvos.Clear(); Placas.Clear(); fila.Clear(); Soltas.Clear();
             Marcador = null; Expansao = null; Chamado = null; ItemDoMarcador = null;
             if (vista == Vista.Mundo) { DesenharMundo(); return; }
             if (vista == Vista.Dados || vista == Vista.Rede) { DesenharArea(vista); return; }
