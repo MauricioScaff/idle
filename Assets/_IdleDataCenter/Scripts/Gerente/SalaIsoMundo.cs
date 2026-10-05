@@ -4,7 +4,7 @@ using UnityEngine;
 namespace IdleDataCenter.Gerente
 {
     /// <summary>
-    /// CTO: o mapa-múndi à noite, como no telão de um NOC. Continentes com luzes de cidade, a sede na América do Sul,
+    /// CTO: o mapa-múndi à noite (PixelLab Pro), como no telão de um NOC. Continentes com luzes de cidade, a sede na América do Sul,
     /// as regiões abertas brilhando, cabos submarinos com pacotes atravessando o oceano, cataventos da energia
     /// renovável e o brilho roxo dos clusters de GPU. Pane regional deixa a região vermelha piscando.
     /// </summary>
@@ -13,19 +13,11 @@ namespace IdleDataCenter.Gerente
         const int MapaL = 460, MapaA = 300;
         PixelCanvas telaMundo;
 
-        // continentes em frações do mapa (bem simplificados)
-        static readonly Vector2[][] Continentes =
-        {
-            new[] { new Vector2(.05f, .18f), new Vector2(.12f, .11f), new Vector2(.22f, .08f), new Vector2(.31f, .12f), new Vector2(.33f, .20f), new Vector2(.28f, .30f), new Vector2(.24f, .40f), new Vector2(.19f, .46f), new Vector2(.14f, .38f), new Vector2(.07f, .30f) },
-            new[] { new Vector2(.25f, .50f), new Vector2(.31f, .51f), new Vector2(.36f, .58f), new Vector2(.34f, .68f), new Vector2(.30f, .80f), new Vector2(.27f, .88f), new Vector2(.25f, .80f), new Vector2(.24f, .66f), new Vector2(.22f, .57f) },
-            new[] { new Vector2(.45f, .16f), new Vector2(.51f, .11f), new Vector2(.57f, .14f), new Vector2(.56f, .24f), new Vector2(.51f, .30f), new Vector2(.46f, .28f), new Vector2(.44f, .22f) },
-            new[] { new Vector2(.46f, .35f), new Vector2(.55f, .33f), new Vector2(.61f, .42f), new Vector2(.59f, .56f), new Vector2(.54f, .70f), new Vector2(.50f, .64f), new Vector2(.47f, .52f), new Vector2(.44f, .42f) },
-            new[] { new Vector2(.57f, .12f), new Vector2(.68f, .07f), new Vector2(.82f, .08f), new Vector2(.94f, .14f), new Vector2(.95f, .24f), new Vector2(.88f, .33f), new Vector2(.80f, .42f), new Vector2(.72f, .40f), new Vector2(.64f, .33f), new Vector2(.58f, .24f) },
-            new[] { new Vector2(.80f, .62f), new Vector2(.88f, .59f), new Vector2(.94f, .66f), new Vector2(.90f, .75f), new Vector2(.82f, .74f) },
-        };
-
         /// <summary>Onde fica cada região (0 = sede, na América do Sul).</summary>
-        public static readonly Vector2[] PosicaoRegiao = { new Vector2(.31f, .66f), new Vector2(.20f, .28f), new Vector2(.51f, .20f), new Vector2(.82f, .27f) };
+        public static readonly Vector2[] PosicaoRegiao = { new Vector2(.32f, .71f), new Vector2(.24f, .31f), new Vector2(.50f, .22f), new Vector2(.83f, .32f) };
+
+        /// <summary>O mapa à noite desenhado no PixelLab Pro (Resources/Arte/Salas/mundo.png), carregado uma vez.</summary>
+        Color32[] mapaPixelLab;
 
         Vector2Int M(Vector2 f) => new Vector2Int(Mathf.RoundToInt(f.x * MapaL), Mathf.RoundToInt(f.y * MapaA));
 
@@ -34,26 +26,12 @@ namespace IdleDataCenter.Gerente
             if (telaMundo == null) telaMundo = new PixelCanvas(MapaL, MapaA);
             tela = telaMundo;
             d = new IsoDesenho(tela);   // só as primitivas (polígono, linha)
-            var oceano = IsoDesenho.C("0e1a33");
-            tela.Limpar(oceano);
-            // grade de latitude/longitude
-            for (int x = 0; x < MapaL; x += 23) tela.Ret(x, 0, 1, MapaA, IsoDesenho.C("132447"));
-            for (int y = 0; y < MapaA; y += 25) tela.Ret(0, y, MapaL, 1, IsoDesenho.C("132447"));
-
-            foreach (var c in Continentes)
+            if (mapaPixelLab == null)
             {
-                var pts = new Vector2Int[c.Length];
-                for (int i = 0; i < c.Length; i++) pts[i] = M(c[i]);
-                d.Poligono(IsoDesenho.C("24344f"), pts);
-                for (int i = 0; i < pts.Length; i++) d.Linha(pts[i], pts[(i + 1) % pts.Length], IsoDesenho.C("3a5075"));
+                var tex = ArteGerada.Textura("Salas/mundo");
+                mapaPixelLab = tex != null ? ArteGerada.PixelsDeCimaParaBaixo(tex) : new Color32[MapaL * MapaA];
             }
-            // luzes das cidades: pontinhos que piscam devagar sobre os continentes
-            for (int i = 0; i < 160; i++)
-            {
-                int x = (i * 97 + 13) % MapaL, y = (i * 61 + 29) % MapaA;
-                if (!DentroDeContinente(new Vector2((float)x / MapaL, (float)y / MapaA))) continue;
-                if (Mathf.Sin(t * 0.7f + i) > -0.6f) tela.Pixel(x, y, IsoDesenho.C(i % 5 == 0 ? "fdf6e3" : "ffd65c"));
-            }
+            tela.Imagem(mapaPixelLab, MapaL, MapaA, 0, 0);
 
             // cabos submarinos: da sede para cada região ligada, em arco, com pacotes
             int ligadas = E.RegioesLigadas;
@@ -66,18 +44,6 @@ namespace IdleDataCenter.Gerente
             for (int i = 0; i < E.Nivel(Catalogo.Renovavel); i++) Catavento(M(PosicaoRegiao[0]) + new Vector2Int(-22 + i * 11, 24));
 
             tela.Aplicar();
-        }
-
-        bool DentroDeContinente(Vector2 p)
-        {
-            foreach (var c in Continentes)
-            {
-                bool dentro = false;
-                for (int i = 0, j = c.Length - 1; i < c.Length; j = i++)
-                    if ((c[i].y > p.y) != (c[j].y > p.y) && p.x < (c[j].x - c[i].x) * (p.y - c[i].y) / (c[j].y - c[i].y) + c[i].x) dentro = !dentro;
-                if (dentro) return true;
-            }
-            return false;
         }
 
         void Cabo(int de, int para)

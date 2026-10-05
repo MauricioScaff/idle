@@ -4,7 +4,7 @@ using UnityEngine;
 namespace IdleDataCenter.Gerente
 {
     /// <summary>
-    /// Arquiteto: a "troca de escala". A sala vira o prédio DC-01 num quarteirão com ruas, carros e árvores,
+    /// Arquiteto: a "troca de escala". A sala vira o prédio DC-01 (PixelLab Pro) num quarteirão com ruas, carros e árvores,
     /// e cada datacenter novo é outro prédio. Fibra liga os prédios (com dados correndo), a CDN aparece como
     /// nuvens sobre o DC-01 e os geradores ficam ao lado de cada prédio. Queda de energia apaga as janelas.
     /// </summary>
@@ -116,34 +116,35 @@ namespace IdleDataCenter.Gerente
             }
         }
 
+        /// <summary>
+        /// Prédio de datacenter (PixelLab Pro): a ponta de baixo da base no canto da frente do lote. As janelas mostram os
+        /// LEDs dos racks piscando; numa queda de energia o prédio escurece e os LEDs apagam.
+        /// </summary>
         void Predio(float gx, float gy, int indice)
         {
             bool semEnergia = indice > 0 && E.DatacenterSemEnergia == indice;
-            var paredeE = indice == 0 ? IsoDesenho.C("3a4668") : IsoDesenho.C("46506e");
-            var paredeD = indice == 0 ? IsoDesenho.C("2c3654") : IsoDesenho.C("363f5a");
-            d.Caixa(gx, gy, 3, 3, 64, IsoDesenho.C("6d7390"), paredeE, paredeD);
-            // janelas: fileiras de LEDs de racks vistas por fora (apagadas numa queda de energia)
-            string[] cores = { "5cff8a", "5cc8ff", "5cff8a", "b48cff" };
-            for (int andar = 0; andar < 4; andar++)
-            for (int j = 0; j < 6; j++)
-            {
-                float u = 0.08f + j * 0.15f, z = 52 - andar * 13;
-                Color32 cor = semEnergia ? IsoDesenho.C("1b1f2c") : Led(indice * 31 + andar * 7 + j, IsoDesenho.C(cores[(andar + j + indice) % cores.Length]), 1.5f + j % 3);
-                var a = d.FaceEsq(gx, gy, 3, 3, u, z);
-                tela.Ret(a.x, a.y, 5, 3, IsoDesenho.C("1b1f2c"));
-                tela.Ret(a.x + 1, a.y + 1, 3, 1, cor);
-                var b = d.FaceDir(gx, gy, 3, 3, u, z);
-                tela.Ret(b.x - 5, b.y, 5, 3, IsoDesenho.C("1b1f2c"));
-                tela.Ret(b.x - 4, b.y + 1, 3, 1, semEnergia ? cor : IsoDesenho.Escurecer(cor, 0.8f));
-            }
-            // porta
-            var p = d.FaceEsq(gx, gy, 3, 3, 0.45f, 12);
-            tela.Ret(p.x, p.y, 8, 12, IsoDesenho.C("1b1f2c"));
-            tela.Ret(p.x + 1, p.y + 1, 6, 10, IsoDesenho.C(indice == 0 ? "ffd65c" : "7cc8ff"));
-            // telhado: condensadoras de ar
-            for (int k = 0; k < 3; k++)
-                d.Caixa(gx + 0.3f + k * 0.9f, gy + 0.4f, 0.6f, 0.6f, 6, IsoDesenho.C("e8edf5"), IsoDesenho.C("c9d0dc"), IsoDesenho.C("a9b0bf"), 64);
+            var s = CarregarPixelLab("predio_dc");
+            if (s == null) return;
+            if (semEnergia) s = Apagado(s);
+            var ponta = d.P(gx + 3, gy + 3);
+            DesenharSprite(s, ponta.x - s.w / 2, ponta.y - s.h + 1, semEnergia ? -1 : indice * 3.1f + 1);
             if (semEnergia) Alerta(gx + 1.5f, gy + 1.5f, 84);
+        }
+
+        /// <summary>O prédio sem energia: tudo mais escuro e sem LED aceso.</summary>
+        static SpriteIso Apagado(SpriteIso o)
+        {
+            string chave = "apagado|" + o.GetHashCode();
+            if (sprites.TryGetValue(chave, out var s)) return s;
+            var px = (Color32[])o.px.Clone();
+            for (int i = 0; i < px.Length; i++)
+            {
+                var c = px[i];
+                if (c.a == 0) continue;
+                px[i] = new Color32((byte)(c.r * 0.45f), (byte)(c.g * 0.45f), (byte)(c.b * 0.55f), c.a);
+            }
+            s = new SpriteIso { px = px, w = o.w, h = o.h, frente = o.frente };
+            return sprites[chave] = s;
         }
 
         void TerrenoVazio(float gx, float gy)
@@ -169,9 +170,8 @@ namespace IdleDataCenter.Gerente
         void Arvore(float gx, float gy)
         {
             var p = d.P(gx + 0.25f, gy + 0.25f);
-            tela.Ret(p.x - 1, p.y - 8, 2, 8, IsoDesenho.C("7d5238"));
-            tela.Circulo(p.x, p.y - 12, 6, IsoDesenho.C("3f9b54"));
-            tela.Circulo(p.x - 2, p.y - 15, 3, IsoDesenho.C("6fd36f"));
+            var s = CarregarPixelLab("arvore");
+            if (s != null) tela.Imagem(s.px, s.w, s.h, p.x - s.w / 2, p.y - s.h + 2);
         }
 
         void Fibra(int de, int para)
