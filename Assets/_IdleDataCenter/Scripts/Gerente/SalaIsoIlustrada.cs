@@ -313,7 +313,7 @@ namespace IdleDataCenter.Gerente
         {
             TorresNaParede(61, 7, true);
             Alvos.Add(new Alvo { Area = new RectInt(244, 128, 90, 108), Tipo = "equipamento", Prof = -20, Nome = "Mesa do técnico" });   // mesa da ilustração (atrás de tudo que fica em cima dela)
-            Caneca("caneca", new Vector2Int(308, 176));
+            Caneca("caneca", new Vector2Int(305, 183));
             BackupNaMesa(new Vector2Int(294, 182), new Vector2Int(262, 170));
             pontoDoVentilador = new Vector2Int(318, 112);
             var ventilador = CarregarPixelLab("ventilador");
