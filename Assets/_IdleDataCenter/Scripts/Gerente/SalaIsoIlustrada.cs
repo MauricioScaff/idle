@@ -754,6 +754,7 @@ namespace IdleDataCenter.Gerente
                 quemTem.Add("tecnico");
                 if (E.TemEstagiario) quemTem.Add("estagiario");
                 for (int i = 0; i < (E.Cargo >= 2 ? Mathf.Min(E.Cargo - 1, 3) : 0); i++) quemTem.Add("engenheiro" + i);
+                if (E.Cargo >= 4) quemTem.Add("robo");   // o robô de manutenção do SRE roda pelo data center
             }
             foreach (var chave in new List<string>(pessoas.Keys)) if (!quemTem.Contains(chave)) pessoas.Remove(chave);
 
@@ -762,7 +763,7 @@ namespace IdleDataCenter.Gerente
                 if (!pessoas.TryGetValue(chave, out var p))
                 {
                     p = new Trabalhador { fase = (float)sorteioDasPessoas.NextDouble() };
-                    p.quem = chave == "estagiario" ? "estagiario" : tecnico;
+                    p.quem = chave == "estagiario" ? "estagiario" : chave == "robo" ? "robo" : tecnico;
                     if (chave.StartsWith("engenheiro")) p.camisa = CamisasDosEngenheiros[chave[chave.Length - 1] - '0'];
                     // começa no lugar de trabalho (técnico) ou num ponto de ronda
                     if (chave == "tecnico") { p.pos = Mesa.lugar; p.olhar = Mesa.olhar; p.naMesa = true; p.paradaAte = t + 8 + (float)sorteioDasPessoas.NextDouble() * 15; }
@@ -871,6 +872,10 @@ namespace IdleDataCenter.Gerente
                 while (n < 8 && CarregarPixelLab(quem + "_" + lado + "_" + n) != null) n++;
                 if (n > 0) return CarregarPixelLab(quem + "_" + lado + "_" + (Mathf.FloorToInt(andado / (PassadaEmPixels / n)) % n), espelhar);
             }
+            // parado: respira, se tiver a animação (tecnico_se_parado_0...)
+            int m = 0;
+            while (m < 8 && CarregarPixelLab(quem + "_" + lado + "_parado_" + m) != null) m++;
+            if (m > 0) return CarregarPixelLab(quem + "_" + lado + "_parado_" + (Mathf.FloorToInt(t * 5f + andado) % m), espelhar);
             return CarregarPixelLab(quem + "_" + lado, espelhar);
         }
 
@@ -885,7 +890,8 @@ namespace IdleDataCenter.Gerente
                 s = CarregarPixelLab(p.quem + "_s") ?? Pose(p.quem, "se", false, p.andado);
                 pulo = Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * 8f;
             }
-            else s = Pose(p.quem, p.olhar, andando, p.andado + p.fase * PassadaEmPixels);
+            else s = Pose(p.quem, p.olhar, andando, andando ? p.andado + p.fase * PassadaEmPixels : p.fase * 10);
+            if (p.quem == "robo" && andando) pulo = Mathf.Abs(Mathf.Sin(t * 14f + p.fase * 6)) * 1.5f;   // as rodas no piso perfurado
             if (s == null) return;
             if (p.camisa.HasValue) s = Recolorido(s, p.camisa.Value);
             PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, areaAtual == null && E.Cargo >= 2);
