@@ -671,6 +671,7 @@ namespace IdleDataCenter.Gerente
             public bool naMesa;                    // técnico: está trabalhando na mesa
             public bool consertando;
             public float fase;
+            public float andado;                   // pixels andados: escolhe o quadro do passo (o pé não patina)
         }
 
         readonly Dictionary<string, Trabalhador> pessoas = new Dictionary<string, Trabalhador>();
@@ -693,7 +694,10 @@ namespace IdleDataCenter.Gerente
             : (new Vector2(2.4f, 9.6f), "nw");   // na frente do NOC, fora das fileiras
 
         /// <summary>Velocidade de quem anda, em casas por segundo (casas menores nas salas grandes).</summary>
-        float Velocidade => E.Cargo == 0 ? 0.55f : 0.65f;
+        float Velocidade => E.Cargo == 0 ? 0.7f : 0.85f;
+
+        /// <summary>Quantos pixels a pessoa anda num ciclo inteiro da caminhada (dois passos).</summary>
+        const float PassadaEmPixels = 40;
 
         /// <summary>Ponto da tela (pixel da ilustração) para casas: o inverso de IP.</summary>
         Vector2 Grade(Vector2 p)
@@ -830,6 +834,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Anda pelo caminho (um eixo de cada vez); ao chegar, vira para o destino e fica parada um tempo.</summary>
         void Andar(Trabalhador p, float dt)
         {
+            float pixelsPorCasa = (Sala.direita - Sala.fundo).magnitude / Sala.casas;
             float passo = Velocidade * dt;
             while (p.caminho.Count > 0 && passo > 0)
             {
@@ -839,6 +844,8 @@ namespace IdleDataCenter.Gerente
                 if (dist < 0.001f) { p.caminho.RemoveAt(0); continue; }
                 // direção na tela: gx crescendo é sudeste, gy crescendo é sudoeste
                 p.olhar = Mathf.Abs(d.x) >= Mathf.Abs(d.y) ? (d.x > 0 ? "se" : "nw") : (d.y > 0 ? "sw" : "ne");
+                float anda = Mathf.Min(passo, dist);
+                p.andado += anda * pixelsPorCasa;
                 if (passo >= dist) { p.pos = alvo; passo -= dist; p.caminho.RemoveAt(0); }
                 else { p.pos += d / dist * passo; passo = 0; }
                 if (p.caminho.Count == 0)
@@ -854,7 +861,7 @@ namespace IdleDataCenter.Gerente
         /// Sprite de uma pessoa virada para uma das quatro diagonais. O PixelLab deu sudeste e noroeste; sudoeste e
         /// nordeste são os mesmos espelhados.
         /// </summary>
-        SpriteIso Pose(string quem, string dir, bool andando, float fase)
+        SpriteIso Pose(string quem, string dir, bool andando, float andado)
         {
             bool espelhar = dir == "sw" || dir == "ne";
             string lado = dir == "sw" ? "se" : dir == "ne" ? "nw" : dir;
@@ -862,7 +869,7 @@ namespace IdleDataCenter.Gerente
             {
                 int n = 0;
                 while (n < 8 && CarregarPixelLab(quem + "_" + lado + "_" + n) != null) n++;
-                if (n > 0) return CarregarPixelLab(quem + "_" + lado + "_" + (Mathf.FloorToInt(t * 6f + fase * 10) % n), espelhar);
+                if (n > 0) return CarregarPixelLab(quem + "_" + lado + "_" + (Mathf.FloorToInt(andado / (PassadaEmPixels / n)) % n), espelhar);
             }
             return CarregarPixelLab(quem + "_" + lado, espelhar);
         }
@@ -875,10 +882,10 @@ namespace IdleDataCenter.Gerente
             if (ehTecnico && !andando && !p.consertando && t - ultimaCompraEm < 1.5f)
             {
                 // comemora a compra: pulinhos olhando para a frente
-                s = CarregarPixelLab(p.quem + "_s") ?? Pose(p.quem, "se", false, p.fase);
+                s = CarregarPixelLab(p.quem + "_s") ?? Pose(p.quem, "se", false, p.andado);
                 pulo = Mathf.Abs(Mathf.Sin((t - ultimaCompraEm) * 9f)) * 8f;
             }
-            else s = Pose(p.quem, p.olhar, andando, p.fase);
+            else s = Pose(p.quem, p.olhar, andando, p.andado + p.fase * PassadaEmPixels);
             if (s == null) return;
             if (p.camisa.HasValue) s = Recolorido(s, p.camisa.Value);
             PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, areaAtual == null && E.Cargo >= 2);
