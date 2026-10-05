@@ -35,9 +35,9 @@ public static class Salas
             piso = "tabua", pisoCores = Cs("DDA87C", "D8A276", "8C5545", "98634D", "642D38", "B07A58"),
         };
         s.portas.Add(new Montar.Porta { parede = 'D', u0 = 2.45, u1 = 3.75, altura = 98, moldura = C("582D1F"), painel = C("B8B7B6"), luz = C("D4D3D2"), macaneta = C("3A2A20") });
-        s.moveis.Add(new Montar.Movel { nome = "janela", x = 210, y = 66, w = 40, h = 76, parede = 'D', u = 0.5, escala = 1.5 });
-        s.moveis.Add(new Montar.Movel { nome = "planta", x = 172, y = 82, w = 52, h = 84, parede = 'C', escala = 1.5 });
-        s.moveis.Add(new Montar.Movel { nome = "mesa", x = 264, y = 132, w = 94, h = 100, parede = 'D', u = 2.8, escala = 1.5 });
+        s.moveis.Add(new Montar.Movel { nome = "janela", x = 210, y = 66, w = 40, h = 76, parede = 'D', u = 0.5, escala = 1.5, arquivo = "moveis_pro/janela.png" });
+        s.moveis.Add(new Montar.Movel { nome = "planta", x = 172, y = 82, w = 52, h = 84, parede = 'C', escala = 1.5, arquivo = "moveis_pro/planta.png" });
+        s.moveis.Add(new Montar.Movel { nome = "mesa", x = 264, y = 132, w = 94, h = 100, parede = 'D', u = 2.8, escala = 1.5, arquivo = "moveis_pro/mesa_salinha.png", pedacoMinimo = 0.15 });
         l.Add(s);
 
         // Sala de racks (Analista e DevOps): 10 casas, piso de ladrilho, quadro e mesa na frente da parede da esquerda.
@@ -51,9 +51,26 @@ public static class Salas
         };
         s.portas.Add(new Montar.Porta { parede = 'E', u0 = 3.0, u1 = 4.3, altura = 98, moldura = C("5C5B5B"), painel = C("3B3A3A"), luz = C("4C4A4A"), macaneta = C("D8D8D8") });
         s.portas.Add(new Montar.Porta { parede = 'D', u0 = 2.0, u1 = 3.3, altura = 98, moldura = C("3E3C3C"), painel = C("2C2B2B"), luz = C("383737"), macaneta = C("D8D8D8") });
-        s.moveis.Add(new Montar.Movel { nome = "quadro", x = 48, y = 106, w = 50, h = 64, parede = 'E', u = 9.3, escala = 1.5 });
-        s.moveis.Add(new Montar.Movel { nome = "extintor", x = 119, y = 104, w = 18, h = 36, parede = 'E', u = 6.5, escala = 1.5 });
-        s.moveis.Add(new Montar.Movel { nome = "mesa", x = 50, y = 135, w = 82, h = 78, parede = 'E', u = 9.2, escala = 1.5 });
+        s.moveis.Add(new Montar.Movel { nome = "quadro", x = 48, y = 106, w = 50, h = 64, parede = 'E', u = 9.3, escala = 1.5, arquivo = "moveis_pro/quadro.png", soMaior = true });
+        s.moveis.Add(new Montar.Movel { nome = "extintor", x = 119, y = 104, w = 18, h = 36, parede = 'E', u = 6.5, escala = 1.5, arquivo = "moveis_pro/extintor.png" });
+        s.moveis.Add(new Montar.Movel { nome = "mesa", x = 50, y = 135, w = 82, h = 78, parede = 'E', u = 9.2, escala = 1.5, arquivo = "moveis_pro/mesa_racks.png", pedacoMinimo = 0.15 });
+        l.Add(s);
+
+        // DevOps (sala virtualizada): a mesma planta da sala de racks (o jogo encaixa igual), com cara de time de
+        // produto: paredes azul-ardósia, carpete, faixa roxa, quadro kanban, mesa com dois monitores e o canto do café
+        s = new Montar.Sala
+        {
+            nome = "devops", n = 10, altura = 132, laje = 12, espessura = 0.16,
+            contorno = C("0B0C16"), capaCor = C("6E7393"), capaLuz = C("A9AED0"), paredeEsq = C("4A4F6B"), paredeDir = C("383C55"),
+            pontaEsq = C("383C55"), pontaDir = C("4A4F6B"), lajeEsq = C("15172A"), lajeDir = C("24273E"), bordaLuz = C("8F95B8"),
+            piso = "ladrilho", pisoCores = Cs("5D6178", "595D73", "555970", "2E3142", "6E7290", "676B88"),
+            faixa = C("B37CFF"), faixaSombra = C("7A4FC0"), faixaAltura = 0.55,
+        };
+        s.portas.Add(new Montar.Porta { parede = 'E', u0 = 3.0, u1 = 4.3, altura = 98, moldura = C("6E7393"), painel = C("2E3142"), luz = C("3B3F57"), macaneta = C("D8D8D8") });
+        s.portas.Add(new Montar.Porta { parede = 'D', u0 = 2.0, u1 = 3.3, altura = 98, moldura = C("4A4F6B"), painel = C("24273E"), luz = C("2E3142"), macaneta = C("D8D8D8") });
+        s.moveis.Add(new Montar.Movel { nome = "kanban", origem = "racks", x = 48, y = 106, w = 50, h = 64, parede = 'E', u = 9.3, escala = 1.5, arquivo = "moveis_pro/kanban.png", soMaior = true });
+        s.moveis.Add(new Montar.Movel { nome = "mesa", origem = "racks", x = 50, y = 135, w = 82, h = 78, parede = 'E', u = 9.2, escala = 1.5, arquivo = "moveis_pro/mesa_devops.png", pedacoMinimo = 0.15 });
+        s.moveis.Add(new Montar.Movel { nome = "cafe", arquivo = "moveis_pro/cafe.png", gx = 0.55, gy = 5.9 });
         l.Add(s);
 
         // Data center (SRE em diante): 12 casas, piso técnico com a faixa perfurada, NOC na frente da parede da esquerda
@@ -67,7 +84,7 @@ public static class Salas
         };
         s.portas.Add(new Montar.Porta { parede = 'E', u0 = 3.2, u1 = 4.7, altura = 100, dupla = true, moldura = C("787A83"), painel = C("1C1A2A"), luz = C("3A3F55"), macaneta = C("9AA0B0") });
         s.portas.Add(new Montar.Porta { parede = 'D', u0 = 2.5, u1 = 4.0, altura = 100, dupla = true, moldura = C("5A5C66"), painel = C("120F1E"), luz = C("2C2F45"), macaneta = C("9AA0B0") });
-        s.moveis.Add(new Montar.Movel { nome = "noc", x = 34, y = 128, w = 58, h = 82, parede = 'E', u = 11.3, escala = 2 });
+        s.moveis.Add(new Montar.Movel { nome = "noc", x = 34, y = 128, w = 58, h = 82, parede = 'E', u = 11.3, escala = 2, arquivo = "moveis_pro/noc.png" });
         l.Add(s);
 
         // Dados e backup (atrás da porta da direita): sala fria e clara, storage na parede da esquerda, fitas na da direita.
@@ -81,7 +98,7 @@ public static class Salas
             faixa = C("8FD3FF"), faixaSombra = C("4C7DA6"), faixaAltura = 0.86,
         };
         s.portas.Add(new Montar.Porta { parede = 'E', u0 = 5.2, u1 = 6.5, altura = 98, moldura = C("8A93A6"), painel = C("2E3344"), luz = C("3E4658"), macaneta = C("D8D8D8") });
-        s.moveis.Add(new Montar.Movel { nome = "extintor", origem = "racks", x = 119, y = 104, w = 18, h = 36, parede = 'E', u = 4.6, escala = 1.5 });
+        s.moveis.Add(new Montar.Movel { nome = "extintor", origem = "racks", x = 119, y = 104, w = 18, h = 36, parede = 'E', u = 4.6, escala = 1.5, arquivo = "moveis_pro/extintor.png" });
         l.Add(s);
 
         // Rede e segurança (atrás da porta da esquerda): sala escura com faixa verde, os racks de rede e de segurança e a
@@ -95,7 +112,7 @@ public static class Salas
             faixa = C("4FD18B"), faixaSombra = C("2E8A5A"), faixaAltura = 0.55,
         };
         s.portas.Add(new Montar.Porta { parede = 'D', u0 = 5.2, u1 = 6.5, altura = 98, moldura = C("4A5266"), painel = C("161A26"), luz = C("2B3140"), macaneta = C("9AA0B0") });
-        s.moveis.Add(new Montar.Movel { nome = "soc", origem = "dc", x = 34, y = 128, w = 58, h = 82, parede = 'E', u = 6.6, escala = 2,
+        s.moveis.Add(new Montar.Movel { nome = "soc", origem = "dc", x = 34, y = 128, w = 58, h = 82, parede = 'E', u = 6.6, escala = 2, arquivo = "moveis_pro/noc.png",
             trocas = Cs("37374B", "2B3140", "353545", "293040", "171427", "1C2130", "F79C42", "2B3140", "A25B11", "1C2130") });
         l.Add(s);
         return l;

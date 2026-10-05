@@ -8,6 +8,8 @@ $arte = "$PSScriptRoot\..\..\Assets\_IdleDataCenter\Resources\Arte"
 $destSalas = if ($saida) { $saida } else { "$arte\Salas" }
 $destPl = if ($saida) { $saida } else { "$arte\PixelLab" }
 
+[Montar]::PastaDasImagens = (Resolve-Path "$PSScriptRoot\..\PixelLab").Path
+if ($saida) { [Montar]::PastaDosMoveis = $saida }
 foreach ($b in [Salas]::Bases()) {
   $w = 0; $h = 0
   $b.px = [Dobrar]::Ler("$base\$($b.nome).png", [ref]$w, [ref]$h)

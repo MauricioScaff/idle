@@ -9,12 +9,17 @@ public static class Montar
     public const int CW = 32, CH = 16;
 
     public class Porta { public char parede; public double u0, u1; public int altura; public int moldura, painel, luz, macaneta; public bool dupla; }
-    public class Movel { public string nome, origem; public int x, y, w, h; public char parede; public double u; public double escala; public int[] trocas; }   // trocas: pares de cores (de, para)
+    public class Movel { public bool soMaior; public double pedacoMinimo, gx, gy;   // gx, gy: peça avulsa (sem recorte), com a base no ponto do piso
+        public string nome, origem, arquivo; public int x, y, w, h; public char parede; public double u; public double escala; public int[] trocas; }   // trocas: pares de cores (de, para)
 
     /// Uma ilustração de onde se recortam móveis: os pixels, o losango do piso (fundo, esquerda, direita) e as cores do
     /// fundo (paredes e piso), que não fazem parte dos móveis.
     public class Base { public string nome; public int[] px; public int w, h; public double ofx, ofy, oex, oey, odx, ody; public int[] fundo; }
     public static readonly Dictionary<string, Base> Bases = new Dictionary<string, Base>();
+    /// Onde salvar os recortes dos móveis (referência para refazer no PixelLab); null: não salva.
+    public static string PastaDosMoveis;
+    /// Pasta das imagens prontas de móveis (Movel.arquivo), que substituem o recorte.
+    public static string PastaDasImagens;
 
     public class Sala
     {
@@ -147,7 +152,7 @@ public static class Montar
             }
 
         // móveis recortados da ilustração
-        foreach (var m in s.moveis) ColarMovel(s, m, Bases[m.origem ?? s.nome], saida, id, W, H);
+        foreach (var m in s.moveis) ColarMovel(s, m, m.w == 0 ? null : Bases[m.origem ?? s.nome], saida, id, W, H);
         return saida;
     }
 
@@ -245,6 +250,52 @@ public static class Montar
 
     // ---------------- móveis ----------------
 
+    /// Só o maior pedaço contínuo de pixels opacos (o resto vira transparente).
+    static int[] MaiorPedaco(int[] p, int w, int h, double fracaoMinima = 1)
+    {
+        var rotulo = new int[w * h];
+        int melhor = 0, tamMelhor = 0, atual = 0;
+        var pilha = new Stack<int>();
+        for (int i = 0; i < p.Length; i++)
+        {
+            if (rotulo[i] != 0 || ((p[i] >> 24) & 255) < 128) continue;
+            atual++; int tam = 0;
+            pilha.Push(i); rotulo[i] = atual;
+            while (pilha.Count > 0)
+            {
+                int j = pilha.Pop(); tam++;
+                int x = j % w, y = j / w;
+                for (int dy = -1; dy <= 1; dy++)
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        int nx = x + dx, ny = y + dy;
+                        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+                        int n = ny * w + nx;
+                        if (rotulo[n] != 0 || ((p[n] >> 24) & 255) < 128) continue;
+                        rotulo[n] = atual; pilha.Push(n);
+                    }
+            }
+            if (tam > tamMelhor) { tamMelhor = tam; melhor = atual; }
+        }
+        // fica o maior e, com fracaoMinima < 1, os outros pedaços com pelo menos essa fração do tamanho dele
+        var tamanhos = new int[atual + 1];
+        for (int i = 0; i < p.Length; i++) tamanhos[rotulo[i]]++;
+        var o = new int[p.Length];
+        for (int i = 0; i < p.Length; i++)
+            if (rotulo[i] != 0 && (rotulo[i] == melhor || tamanhos[rotulo[i]] >= tamMelhor * fracaoMinima)) o[i] = p[i];
+        return o;
+    }
+
+    /// Retângulo dos pixels opacos: x0, y0, x1, y1.
+    static int[] Caixa(int[] p, int w, int h)
+    {
+        int x0 = w, y0 = h, x1 = 0, y1 = 0;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                if (((p[y * w + x] >> 24) & 255) >= 128) { x0 = Math.Min(x0, x); y0 = Math.Min(y0, y); x1 = Math.Max(x1, x); y1 = Math.Max(y1, y); }
+        return new[] { x0, y0, x1, y1 };
+    }
+
     static double PeOrig(Base s, char parede, double x)
     {
         // y do pé da parede da ilustração original na coluna x
@@ -259,6 +310,25 @@ public static class Montar
 
     static void ColarMovel(Sala s, Movel m, Base b, int[] tela, int[] id, int W, int H)
     {
+        if (m.w == 0)
+        {
+            // peça avulsa (só a imagem pronta): o meio da base no ponto (gx, gy) do piso
+            int fw, fh;
+            var im = Dobrar.Ler(System.IO.Path.Combine(PastaDasImagens, m.arquivo), out fw, out fh);
+            var c = Caixa(im, fw, fh);
+            double px = s.Bx + CW * m.gx - CW * m.gy, py = s.By + CH * m.gx + CH * m.gy;
+            int ox = (int)Math.Round(px - (c[0] + c[2]) / 2.0), oy = (int)Math.Round(py - c[3]);
+            for (int y = 0; y < fh; y++)
+                for (int x = 0; x < fw; x++)
+                {
+                    int cor = im[y * fw + x];
+                    if (((cor >> 24) & 255) < 128) continue;
+                    int X = ox + x, Y = oy + y;
+                    if (X < 0 || Y < 0 || X >= W || Y >= H || id[Y * W + X] == Vazio) continue;
+                    tela[Y * W + X] = cor;
+                }
+            return;
+        }
         int[] orig = b.px; int ow = b.w, oh = b.h;
         // recorte: tira o fundo da ilustração (paredes, piso e as linhas do pé das paredes) que encosta na borda do
         // retângulo; o que tem cor de fundo mas fica cercado pelo móvel (assento, tampo da mesa) continua
@@ -307,7 +377,21 @@ public static class Montar
             img = Dobrar.Reduzir(img, iw, ih, m.escala / 2.0, out nw, out nh);
             iw = nw; ih = nh;
         }
+        if (PastaDosMoveis != null) Dobrar.Gravar(System.IO.Path.Combine(PastaDosMoveis, s.nome + "_" + m.nome + ".png"), img, iw, ih);
         double k = iw / (double)m.w;   // escala efetiva
+        int ajusteX = 0, ajusteY = 0;
+        if (m.arquivo != null)
+        {
+            // móvel refeito (PixelLab Pro): entra no lugar do recorte ampliado, com a base (centro e chão) no mesmo ponto
+            int fw, fh;
+            var novo = Dobrar.Ler(System.IO.Path.Combine(PastaDasImagens, m.arquivo), out fw, out fh);
+            if (m.soMaior) novo = MaiorPedaco(novo, fw, fh);   // o Pro às vezes repete um pedaço do objeto na imagem
+            else if (m.pedacoMinimo > 0) novo = MaiorPedaco(novo, fw, fh, m.pedacoMinimo);   // tira pedaços soltos pequenos
+            int[] cv = Caixa(img, iw, ih), cn = Caixa(novo, fw, fh);
+            ajusteX = (cv[0] + cv[2]) / 2 - (cn[0] + cn[2]) / 2;
+            ajusteY = cv[3] - cn[3];
+            img = novo; iw = fw; ih = fh;
+        }
 
         // ponto de referência: o pé da parede embaixo da borda esquerda do recorte (ou o canto do fundo)
         double rxo, ryo, rxn, ryn;
@@ -319,6 +403,7 @@ public static class Montar
             else { rxn = s.Bx + CW * m.u; ryn = s.By + CH * m.u; }
         }
         int x0 = (int)Math.Round(rxn + (m.x - rxo) * k), y0 = (int)Math.Round(ryn + (m.y - ryo) * k);
+        x0 += ajusteX; y0 += ajusteY;
         for (int y = 0; y < ih; y++)
             for (int x = 0; x < iw; x++)
             {

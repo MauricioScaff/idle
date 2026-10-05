@@ -31,13 +31,13 @@ namespace IdleDataCenter.Gerente
             public int casas;
         }
 
-        /// <summary>Uma por cargo. O DevOps usa a sala de racks até ganhar a sua; do SRE em diante, o data center.</summary>
+        /// <summary>Uma por cargo: o DevOps tem a sua (mesma planta da sala de racks, outra decoração); do SRE em diante, o data center.</summary>
         static readonly Ilustracao[] Ilustracoes =
         {
             new Ilustracao { nome = "armario", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },
             new Ilustracao { nome = "salinha_hd", equip = "_g", fundo = new Vector2(244, 140), esquerda = new Vector2(20, 252), direita = new Vector2(468, 252), casas = 7 },
             new Ilustracao { nome = "racks_hd", equip = "_g", escala = 2, fundo = new Vector2(338, 152), esquerda = new Vector2(18, 312), direita = new Vector2(658, 312), casas = 10 },
-            new Ilustracao { nome = "racks_hd", equip = "_g", escala = 2, fundo = new Vector2(338, 152), esquerda = new Vector2(18, 312), direita = new Vector2(658, 312), casas = 10 },
+            new Ilustracao { nome = "devops_hd", equip = "_g", escala = 2, fundo = new Vector2(338, 152), esquerda = new Vector2(18, 312), direita = new Vector2(658, 312), casas = 10 },
             new Ilustracao { nome = "dc_hd", equip = "_g", escala = 2, fundo = new Vector2(400, 150), esquerda = new Vector2(16, 342), direita = new Vector2(784, 342), casas = 12 },
         };
 
