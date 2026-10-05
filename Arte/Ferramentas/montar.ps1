@@ -26,3 +26,11 @@ $p = [Dobrar]::Ler("$arte\PixelLab\rack.png", [ref]$w, [ref]$h)
 $d = [Dobrar]::Scale2x($p, $w, $h)
 $r = [Dobrar]::Reduzir($d, $w * 2, $h * 2, 0.625, [ref]$W, [ref]$H)
 [Dobrar]::Gravar("$destPl\rack_g.png", $r, $W, $H)
+# equipamentos próprios gerados no PixelLab (já na escala do rack 1,25x): recorta e deixa todos com a frente à esquerda
+foreach ($e in @(@('storage_v2', 'storage_g', $false), @('fita_v1', 'fita_g', $true), @('rede_v1', 'rede_g', $false))) {
+  $w = 0; $h = 0; $W = 0; $H = 0
+  $p = [Dobrar]::Ler("$PSScriptRoot\..\PixelLab\$($e[0]).png", [ref]$w, [ref]$h)
+  $r = [Dobrar]::Recortar($p, $w, $h, $e[2], [ref]$W, [ref]$H)
+  [Dobrar]::Gravar("$destPl\$($e[1]).png", $r, $W, $H)
+  "{0}: {1}x{2}" -f $e[1], $W, $H
+}

@@ -192,6 +192,24 @@ public static class Dobrar
         return o;
     }
 
+    /// Recorta no retângulo dos pixels opacos (alfa binário: abaixo de 128 vira transparente), espelhando se pedir.
+    public static int[] Recortar(int[] p, int w, int h, bool espelhar, out int W, out int H)
+    {
+        int x0 = w, y0 = h, x1 = -1, y1 = -1;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                if (((p[y * w + x] >> 24) & 255) >= 128) { x0 = Math.Min(x0, x); x1 = Math.Max(x1, x); y0 = Math.Min(y0, y); y1 = Math.Max(y1, y); }
+        W = x1 - x0 + 1; H = y1 - y0 + 1;
+        var o = new int[W * H];
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+            {
+                int c = p[(y0 + y) * w + x0 + (espelhar ? W - 1 - x : x)];
+                o[y * W + x] = ((c >> 24) & 255) >= 128 ? (c | unchecked((int)0xFF000000)) : 0;
+            }
+        return o;
+    }
+
     /// Reduz pela cor mais frequente de cada bloco (alfa binário; LED verde vivo não some; empate fica com o mais escuro).
     public static int[] Reduzir(int[] p, int w, int h, double fator, out int W, out int H)
     {

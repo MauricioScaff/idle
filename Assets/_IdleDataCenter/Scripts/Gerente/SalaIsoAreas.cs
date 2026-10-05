@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using IdleDataCenter.Simulacao;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace IdleDataCenter.Gerente
     /// </summary>
     public partial class SalaIso
     {
-        static readonly Color32 LedLink = new Color32(70, 230, 230, 255), LedSeguranca = new Color32(255, 140, 60, 255);
+        static readonly Color32 LedSeguranca = new Color32(255, 140, 60, 255);
 
         /// <summary>Ponto na parede da esquerda ('E', u ao longo de gy) ou da direita ('D', u ao longo de gx), z acima do piso.</summary>
         Vector2Int NaParede(char parede, float u, float z = 0) => parede == 'E' ? IP(0, u, z) : IP(u, 0, z);
@@ -112,16 +113,42 @@ namespace IdleDataCenter.Gerente
             return lugares;
         }
 
-        /// <summary>Um rack de área: LEDs na cor do que ele faz, aceso até 'cheio', clicável.</summary>
-        void RackDeArea(char parede, Vector2Int l, Color32 led, float cheio, string tipo, string nome, bool quebrado, int ordem)
+        /// <summary>
+        /// Um rack de área, clicável. Sem 'arte': o rack comum com os LEDs na cor do que ele faz, aceso até 'cheio'. Com
+        /// 'arte' (storage, fitas, rede): o equipamento próprio; 'led' recolore as luzes verdes dele (null: como veio).
+        /// Quebrado, as luzes ficam vermelhas.
+        /// </summary>
+        void RackDeArea(char parede, Vector2Int l, Color32? led, float cheio, string tipo, string nome, bool quebrado, int ordem, string arte = null)
         {
-            var s = ComLedsEspelhado("rack" + Sala.equip, quebrado ? LedQuebrado : led, parede == 'E');
+            bool espelhar = parede == 'E';
+            var s = arte == null ? ComLedsEspelhado("rack" + Sala.equip, quebrado ? LedQuebrado : led ?? LedRackCheio, espelhar)
+                  : quebrado ? Avariado(arte, espelhar)
+                  : led.HasValue ? ComLedsEspelhado(arte, led.Value, espelhar) : CarregarPixelLab(arte, espelhar);
             float prof = -5 + ordem * 0.01f;
             fila.Add((prof, () => DesenharRack(s, l, cheio, !quebrado)));
             Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = tipo, Px = s.px, Prof = prof, Nome = nome });
             var b = BaseDe(s);
             if (quebrado) fila.Add((5, () => { if (Piscar()) tela.Texto("!", l.x + b.frente.x - 3, l.y - 4, IsoDesenho.C("ff3b4e"), true, 3); }));
             Ronda(l + b.frente, parede == 'E');
+        }
+
+        /// <summary>O equipamento com as luzes (os LEDs verdes e os pontos claros e sem cor) em vermelho: está com defeito.</summary>
+        static SpriteIso Avariado(string nome, bool espelhar)
+        {
+            string chave = "pl/" + nome + (espelhar ? "|espelhado" : "") + "|avariado";
+            if (sprites.TryGetValue(chave, out var s)) return s;
+            var o = CarregarPixelLab(nome, espelhar);
+            var px = (Color32[])o.px.Clone();
+            var leds = new HashSet<int>(o.leds);
+            for (int i = 0; i < px.Length; i++)
+            {
+                var c = px[i];
+                bool claro = c.a > 0 && c.r + c.g + c.b > 520 && Mathf.Max(c.r, Mathf.Max(c.g, c.b)) - Mathf.Min(c.r, Mathf.Min(c.g, c.b)) < 60;
+                if (leds.Contains(i) || claro) { px[i] = LedQuebrado; leds.Add(i); }
+            }
+            s = new SpriteIso { px = px, w = o.w, h = o.h, frente = o.frente };
+            s.leds.AddRange(leds);
+            return sprites[chave] = s;
         }
 
         static SpriteIso ComLedsEspelhado(string nome, Color32 cor, bool espelhar)
@@ -162,7 +189,7 @@ namespace IdleDataCenter.Gerente
             for (int i = 0; i < storages; i++)
             {
                 bool queimado = i == 0 && E.DiscoQueimado;
-                RackDeArea('E', esq[i], LedStorage, 1, "storage", queimado ? "Storage: disco queimou, clique para trocar" : "Storage (RAID)", queimado, i);
+                RackDeArea('E', esq[i], null, 1, "storage", queimado ? "Storage: disco queimou, clique para trocar" : "Storage (RAID)", queimado, i, "storage_g");
             }
             if (storages > 0) pontoDoStorage = esq[0] + new Vector2Int(20, 30);
             if (storages < 3 && Catalogo.Buscar(Catalogo.Storage).Cargo <= E.Cargo) MarcarNaArea('E', esq[storages], Catalogo.Storage);
@@ -171,7 +198,7 @@ namespace IdleDataCenter.Gerente
             int fitas = E.Nivel(Catalogo.Backup) > 0 ? (E.Nivel(Catalogo.SalaBackup) > 0 ? 3 : 1) : 0;
             var dir = RacksNaParede('D', 1.3f, 3);
             for (int i = 0; i < fitas; i++)
-                RackDeArea('D', dir[i], LedFita, 1, "loja:Storage", i == 0 ? "Biblioteca de fitas" : "Cofre de fitas (sala de backup)", false, 10 + i);
+                RackDeArea('D', dir[i], null, 1, "loja:Storage", i == 0 ? "Biblioteca de fitas" : "Cofre de fitas (sala de backup)", false, 10 + i, "fita_g");
             if (fitas > 0) pontoDaFita = dir[0] + new Vector2Int(20, 30);
             if (ItemDoMarcador == null)
             {
@@ -200,7 +227,7 @@ namespace IdleDataCenter.Gerente
             links = Mathf.Min(links, 3);
             var esq = RacksNaParede('E', 0.5f, 3);
             for (int i = 0; i < links; i++)
-                RackDeArea('E', esq[i], E.LinkSaturado ? LedPico : LedLink, 1, "loja:Rede", E.LinkSaturado ? "Rede: link saturado!" : "Rack de rede (links)", false, i);
+                RackDeArea('E', esq[i], E.LinkSaturado ? LedPico : (Color32?)null, 1, "loja:Rede", E.LinkSaturado ? "Rede: link saturado!" : "Rack de rede (links)", false, i, "rede_g");
             string proximoLink = links < 3 ? ProximoDe(Catalogo.Link, Catalogo.Link10G, Catalogo.Fibra, Catalogo.CaboSubmarino) : null;
 
             // parede da direita: segurança, um rack a cada três itens da linha; os LEDs acendem conforme ela cresce.
