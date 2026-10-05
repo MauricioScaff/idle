@@ -51,12 +51,12 @@ namespace IdleDataCenter.Gerente
             }
         }
 
-        /// <summary>Redesenha a sala (chamado no Update, uns 12 quadros por segundo).</summary>
+        /// <summary>Redesenha a sala (chamado no Update, até 60 quadros por segundo: as pessoas andam lisas).</summary>
         void AtualizarSala()
         {
             if (salaIso == null) salaIso = new SalaIso(E) { MostrarExpansao = false };
             if (Time.unscaledTime < proximoQuadroSala) return;
-            proximoQuadroSala = Time.unscaledTime + 1f / 12f;
+            proximoQuadroSala = Time.unscaledTime + 1f / 60f;
             salaIso.Desenhar(Time.unscaledTime, VistaAtual);
         }
 

@@ -128,7 +128,7 @@ namespace IdleDataCenter
             ShowWindow(hwnd, SW_SHOW);
             SetForegroundWindow(hwnd);
             visivel = true;
-            Application.targetFrameRate = 30;
+            Application.targetFrameRate = 60;   // no modo gerente as pessoas andam na sala: 60 quadros, movimento liso
         }
 #endif
 
@@ -233,6 +233,7 @@ namespace IdleDataCenter
             ultimaArea = AreaDeTrabalho();
             AplicarEstilo();
             Redimensionar();
+            Application.targetFrameRate = 30;   // a faixa fica discreta: 30 bastam
 #endif
         }
 
