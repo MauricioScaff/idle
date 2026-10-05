@@ -311,7 +311,7 @@ namespace IdleDataCenter.Gerente
 
         void ArmarioIlustrado()
         {
-            TorresNaParede(61, 7, true);
+            TorresNaParede(61, 5, true);
             Alvos.Add(new Alvo { Area = new RectInt(244, 128, 90, 108), Tipo = "equipamento", Prof = -20, Nome = "Mesa do técnico" });   // mesa da ilustração (atrás de tudo que fica em cima dela)
             Caneca("caneca", new Vector2Int(305, 183));
             BackupNaMesa(new Vector2Int(294, 182), new Vector2Int(262, 170));
