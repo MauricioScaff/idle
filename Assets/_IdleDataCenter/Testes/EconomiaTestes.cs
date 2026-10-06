@@ -1037,77 +1037,160 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.TemConquista(Catalogo.ConquistaDns));
         }
 
-        // ---------- Contratos de clientes ----------
+        // ---------- Clientes ----------
 
-        static Economia ComContrato(double uptime)
+        static Economia ComClientes(double uptime)
         {
             var e = Nova(1000);
             e.Estado.cargo = 1;
             e.Estado.proximoEvento = 1e9;
             e.Estado.proximoChamado = 1e9;
+            e.Estado.proximaProposta = 1e9;
             e.Estado.uptime = uptime;
             e.Avancar(0);
             return e;
         }
 
-        [Test]
-        public void ClienteSoPedeOQueOUptimeEntrega()
+        static Cliente ComUmCliente(Economia e)
         {
-            var e = ComContrato(0.9962);
-            var p = e.ProporContrato();
+            e.ProporCliente();
+            Assert.IsTrue(e.AceitarCliente());
+            var c = e.Clientes[0];
+            c.proximoPedido = 1e9;
+            return c;
+        }
+
+        [Test]
+        public void ClienteSoPedeOSlaQueOUptimeEntrega()
+        {
+            var e = ComClientes(0.9962);
+            var p = e.ProporCliente();
             Assert.IsNotNull(p);
             Assert.AreEqual(0.995, p.sla, 1e-9, "o maior SLA abaixo do uptime de agora");
-            Assert.IsTrue(e.TemPropostaDeContrato);
+            Assert.IsTrue(e.TemPropostaDeCliente);
             e.Estado.uptime = 0.97;
-            e.RecusarContrato();
-            Assert.IsNull(e.ProporContrato(), "abaixo de 98% ninguém quer contrato");
+            e.RecusarCliente();
+            Assert.IsNull(e.ProporCliente(), "abaixo de 98% ninguém quer hospedar aqui");
         }
 
         [Test]
-        public void ContratoRendeEnquantoValeEPagaPremioNoFim()
+        public void ClienteAceitoRendeConformeOPorteEASatisfacao()
         {
-            var e = ComContrato(0.9999);
-            var p = e.ProporContrato();
+            var e = ComClientes(0.9999);
             double antes = e.ReceitaPorSegundo;
-            Assert.IsTrue(e.AceitarContrato());
-            Assert.IsFalse(e.TemPropostaDeContrato);
-            Assert.AreEqual(antes * (1 + p.bonus), e.ReceitaPorSegundo, 1e-9);
-            double premio = 0;
-            e.ContratoEncerrado += (c, v) => premio = v;
-            for (int i = 0; i < p.duracao + 1; i++) e.Avancar(1);
-            Assert.AreEqual(0, e.Contratos.Count);
-            Assert.Greater(premio, 0);
-            Assert.AreEqual(1, e.Estado.contratosCumpridos);
+            var c = ComUmCliente(e);
+            Assert.IsFalse(e.TemPropostaDeCliente);
+            Assert.AreEqual(1, c.porte);
+            double bonus = Catalogo.BonusPorPorte[1] * (0.5 + 0.5 * Catalogo.SatisfacaoInicial / 100);
+            Assert.AreEqual(antes * (1 + bonus), e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
-        public void UptimeAbaixoDoSlaQuebraOContratoComMulta()
+        public void SiteCaiQuandoOServidorDeleTravaEOClienteSeIrrita()
         {
-            var e = ComContrato(0.9999);
-            e.ProporContrato();
-            e.AceitarContrato();
-            double valor = 0;
-            e.ContratoEncerrado += (c, v) => valor = v;
-            double dinheiro = e.Dinheiro;
-            e.Estado.uptime = 0.97;
-            e.Avancar(1);
-            Assert.AreEqual(0, e.Contratos.Count);
-            Assert.Less(valor, 0, "multa");
-            Assert.Less(e.Dinheiro, dinheiro + e.ReceitaPorSegundo);
+            var e = ComClientes(0.9999);
+            var c = ComUmCliente(e);
+            Assert.IsFalse(e.SiteFora(c));
+            Cliente caiu = null;
+            e.SiteCaiu += x => caiu = x;
+            e.Travar(c.servidor);
+            Assert.IsTrue(e.SiteFora(c));
+            e.Avancar(5);
+            Assert.AreEqual(c, caiu);
+            Assert.Less(c.satisfacao, Catalogo.SatisfacaoInicial - 5);
+            Assert.Greater(c.foraDoAr, 0);
         }
 
         [Test]
-        public void PropostaSemRespostaVenceEDoisContratosNoMaximo()
+        public void ClienteSatisfeitoCresceDePorte()
         {
-            var e = ComContrato(0.9999);
-            e.ProporContrato();
+            var e = ComClientes(0.9999);
+            var c = ComUmCliente(e);
+            c.satisfacao = 100;
+            Cliente cresceu = null;
+            e.ClienteCresceu += x => cresceu = x;
+            for (int i = 0; i <= Catalogo.MinutosParaCrescer[1] * 60; i++) e.Avancar(1);
+            Assert.AreEqual(2, c.porte);
+            Assert.AreEqual(c, cresceu);
+            Assert.AreEqual("Loja virtual", Catalogo.PortesDoSite[c.porte]);
+        }
+
+        [Test]
+        public void ClienteInsatisfeitoVaiEmbora()
+        {
+            var e = ComClientes(0.9999);
+            var c = ComUmCliente(e);
+            Cliente saiu = null;
+            e.ClienteSaiu += x => saiu = x;
+            c.satisfacao = 1;
+            e.Travar(c.servidor);
+            e.Avancar(2);
+            Assert.AreEqual(0, e.Clientes.Count);
+            Assert.AreEqual(c, saiu);
+        }
+
+        [Test]
+        public void PedidoCumpridoPagaEAceleraOCrescimento()
+        {
+            var e = ComClientes(0.9999);
+            var c = ComUmCliente(e);
+            Assert.IsTrue(e.FazerPedido(c, Catalogo.PedidoServidores));
+            Assert.AreEqual(e.ContagemServidores + 1 + c.porte, c.pedidoAlvo, 1e-9);
+            StringAssert.Contains("servidores", e.TextoDoPedido(c));
+            bool? cumpriu = null;
+            e.PedidoTerminou += (x, ok, premio) => cumpriu = ok;
+            DefinirNivel(e, Catalogo.Servidor, 5);
+            double antes = e.Dinheiro;
+            e.Avancar(0.1);
+            Assert.AreEqual(true, cumpriu);
+            Assert.AreEqual("", c.pedido);
+            Assert.AreEqual(1, e.Estado.pedidosAtendidos);
+            Assert.AreEqual(Catalogo.CrescimentoDoPedido, c.crescimento, 0.01);
+            Assert.Greater(e.Dinheiro, antes);
+        }
+
+        [Test]
+        public void PedidoPerdidoNoPrazoIrrita()
+        {
+            var e = ComClientes(0.9999);
+            var c = ComUmCliente(e);
+            Assert.IsTrue(e.FazerPedido(c, Catalogo.PedidoServidores));
+            c.proximoPedido = 1e9;
+            bool? cumpriu = null;
+            e.PedidoTerminou += (x, ok, premio) => cumpriu = ok;
+            c.pedidoRestante = 1;
+            c.satisfacao = 90;
+            e.Avancar(1.5);
+            Assert.AreEqual(false, cumpriu);
+            Assert.Less(c.satisfacao, 90 - Catalogo.SatisfacaoDoPedidoPerdido + 2);
+            Assert.AreEqual(0, e.Estado.pedidosAtendidos);
+        }
+
+        [Test]
+        public void ContratosDosSavesAntigosViramClientes()
+        {
+            var e = ComClientes(0.9999);
+            e.Estado.contratos.Add(new Contrato { cliente = "Banco Pixel", sla = 0.99 });
+            e.Avancar(0);
+            Assert.AreEqual(1, e.Clientes.Count);
+            Assert.AreEqual("Banco Pixel", e.Clientes[0].nome);
+            Assert.AreEqual(0.99, e.Clientes[0].sla, 1e-9);
+            Assert.AreEqual(0, e.Estado.contratos.Count);
+        }
+
+        [Test]
+        public void PropostaSemRespostaVenceEOCargoLimitaOsClientes()
+        {
+            var e = ComClientes(0.9999);
+            e.ProporCliente();
             for (int i = 0; i < Catalogo.TempoParaAceitar; i++) e.Avancar(1);
-            Assert.IsFalse(e.TemPropostaDeContrato, "venceu");
-            e.ProporContrato(); e.AceitarContrato();
-            e.ProporContrato(); e.AceitarContrato();
-            e.ProporContrato();
-            Assert.IsFalse(e.PodeAceitarContrato, "já tem dois");
-            Assert.IsFalse(e.AceitarContrato());
+            Assert.IsFalse(e.TemPropostaDeCliente, "venceu");
+            for (int i = 0; i < Catalogo.CapacidadeDeClientes(1); i++) { e.ProporCliente(); Assert.IsTrue(e.AceitarCliente()); }
+            e.ProporCliente();
+            Assert.IsFalse(e.PodeAceitarCliente, "o Sysadmin cuida de 3 clientes");
+            Assert.IsFalse(e.AceitarCliente());
+            Assert.AreEqual(Catalogo.CapacidadeDeClientes(1), e.Clientes.Count);
+            Assert.AreEqual(Catalogo.CapacidadeDeClientes(1), new System.Collections.Generic.HashSet<string>(e.Clientes.ConvertAll(c => c.nome)).Count, "nomes diferentes");
         }
 
         // ---------- Offline ----------

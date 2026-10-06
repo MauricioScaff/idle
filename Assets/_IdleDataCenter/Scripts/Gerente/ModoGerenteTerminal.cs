@@ -32,6 +32,7 @@ namespace IdleDataCenter.Gerente
         void IniciarTerminal()
         {
             E.ResolvidoNoTerminal += (p, bonus) => { acertoNoTerminalEm = Time.unscaledTime; Sons.Moeda(); };
+            E.SiteCaiu += c => Escrever(Hora() + Catalogo.TipoDoCliente(c.nome).Dominio + ": 502 Bad Gateway (o site de " + c.nome + " caiu junto)", TipoLinha.Alerta);
             Escrever("Idle Data Center · terminal. Quando algo quebrar, o sintoma aparece aqui em vermelho.", TipoLinha.Info);
             Escrever("Digite help para ver o comando que resolve. Acertos seguidos rendem combo.", TipoLinha.Info);
             // teste: -terminal abre; -terminal=<comando> abre e digita o comando 4 s depois (dá tempo do sintoma aparecer)
@@ -120,14 +121,14 @@ namespace IdleDataCenter.Gerente
         }
 
         /// <summary>Quebra por palavras para caber na largura (palavras maiores que a linha ficam inteiras).</summary>
-        List<string> QuebrarLinha(string texto, float largura)
+        List<string> QuebrarLinha(string texto, float largura, int escala = 2)
         {
             var linhas = new List<string>();
             string atual = "";
             foreach (var palavra in (texto ?? "").Split(' '))
             {
                 string tentativa = atual.Length == 0 ? palavra : atual + " " + palavra;
-                if (atual.Length == 0 || ui.Largura(tentativa, 2) <= largura) atual = tentativa;
+                if (atual.Length == 0 || ui.Largura(tentativa, escala) <= largura) atual = tentativa;
                 else { linhas.Add(atual); atual = "  " + palavra; }
             }
             linhas.Add(atual);

@@ -255,7 +255,7 @@ namespace IdleDataCenter.Simulacao
                                    * FatorEvento
                                    * FatorSla
                                    * FatorConquistas
-                                   * FatorContratos;
+                                   * FatorClientes;
 
         // ---------------- Prestígio: certificações e desafio ----------------
 
@@ -441,7 +441,7 @@ namespace IdleDataCenter.Simulacao
             ChecarConquistas();
             AvancarEvento(segundos);
             AvancarUptime(segundos);
-            AvancarContratos(segundos);
+            AvancarClientes(segundos);
             AvancarIdade(segundos);
             AvancarQuedaDeEnergia(segundos);
             AvancarPaneRegional(segundos);

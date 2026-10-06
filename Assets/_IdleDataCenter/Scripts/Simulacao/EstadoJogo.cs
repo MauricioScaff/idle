@@ -49,7 +49,11 @@ namespace IdleDataCenter.Simulacao
         public int cafesTomados;
         public int comandosCertos;             // problemas resolvidos digitando no terminal (ver Terminal.cs)
 
-        // Contratos de clientes (ver Contratos.cs): a proposta na mesa (cliente vazio = nenhuma) e os ativos
+        // Clientes (ver Clientes.cs): os que hospedam aqui e a proposta na mesa (nome vazio = nenhuma)
+        public List<Cliente> clientes = new List<Cliente>();
+        public Cliente propostaCliente = new Cliente();
+        public int pedidosAtendidos;
+        // saves antigos: os contratos viram clientes (Economia.MigrarContratos)
         public Contrato proposta = new Contrato();
         public List<Contrato> contratos = new List<Contrato>();
         public double proximaProposta = -1;

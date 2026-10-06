@@ -36,6 +36,7 @@ namespace IdleDataCenter.Gerente
             salaIso = new SalaIso(E) { MostrarExpansao = false, PessoasSoltas = true };
             IniciarPrimeiraHora();
             IniciarTerminal();
+            IniciarClientes();
 
             // avisos na barra de notícias (os sons e o save continuam por conta da faixa)
             E.AutomacaoPronta += id => Notificar("Automação pronta: " + Catalogo.BuscarAutomacao(id).Nome, 8);
@@ -177,7 +178,7 @@ namespace IdleDataCenter.Gerente
             DesenharSala();
             Hud();
             PainelHelpDesk();
-            PainelContratos();
+            PainelClientes();
             CartaoAtencao();
             Barra();
             BotaoDoTerminal();

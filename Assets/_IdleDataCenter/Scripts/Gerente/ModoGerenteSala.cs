@@ -113,7 +113,7 @@ namespace IdleDataCenter.Gerente
             // equipamentos clicáveis: só o que está sob o cursor (pelo desenho do objeto, o da frente ganha). Objetos com
             // pixels ganham um contorno no próprio desenho; os outros, o retângulo
             var mouse = Event.current.mousePosition;
-            int sob = Livre && retSala.Contains(mouse) && !RetHelpDesk.Contains(mouse) && !RetContratos.Contains(mouse) ? salaIso.AlvoEm((mouse - retSala.position) / zoomSala) : -1;
+            int sob = Livre && retSala.Contains(mouse) && !RetHelpDesk.Contains(mouse) && !RetClientes.Contains(mouse) ? salaIso.AlvoEm((mouse - retSala.position) / zoomSala) : -1;
             dica = (null, mouse);
             salaIso.DestaqueTipo = null;
             if (sob >= 0)
@@ -144,7 +144,7 @@ namespace IdleDataCenter.Gerente
             // nas áreas: o nome da área e o caminho de volta
             if (EmArea)
             {
-                // embaixo, à esquerda da sala (em cima ficam o help desk e os contratos)
+                // embaixo, à esquerda da sala (em cima ficam o help desk e os clientes)
                 ui.Texto(VistaAtual == SalaIso.Vista.Dados ? "Dados e backup" : "Rede e segurança", areaSala.x + 12, areaSala.yMax - 84, IsoGui.Cyan, 3);
                 if (ui.Botao(new Rect(areaSala.x + 12, areaSala.yMax - 52, 200, 40), "< Voltar", IsoGui.Borda, Livre)) vistaEscolhida = SalaIso.Vista.Sala;
             }
@@ -377,7 +377,7 @@ namespace IdleDataCenter.Gerente
             else if (E.DiscoQueimado) Alerta(r, "Disco queimou", E.NivelStorage > 0 ? "No storage" : "HD da torre", "Trocar disco", faixa.TrocarDisco);
             else if (E.Travamentos.Count > 0) Alerta(r, "Servidor travou", "O técnico vai consertar", "Reiniciar", Resolver);
             else if (E.TemEvento) AlertaDoEvento(r);
-            else if (E.TemPropostaDeContrato) CartaoProposta(r);
+            else if (E.TemPropostaDeCliente) CartaoProposta(r);
             else if (E.ForaDaGarantia && (E.PodeFazerRefresh || E.FimDaVida))
                 Alerta(r, E.FimDaVida ? "Fim de vida" : "Fora da garantia", "Servidores travam " + Numero(E.FatorIdade) + "x mais", "Refresh " + Dinheiro(E.CustoDoRefresh), () =>
                 {

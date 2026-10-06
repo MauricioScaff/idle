@@ -50,12 +50,6 @@ namespace IdleDataCenter.Gerente
             E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A empresa está na bolsa"; festaTexto = "De técnico de TI num armário a CTO de uma nuvem global."; };
             E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Vendida!"; festaCargo = "+" + c + " certificações"; festaTexto = "Uma empresa nova começa no armário, com os bônus."; };
             E.ChamadoApareceu += c => { if (c.prioridade <= 2) { Notificar("Chamado P" + c.prioridade + ": " + c.texto + "! Atenda no painel do help desk, à esquerda.", 6); if (c.prioridade == 1) Sons.Alerta(); } };
-            E.ContratoProposto += c => Notificar("Proposta de contrato: " + c.cliente + " quer " + Economia.FormatarUptime(c.sla) + " de uptime. Veja o cartão à direita.", 6);
-            E.ContratoEncerrado += (c, valor) =>
-            {
-                if (valor > 0) { Notificar("Contrato com " + c.cliente + " cumprido: +" + Dinheiro(valor) + ".", 5); Sons.Promocao(); }
-                else { Notificar("Contrato com " + c.cliente + " quebrado: o uptime caiu abaixo de " + Economia.FormatarUptime(c.sla) + ". Multa de " + Dinheiro(-valor) + ".", 6); Sons.Alerta(); }
-            };
             E.EventoComecou += AoComecarEvento;
             E.EventoTerminou += AoTerminarEvento;
             E.AtaqueBloqueado += (def, quem) => Notificar(quem + " bloqueou um ataque de " + def.Nome.ToLower() + ".", 4);

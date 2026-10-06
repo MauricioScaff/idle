@@ -112,7 +112,7 @@ namespace IdleDataCenter.Gerente
             bool automacao = janela == "Automacao", loja = EmLoja;
             if (loja) ultimaAbaLoja = janela;
             ui.Caixa(modal, IsoGui.Cor("14243a"), automacao ? IsoGui.Verde : loja ? IsoGui.Cyan : IsoGui.Roxo);
-            string titulo = janela == "Vender" ? "Vender a empresa" : automacao ? "Automação" : loja ? "Loja" : "Carreira";
+            string titulo = janela == "Clientes" ? "Clientes" : janela == "Vender" ? "Vender a empresa" : automacao ? "Automação" : loja ? "Loja" : "Carreira";
             ui.Texto(titulo, modal.x + 28, modal.y + 22, IsoGui.Branco, 5);
             string saldo = Dinheiro(E.Dinheiro);
             ui.Texto(saldo, modal.xMax - 76 - ui.Largura(saldo, 4), modal.y + 26, Ouro, 4);
@@ -120,7 +120,7 @@ namespace IdleDataCenter.Gerente
 
             // abas (a loja por setor, a carreira com o prestígio)
             var abas = loja ? AbasDaLoja.Where(a => a == "Melhorias" || SalaIso.CargoDoSetor(a) <= E.Cargo).ToArray()
-                     : !automacao && janela != "Vender" ? AbasDaCarreira : new string[0];
+                     : !automacao && janela != "Vender" && janela != "Clientes" ? AbasDaCarreira : new string[0];
             float ax = modal.x + 28;
             foreach (var aba in abas)
             {
@@ -132,6 +132,7 @@ namespace IdleDataCenter.Gerente
             if (abas.Length == 0) ui.Texto(Subtitulo(janela), modal.x + 28, modal.y + 80, IsoGui.Muted, 2);
             var conteudo = new Rect(modal.x, modal.y + 34, modal.width, modal.height - 34);   // o que antes começava logo abaixo do título
 
+            if (janela == "Clientes") { TelaClientes(modal); return; }
             if (janela == "Carreira") { Carreira(conteudo); return; }
             if (janela == "Conquistas") { TelaConquistas(conteudo); return; }
             if (janela == "Prestigio") { TelaPrestigio(conteudo); return; }
