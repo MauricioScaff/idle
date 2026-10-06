@@ -69,7 +69,7 @@ namespace IdleDataCenter
             economia.Ipo += () => { Avisar("IPO! Empresa na bolsa!", 6f, Amarelo); Sons.Promocao(); Salvamento.Salvar(economia.Estado); };
             economia.Vendeu += AoVender;
             // quem já passou do começo não precisa do tutorial
-            if (!economia.TutorialConcluido && (economia.Cargo > Catalogo.CargoTecnico || economia.Estado.totalGanho > 2000))
+            if (!economia.TutorialConcluido && (economia.Cargo > Catalogo.CargoFreelancer || economia.Estado.totalGanho > 2000))
                 economia.AvancarTutorial(Catalogo.PassosTutorial);
         }
 
@@ -263,7 +263,7 @@ namespace IdleDataCenter
 
         void AoPromover(int cargo)
         {
-            Avisar("Promovido! " + economia.CargoAtual.Nome, 5f);
+            Avisar((cargo == Catalogo.CargoTecnico ? "Contratado! " : "Promovido! ") + economia.CargoAtual.Nome, 5f);
             Sons.Promocao();
             Salvamento.Salvar(economia.Estado);
         }

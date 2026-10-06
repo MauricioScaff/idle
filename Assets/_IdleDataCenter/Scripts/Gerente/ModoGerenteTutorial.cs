@@ -15,11 +15,11 @@ namespace IdleDataCenter.Gerente
 
         static readonly string[] Dicas =
         {
-            "Bem-vindo! Clique num servidor para ganhar dinheiro.",
-            "Compre o SSD: ele dobra a receita das torres. Está na loja.",
+            "Bem-vindo! Você é freelancer. Clique na sua torre velha para ganhar dinheiro.",
+            "Hospede o site de um cliente na torre: compre na loja.",
             "Hora do café: clique na caneca da mesa. A receita dobra por 30 s.",
-            "Construa mais um servidor no marcador laranja da sala.",
-            "A meta da promoção fica no topo. Cumpra as três para virar Sysadmin.",
+            "Hospede mais um site: o marcador laranja compra o próximo.",
+            "A meta fica no topo. Cumpra as três e uma empresa de TI te contrata.",
             "Vai trabalhar? O botão Faixa deixa o jogo discreto acima da barra de tarefas.",
         };
 
@@ -35,7 +35,13 @@ namespace IdleDataCenter.Gerente
                 festaCargo = E.UnidadesDoGerador(id) + "× " + NomeLongo(id);
                 festaTexto = "A renda deles dobrou." + (E.ProximoMarco(id) > 0 ? " Próximo marco: " + E.ProximoMarco(id) + "." : " Todos os marcos!");
             };
-            E.Promoveu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Promovido!"; festaCargo = E.CargoAtual.Nome; festaTexto = "A sala cresceu. Novos setores e equipamentos na loja."; };
+            E.Promoveu += c =>
+            {
+                vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaCargo = E.CargoAtual.Nome;
+                bool contratado = c == Catalogo.CargoTecnico;   // do Freelancer para a primeira vaga: é contratação, não promoção
+                festaTitulo = contratado ? "Contratado!" : "Promovido!";
+                festaTexto = contratado ? "Uma empresa de TI quer você. Seus sites vêm junto." : "A sala cresceu. Novos setores e equipamentos na loja.";
+            };
             E.Conquistou += c =>
             {
                 // várias de uma vez (um save antigo que já tinha feito muita coisa): uma festa só
@@ -114,13 +120,13 @@ namespace IdleDataCenter.Gerente
         void AvancarDicas()
         {
             if (E.TutorialConcluido) return;
-            if (E.Cargo > Catalogo.CargoTecnico) { E.AvancarTutorial(Catalogo.PassosTutorial); return; }
+            if (E.Cargo > Catalogo.CargoFreelancer) { E.AvancarTutorial(Catalogo.PassosTutorial); return; }
             switch (E.PassoTutorial)
             {
                 case 0: if (E.Estado.jaClicouNoServidor) E.AvancarTutorial(1); break;
-                case 1: if (E.Nivel(Catalogo.Ssd) > 0) E.AvancarTutorial(2); break;
+                case 1: if (E.Sites > 0) E.AvancarTutorial(2); break;
                 case 2: if (E.CafeAtivo || !E.PodeTomarCafe) E.AvancarTutorial(3); break;
-                case 3: if (E.Torres >= 2) E.AvancarTutorial(4); break;
+                case 3: if (E.Sites >= 2) E.AvancarTutorial(4); break;
             }
         }
 

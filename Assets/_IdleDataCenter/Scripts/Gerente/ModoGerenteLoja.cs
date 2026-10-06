@@ -46,8 +46,9 @@ namespace IdleDataCenter.Gerente
         {
             switch (setor)
             {
-                case "Compute": return new[] { Catalogo.Servidor, Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Rack, Catalogo.Servidor1U, Catalogo.RackCheio,
+                case "Compute": return new[] { Catalogo.SiteCliente, Catalogo.Hospedagem, Catalogo.Servidor, Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Rack, Catalogo.Servidor1U, Catalogo.RackCheio,
                                                Catalogo.Hypervisor, Catalogo.Containers, Catalogo.ServidorCi, Catalogo.NoKubernetes, Catalogo.Balanceador };
+                case "Bancada": return new[] { Catalogo.KitFerramentas, Catalogo.CartaoDeVisita };
                 case "Energia": return new[] { Catalogo.NoBreak };
                 case "Refrigeracao": return new[] { Catalogo.ArCondicionado };
                 case "Storage": return new[] { Catalogo.Storage, Catalogo.HdExterno, Catalogo.Nas, Catalogo.Backup, Catalogo.SalaBackup, Catalogo.DcRecuperacao, Catalogo.BackupRegiao };
@@ -64,7 +65,8 @@ namespace IdleDataCenter.Gerente
 
         static readonly string[] Subtitulos =
         {
-            "Compute", "Servidores, racks, virtualização, containers e Kubernetes",
+            "Compute", "Sites, servidores, racks, virtualização, containers e Kubernetes",
+            "Bancada", "Consertos: ferramentas e clientes do bairro",
             "Energia", "No-breaks: mais capacidade, menos sobrecarga",
             "Refrigeracao", "Ar-condicionado: sala fria rende mais e trava menos",
             "Storage", "Discos em RAID e backup",
@@ -88,7 +90,7 @@ namespace IdleDataCenter.Gerente
         }
 
         /// <summary>As abas da LOJA: um setor por aba (as que o cargo ainda não tem ficam de fora) e "Tudo" no fim.</summary>
-        static readonly string[] AbasDaLoja = { "Compute", "Energia", "Refrigeracao", "Storage", "Seguranca", "Rede", "NOC", "Equipe", "Campus", "Mundo", "Melhorias" };
+        static readonly string[] AbasDaLoja = { "Compute", "Bancada", "Energia", "Refrigeracao", "Storage", "Seguranca", "Rede", "NOC", "Equipe", "Campus", "Mundo", "Melhorias" };
         static readonly string[] AbasDaCarreira = { "Carreira", "Conquistas", "Prestigio" };
         string ultimaAbaLoja = "Compute";
 

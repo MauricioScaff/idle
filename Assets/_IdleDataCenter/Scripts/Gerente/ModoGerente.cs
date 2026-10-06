@@ -46,7 +46,7 @@ namespace IdleDataCenter.Gerente
             E.PicoComecou += nome => Notificar("Pico de tráfego: " + nome + "! Escale o cluster.", 10);
             E.QuedaDeEnergia += dc => Notificar("Queda de energia no DC-0" + (dc + 1) + "! Clique no prédio apagado para religar.", 8);
             E.PaneRegional += r => Notificar("Pane regional: " + Catalogo.NomesRegioes[r] + " fora do ar! Clique na região para redirecionar o tráfego.", 8);
-            E.Promoveu += c => Notificar("Promovido a " + E.CargoAtual.Nome + "! Novos setores liberados.", 10);
+            E.Promoveu += c => Notificar((c == Catalogo.CargoTecnico ? "Contratado como " : "Promovido a ") + E.CargoAtual.Nome + "! Novos setores liberados.", 10);
         }
 
         public void Abrir()

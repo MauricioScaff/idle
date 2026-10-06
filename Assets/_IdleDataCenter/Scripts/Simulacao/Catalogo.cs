@@ -51,7 +51,7 @@ namespace IdleDataCenter.Simulacao
         public double Multiplicador;
     }
 
-    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos, Datacenters, Regioes }
+    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos, Datacenters, Regioes, Consertos, Sites }
 
     public class MetaDef
     {
@@ -108,6 +108,8 @@ namespace IdleDataCenter.Simulacao
         public const string CaboSubmarino = "cabo";
         public const string Renovavel = "renovavel";
         public const string Gpu = "gpu";
+        // Freelancer: sites dos clientes na torre velha e a bancada de consertos
+        public const string SiteCliente = "site", Hospedagem = "hospedagem", KitFerramentas = "kit", CartaoDeVisita = "cartao";
         // melhorias simples (multiplicam a renda de um gerador, ou dão energia/frio)
         public const string FiltroDeLinha = "filtro", Ventilador = "ventilador", PastaTermica = "pasta";
         public const string CabosOrganizados = "cabos", Firmware = "firmware", PisoElevado = "piso";
@@ -116,7 +118,7 @@ namespace IdleDataCenter.Simulacao
 
         // alvos das melhorias simples
         public const string AlvoTorres = "torres", Alvo1U = "1u", AlvoRackCheio = "rackcheio", AlvoApps = "apps", AlvoK8s = "k8s",
-                            AlvoDatacenters = "datacenters", AlvoRegioes = "regioes", AlvoGpu = "gpu", AlvoKw = "kw", AlvoGraus = "graus";
+                            AlvoDatacenters = "datacenters", AlvoRegioes = "regioes", AlvoGpu = "gpu", AlvoKw = "kw", AlvoGraus = "graus", AlvoSites = "sites";
 
         /// <summary>Marcos dos geradores: ao chegar a cada um, a renda daquele gerador dobra.</summary>
         public static readonly int[] Marcos = { 10, 25, 50, 100 };
@@ -126,6 +128,8 @@ namespace IdleDataCenter.Simulacao
 
         // --- Receita ---
         public const double ReceitaBaseServidor = 2;   // servidor torre sem melhorias (R$/s)
+        public const double ReceitaSite = 0.5;           // site de cliente hospedado na torre velha do freelancer (R$/s)
+        public const int SitesNaTorre = 8;             // a torre velha não aguenta mais que isso: depois de contratado, a renda vem da empresa
         public const double BonusSsd = 1.0;            // +100%
         public const double BonusVentoinha = 0.5;      // +50% por ventoinha
         public const double ReceitaServidor1U = 18;     // servidor de rack (R$/s)
@@ -251,17 +255,28 @@ namespace IdleDataCenter.Simulacao
         public const double SegundosMinimosOffline = 60;
 
         /// <summary>Os cargos pelo nome (índice em Cargos): o código nunca usa o número solto, para dar para inserir um cargo.</summary>
-        public const int CargoTecnico = 0, CargoSysadmin = 1, CargoAnalista = 2, CargoDevOps = 3, CargoSre = 4, CargoArquiteto = 5, CargoCto = 6;
+        public const int CargoFreelancer = 0, CargoTecnico = 1, CargoSysadmin = 2, CargoAnalista = 3, CargoDevOps = 4, CargoSre = 5, CargoArquiteto = 6, CargoCto = 7;
 
         public static readonly IReadOnlyList<CargoDef> Cargos = new[]
         {
+            // o começo: sozinho em casa, consertando PCs do bairro e hospedando sites; as metas trazem a proposta de emprego
+            new CargoDef
+            {
+                Nome = "Freelancer", Lugar = "Quarto",
+                MetasParaPromocao = new[]
+                {
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 10, Texto = "Consertar 10 PCs" },
+                    new MetaDef { Tipo = TipoMeta.Sites, Alvo = 5, Texto = "Hospedar 5 sites" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 15000, Texto = "Faturar R$ 15 mil" },
+                },
+            },
             new CargoDef
             {
                 Nome = "Técnico de TI", Lugar = "Armário",
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.Servidores, Alvo = 3, Texto = "Ter 3 servidores" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 120000, Texto = "Faturar R$ 120 mil" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 200000, Texto = "Faturar R$ 200 mil" },
                     new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 8, Texto = "Resolver 8 incidentes" },
                 },
             },
@@ -331,6 +346,11 @@ namespace IdleDataCenter.Simulacao
         public static readonly IReadOnlyList<MelhoriaDef> Melhorias = new[]
         {
             // Técnico: o armário. As torres vão longe, mas pedem energia (filtro de linha) e frio (ventilador).
+            new MelhoriaDef { Id = SiteCliente, Nome = "Site de cliente", Efeito = "+0.5/s, a torre aguenta 8", Cargo = Catalogo.CargoFreelancer, NivelMaximo = SitesNaTorre, CustoBase = 300, FatorCusto = 1.3 },
+            new MelhoriaDef { Id = KitFerramentas, Nome = "Kit de ferramentas", Efeito = "Consertos +50%", Cargo = Catalogo.CargoFreelancer, NivelMaximo = 3, CustoBase = 400, FatorCusto = 2 },
+            new MelhoriaDef { Id = CartaoDeVisita, Nome = "Cartão de visita", Efeito = "Chegam 25% mais PCs", Cargo = Catalogo.CargoFreelancer, NivelMaximo = 2, CustoBase = 800, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = Hospedagem, Nome = "Hospedagem caprichada", Efeito = "Sites +50%", Cargo = Catalogo.CargoFreelancer, Requisito = SiteCliente, NivelMaximo = 3, Alvo = AlvoSites, BonusPorNivel = 0.5, CustoBase = 1500, FatorCusto = 2.2 },
+
             new MelhoriaDef { Id = Ssd, Nome = "SSD", Efeito = "Torres ×2", Cargo = Catalogo.CargoTecnico, NivelMaximo = 1, CustoBase = 600, FatorCusto = 1 },
             new MelhoriaDef { Id = Ventoinha, Nome = "Ventoinha", Efeito = "Torres +50%", Cargo = Catalogo.CargoTecnico, NivelMaximo = 3, CustoBase = 1500, FatorCusto = 2.2 },
             new MelhoriaDef { Id = Servidor, Nome = "Servidor", Efeito = "+1 torre", Cargo = Catalogo.CargoTecnico, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 6000, FatorCusto = 1.4 },
@@ -442,7 +462,7 @@ namespace IdleDataCenter.Simulacao
         }
 
         // --- Prestígio ---
-        public const int CargoParaVender = 4;          // a partir do SRE dá para vender a empresa
+        public const int CargoParaVender = CargoSre;          // a partir do SRE dá para vender a empresa
         public const double MultiplicadorIpo = 2;       // depois do IPO a venda vale o dobro
         public const string UptimeWizard = "uptime", ItilGambiarra = "itil", AwsEstagiario = "aws",
                             ScrumCafe = "scrum", K8sWhisperer = "whisperer", LinuxPlantao = "linux";

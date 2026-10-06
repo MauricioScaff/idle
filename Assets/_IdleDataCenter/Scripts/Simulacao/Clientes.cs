@@ -42,7 +42,7 @@ namespace IdleDataCenter.Simulacao
     public static partial class Catalogo
     {
         // --- Clientes (Sysadmin em diante) ---
-        public const int CargoDosClientes = 1;
+        public const int CargoDosClientes = CargoSysadmin;
         public static int CapacidadeDeClientes(int cargo) => 2 + cargo - Catalogo.CargoTecnico;
         public const double PrimeiraProposta = 300, IntervaloPropostaMin = 300, IntervaloPropostaMax = 540;
         public const double TempoParaAceitar = 90;

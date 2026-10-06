@@ -7,7 +7,7 @@ namespace IdleDataCenter.Simulacao
     [Serializable]
     public class EstadoJogo
     {
-        public const int VersaoAtual = 2;
+        public const int VersaoAtual = 3;   // 3: o Freelancer entrou antes do Técnico
 
         public int versao = VersaoAtual;
         public double dinheiro;

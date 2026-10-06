@@ -28,7 +28,7 @@ namespace IdleDataCenter.Simulacao
             new EventoDef { Id = EventoBlackFriday, Nome = "Viralizou", CargoMinimo = CargoDevOps, Duracao = 120 },   // (o pico "Black Friday" é do SRE)
             new EventoDef { Id = EventoCafeAcabou, Nome = "O café acabou", Duracao = 180 },
             new EventoDef { Id = AtaquePhishing, Nome = "Phishing", Duracao = 1, Ataque = true },
-            new EventoDef { Id = AtaqueMalware, Nome = "Malware", CargoMaximo = CargoDevOps, Duracao = 90, Ataque = true },
+            new EventoDef { Id = AtaqueMalware, Nome = "Malware", CargoMinimo = CargoTecnico, CargoMaximo = CargoDevOps, Duracao = 90, Ataque = true },
             new EventoDef { Id = AtaqueRansomware, Nome = "Ransomware", CargoMinimo = CargoAnalista, Duracao = 180, Ataque = true },
             new EventoDef { Id = AtaqueDdos, Nome = "DDoS", CargoMinimo = CargoSre, Duracao = 90, Ataque = true },
             new EventoDef { Id = EventoSsl, Nome = "SSL expirou", CargoMinimo = CargoSysadmin, Duracao = 120 },

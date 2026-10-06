@@ -46,24 +46,26 @@ namespace IdleDataCenter.Testes
             }
 
             string H(double s) => s <= 0 ? "-" : $"{(int)(s / 3600)}h{(int)(s % 3600 / 60):00}";
-            UnityEngine.Debug.Log($"RITMO: Sysadmin {H(promocoes[1])} (completo {H(completo[1])}); Analista {H(promocoes[2])} (1º backup {H(primeiroBackup)}, completo {H(completo[2])}); " +
-                                  $"DevOps {H(promocoes[3])} (completo {H(completo[3])}); SRE {H(promocoes[4])} (completo {H(completo[4])}, {e.Estado.picosSobrevividos}/{e.Estado.picosTotal} picos); Arquiteto {H(promocoes[5])} (completo {H(completo[5])}); CTO {H(promocoes[6])} (completo {H(completo[6])}, IPO {H(ipo)}); {e.Estado.incidentesResolvidos} incidentes; " +
+            UnityEngine.Debug.Log($"RITMO: Técnico {H(promocoes[Catalogo.CargoTecnico])}; Sysadmin {H(promocoes[Catalogo.CargoSysadmin])} (completo {H(completo[Catalogo.CargoSysadmin])}); Analista {H(promocoes[Catalogo.CargoAnalista])} (1º backup {H(primeiroBackup)}, completo {H(completo[Catalogo.CargoAnalista])}); " +
+                                  $"DevOps {H(promocoes[Catalogo.CargoDevOps])} (completo {H(completo[Catalogo.CargoDevOps])}); SRE {H(promocoes[Catalogo.CargoSre])} (completo {H(completo[Catalogo.CargoSre])}, {e.Estado.picosSobrevividos}/{e.Estado.picosTotal} picos); Arquiteto {H(promocoes[Catalogo.CargoArquiteto])} (completo {H(completo[Catalogo.CargoArquiteto])}); CTO {H(promocoes[Catalogo.CargoCto])} (completo {H(completo[Catalogo.CargoCto])}, IPO {H(ipo)}); {e.Estado.incidentesResolvidos} incidentes; " +
                                   $"receita final {e.ReceitaPorSegundo:0}/s; temperatura {e.Temperatura:0} C; " +
                                   $"energia {e.ConsumoKw:0.0}/{e.CapacidadeKw:0.0} kW; banda {e.TrafegoMbps:0}/{e.BandaMbps:0} Mbps; " +
                                   $"uptime final {Economia.FormatarUptime(e.Uptime)}, melhor {Economia.FormatarUptime(melhorUptime)}, com SLA {H(segundosComSla)}");
 
             // Ritmo de 2026-10-05 (pedido do usuário: 3x mais lento que antes, com preços reais): Sysadmin ~2h30, Analista ~12 h,
             // IPO ~100 h. Ocioso e sem cliques o jogador é o mais lento possível; com cliques e offline tudo anda mais rápido.
-            Assert.That(promocoes[1], Is.InRange(30 * 60, 270 * 60), "promoção a Sysadmin fora do ritmo");
-            Assert.That(promocoes[2], Is.InRange(6 * 3600, 18 * 3600), "promoção a Analista fora do ritmo");
-            Assert.That(promocoes[3], Is.InRange(promocoes[2] + 6 * 3600, promocoes[2] + 24 * 3600), "promoção a DevOps fora do ritmo");
-            Assert.That(promocoes[4], Is.InRange(promocoes[3] + 9 * 3600, promocoes[3] + 36 * 3600), "promoção a SRE fora do ritmo");
+            // o Freelancer é a abertura: uns 30 a 45 min até a proposta de emprego
+            Assert.That(promocoes[Catalogo.CargoTecnico], Is.InRange(15 * 60, 75 * 60), "contratação (Técnico) fora do ritmo");
+            Assert.That(promocoes[Catalogo.CargoSysadmin], Is.InRange(promocoes[Catalogo.CargoTecnico] + 30 * 60, promocoes[Catalogo.CargoTecnico] + 270 * 60), "promoção a Sysadmin fora do ritmo");
+            Assert.That(promocoes[Catalogo.CargoAnalista], Is.InRange(6 * 3600, 18 * 3600), "promoção a Analista fora do ritmo");
+            Assert.That(promocoes[Catalogo.CargoDevOps], Is.InRange(promocoes[Catalogo.CargoAnalista] + 6 * 3600, promocoes[Catalogo.CargoAnalista] + 24 * 3600), "promoção a DevOps fora do ritmo");
+            Assert.That(promocoes[Catalogo.CargoSre], Is.InRange(promocoes[Catalogo.CargoDevOps] + 9 * 3600, promocoes[Catalogo.CargoDevOps] + 36 * 3600), "promoção a SRE fora do ritmo");
             // com geradores sem teto sempre há o que comprar; "completo" aqui é só o que tem limite (melhorias e automações)
-            Assert.That(completo[4], Is.GreaterThan(promocoes[4] + 1800), "SRE acaba rápido demais");
-            Assert.That(promocoes[5], Is.InRange(promocoes[4] + 9 * 3600, promocoes[4] + 42 * 3600), "promoção a Arquiteto fora do ritmo");
-            Assert.That(completo[5], Is.GreaterThan(promocoes[5] + 1800), "Arquiteto acaba rápido demais");
-            Assert.That(promocoes[6], Is.InRange(promocoes[5] + 9 * 3600, promocoes[5] + 48 * 3600), "promoção a CTO fora do ritmo");
-            Assert.That(ipo, Is.GreaterThan(promocoes[6] + 12 * 3600), "IPO rápido demais");
+            Assert.That(completo[Catalogo.CargoSre], Is.GreaterThan(promocoes[Catalogo.CargoSre] + 1800), "SRE acaba rápido demais");
+            Assert.That(promocoes[Catalogo.CargoArquiteto], Is.InRange(promocoes[Catalogo.CargoSre] + 9 * 3600, promocoes[Catalogo.CargoSre] + 42 * 3600), "promoção a Arquiteto fora do ritmo");
+            Assert.That(completo[Catalogo.CargoArquiteto], Is.GreaterThan(promocoes[Catalogo.CargoArquiteto] + 1800), "Arquiteto acaba rápido demais");
+            Assert.That(promocoes[Catalogo.CargoCto], Is.InRange(promocoes[Catalogo.CargoArquiteto] + 9 * 3600, promocoes[Catalogo.CargoArquiteto] + 48 * 3600), "promoção a CTO fora do ritmo");
+            Assert.That(ipo, Is.GreaterThan(promocoes[Catalogo.CargoCto] + 12 * 3600), "IPO rápido demais");
         }
     }
 }

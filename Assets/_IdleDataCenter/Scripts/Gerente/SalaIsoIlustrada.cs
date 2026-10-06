@@ -34,6 +34,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Uma por cargo: o DevOps tem a sua (mesma planta da sala de racks, outra decoração); do SRE em diante, o data center.</summary>
         static readonly Ilustracao[] Ilustracoes =
         {
+            new Ilustracao { nome = "armario", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },   // Freelancer (provisório: o quarto vem na etapa da arte)
             new Ilustracao { nome = "armario", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },
             new Ilustracao { nome = "salinha_hd", equip = "_g", fundo = new Vector2(244, 140), esquerda = new Vector2(20, 252), direita = new Vector2(468, 252), casas = 7 },
             new Ilustracao { nome = "racks_hd", equip = "_g", escala = 2, fundo = new Vector2(338, 152), esquerda = new Vector2(18, 312), direita = new Vector2(658, 312), casas = 10 },
@@ -204,7 +205,7 @@ namespace IdleDataCenter.Gerente
         void DesenharIlustrada()
         {
             areaAtual = null;
-            DesenharCena(() => { if (E.Cargo == Catalogo.CargoTecnico) ArmarioIlustrado(); else if (E.Cargo == Catalogo.CargoSysadmin) SalinhaIlustrada(); else SalaGrandeIlustrada(); });
+            DesenharCena(() => { if (E.Cargo <= Catalogo.CargoTecnico) ArmarioIlustrado(); else if (E.Cargo == Catalogo.CargoSysadmin) SalinhaIlustrada(); else SalaGrandeIlustrada(); });
         }
 
         /// <summary>Uma das áreas atrás das portas (só existem da sala de racks em diante).</summary>
@@ -696,13 +697,13 @@ namespace IdleDataCenter.Gerente
 
         /// <summary>Mesa de trabalho do técnico em cada sala (em casas) e para onde ele olha nela.</summary>
         (Vector2 lugar, string olhar) Mesa =>
-            E.Cargo == Catalogo.CargoTecnico ? (new Vector2(2.0f, 1.55f), "ne")     // ao lado da cadeira, virado para o monitor
+            E.Cargo <= Catalogo.CargoTecnico ? (new Vector2(2.0f, 1.55f), "ne")     // ao lado da cadeira, virado para o monitor
             : E.Cargo == Catalogo.CargoSysadmin ? (new Vector2(4.6f, 1.3f), "ne")
             : E.Cargo <= Catalogo.CargoDevOps ? (new Vector2(1.7f, 7.4f), "nw")
             : (new Vector2(2.4f, 9.6f), "nw");   // na frente do NOC, fora das fileiras
 
         /// <summary>Velocidade de quem anda, em casas por segundo (casas menores nas salas grandes).</summary>
-        float Velocidade => E.Cargo == Catalogo.CargoTecnico ? 0.7f : 0.85f;
+        float Velocidade => E.Cargo <= Catalogo.CargoTecnico ? 0.7f : 0.85f;
 
         /// <summary>Quantos pixels a pessoa anda num ciclo inteiro da caminhada (dois passos).</summary>
         const float PassadaEmPixels = 40;
@@ -763,7 +764,7 @@ namespace IdleDataCenter.Gerente
             else
             {
                 // salas pequenas: pela passagem da frente
-                float frente = E.Cargo == Catalogo.CargoTecnico ? 2.9f : areaAtual != null ? 2.6f : 2.7f;
+                float frente = E.Cargo <= Catalogo.CargoTecnico ? 2.9f : areaAtual != null ? 2.6f : 2.7f;
                 if (Mathf.Abs(p.pos.x - destino.x) > 0.05f) { p.caminho.Add(new Vector2(p.pos.x, frente)); p.caminho.Add(new Vector2(destino.x, frente)); }
             }
             p.caminho.Add(destino);

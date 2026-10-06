@@ -28,6 +28,21 @@ namespace IdleDataCenter.Simulacao
         public const double SegundosForaPorP1 = 5;
         /// <summary>Quanto a equipe (estagiário, help desk) leva para fechar um chamado sozinha.</summary>
         public const double TempoDaEquipeNoChamado = 20;
+        /// <summary>Freelancer: sem equipe, ele mesmo conserta os PCs simples (P3 e P4) quando você não clica, mais devagar.</summary>
+        public const double TempoDoFreelancerNoConserto = 40;
+        /// <summary>Freelancer: o conserto tem preço de bairro (R$ por prioridade, P1 a P4), não depende da receita.</summary>
+        public static readonly double[] PrecoDoConserto = { 300, 200, 120, 60 };
+        public const double BonusDoKit = 0.5;           // +50% no preço do conserto por nível do kit de ferramentas
+        public const double MaisPcsPorCartao = 0.25;    // cada nível do cartão de visita: chamados chegam 25% mais rápido
+
+        /// <summary>O que chega na bancada do freelancer (sem P1: ainda não tem site de ninguém para cair).</summary>
+        public static readonly string[][] TextosDosConsertos =
+        {
+            new[] { "PC da padaria parou" },
+            new[] { "PC da padaria não liga", "Notebook com vírus", "Tela azul no caixa da loja", "HD da gráfica fazendo barulho" },
+            new[] { "Formatar o PC do vizinho", "Instalar a impressora da papelaria", "Wi-Fi da tia não conecta", "Recuperar as fotos do pendrive" },
+            new[] { "Trocar a pasta térmica do PC gamer", "Limpar o teclado do escritório", "Mouse do sobrinho parou", "Instalar o jogo do filho da vizinha" },
+        };
 
         public static readonly string[][] TextosDosChamados =
         {
@@ -73,14 +88,18 @@ namespace IdleDataCenter.Simulacao
         /// <summary>Chamado P1 ou P2 esperando: é o que vale um alerta.</summary>
         public bool TemChamadoUrgente => MaisUrgente != null && MaisUrgente.prioridade <= 2;
         public double BonusDoChamado => BonusDe(PrioridadeDoChamado == 0 ? 3 : PrioridadeDoChamado);
-        public double BonusDe(int prioridade) => Math.Max(25, ReceitaPorSegundo * Catalogo.BonusDoChamadoEmSegundos[prioridade - 1]);
+        public double BonusDe(int prioridade) => Estado.cargo == Catalogo.CargoFreelancer
+            ? Catalogo.PrecoDoConserto[prioridade - 1] * (1 + Nivel(Catalogo.KitFerramentas) * Catalogo.BonusDoKit)
+            : Math.Max(25, ReceitaPorSegundo * Catalogo.BonusDoChamadoEmSegundos[prioridade - 1]);
 
         /// <summary>A pior prioridade que a equipe fecha sozinha (5: nenhuma).</summary>
-        public int EquipeFechaAte => Nivel(Catalogo.ServiceDesk) > 0 ? 2 : Nivel(Catalogo.HelpDesk) > 0 ? 3 : TemEstagiario ? 4 : 5;
+        public int EquipeFechaAte => Estado.cargo == Catalogo.CargoFreelancer ? 3 : Nivel(Catalogo.ServiceDesk) > 0 ? 2 : Nivel(Catalogo.HelpDesk) > 0 ? 3 : TemEstagiario ? 4 : 5;
 
         /// <summary>O chamado em que a equipe está trabalhando agora (ou null) e quanto falta (0 a 1).</summary>
         public ChamadoAberto ChamadoDaEquipe { get { foreach (var c in Chamados) if (c.prioridade >= EquipeFechaAte) return c; return null; } }
-        public double ProgressoDaEquipe => Estado.helpDeskTrabalho / Catalogo.TempoDaEquipeNoChamado;
+        public double ProgressoDaEquipe => Estado.helpDeskTrabalho / TempoDaEquipe;
+        /// <summary>Quanto a equipe leva num chamado (o freelancer sozinho é mais lento).</summary>
+        double TempoDaEquipe => Estado.cargo == Catalogo.CargoFreelancer ? Catalogo.TempoDoFreelancerNoConserto : Catalogo.TempoDaEquipeNoChamado;
 
         /// <summary>Saves de antes da fila tinham um chamado só: vira um P3.</summary>
         void MigrarChamadoAntigo()
@@ -112,7 +131,7 @@ namespace IdleDataCenter.Simulacao
             else
             {
                 Estado.helpDeskTrabalho += segundos;
-                if (Estado.helpDeskTrabalho >= Catalogo.TempoDaEquipeNoChamado)
+                if (Estado.helpDeskTrabalho >= TempoDaEquipe)
                 {
                     Estado.helpDeskTrabalho = 0;
                     Fechar(daEquipe, porEquipe: true);
@@ -123,7 +142,8 @@ namespace IdleDataCenter.Simulacao
             Estado.proximoChamado -= segundos;
             if (Estado.proximoChamado <= 0)
             {
-                Estado.proximoChamado = Catalogo.IntervaloChamadoMin + sorteio.NextDouble() * (Catalogo.IntervaloChamadoMax - Catalogo.IntervaloChamadoMin);
+                Estado.proximoChamado = (Catalogo.IntervaloChamadoMin + sorteio.NextDouble() * (Catalogo.IntervaloChamadoMax - Catalogo.IntervaloChamadoMin))
+                                        * (1 - Nivel(Catalogo.CartaoDeVisita) * Catalogo.MaisPcsPorCartao);
                 AbrirChamado();
             }
         }
@@ -132,7 +152,7 @@ namespace IdleDataCenter.Simulacao
         int SortearPrioridade()
         {
             double r = sorteio.NextDouble();
-            double[] pesos = Estado.cargo == Catalogo.CargoTecnico ? new[] { 0, 0.15, 0.45, 0.40 } : Estado.cargo == Catalogo.CargoSysadmin ? new[] { 0.05, 0.20, 0.40, 0.35 } : new[] { 0.12, 0.23, 0.35, 0.30 };
+            double[] pesos = Estado.cargo <= Catalogo.CargoTecnico ? new[] { 0, 0.15, 0.45, 0.40 } : Estado.cargo == Catalogo.CargoSysadmin ? new[] { 0.05, 0.20, 0.40, 0.35 } : new[] { 0.12, 0.23, 0.35, 0.30 };
             for (int p = 0; p < 4; p++) { if (r < pesos[p]) return p + 1; r -= pesos[p]; }
             return 4;
         }
@@ -143,7 +163,7 @@ namespace IdleDataCenter.Simulacao
             MigrarChamadoAntigo();
             if (Estado.chamados.Count >= Catalogo.ChamadosNaFila) return null;
             if (prioridade < 1 || prioridade > 4) prioridade = SortearPrioridade();
-            var textos = Catalogo.TextosDosChamados[prioridade - 1];
+            var textos = (Estado.cargo == Catalogo.CargoFreelancer ? Catalogo.TextosDosConsertos : Catalogo.TextosDosChamados)[prioridade - 1];
             var c = new ChamadoAberto { texto = textos[sorteio.Next(textos.Length)], prioridade = prioridade, restante = Catalogo.PrazoDoChamado[prioridade - 1] };
             Estado.chamados.Add(c);
             ChamadoApareceu?.Invoke(c);

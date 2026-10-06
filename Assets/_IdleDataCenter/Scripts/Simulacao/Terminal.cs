@@ -33,7 +33,7 @@ namespace IdleDataCenter.Simulacao
         public const int ComboMaximo = 2;
         public const int ComandosParaConquista = 10, ComandosParaConquista2 = 100;
         public static readonly string[] HostsDasRegioes = { "sa-east", "us-east", "eu-west", "ap-south" };
-        public static readonly string[] UsuariosDosCargos = { "tecnico", "sysadmin", "analista", "devops", "sre", "arquiteto", "cto" };
+        public static readonly string[] UsuariosDosCargos = { "freela", "tecnico", "sysadmin", "analista", "devops", "sre", "arquiteto", "cto" };
 
         public static readonly string[] Piadas =
         {
@@ -64,7 +64,7 @@ namespace IdleDataCenter.Simulacao
 
         public static string HostDoServidor(int servidor) => "srv" + (servidor + 1).ToString("00");
         public string UsuarioDoTerminal => Catalogo.UsuariosDosCargos[Math.Min(Estado.cargo, Catalogo.UsuariosDosCargos.Length - 1)];
-        public string MaquinaDoTerminal => Estado.cargo == Catalogo.CargoTecnico ? "armario" : Estado.cargo == Catalogo.CargoSysadmin ? "salinha" : "dc01";
+        public string MaquinaDoTerminal => Estado.cargo == Catalogo.CargoFreelancer ? "casa" : Estado.cargo == Catalogo.CargoTecnico ? "armario" : Estado.cargo == Catalogo.CargoSysadmin ? "salinha" : "dc01";
 
         static string[][] S(params string[][] s) => s;
         static string[] P(params string[] p) => p;

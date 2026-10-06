@@ -40,7 +40,7 @@ namespace IdleDataCenter.Simulacao
             new ConquistaDef { Id = "quatronoves", Nome = "Quatro noves", Descricao = "Uptime de 99,99%", Condicao = e => e.Uptime >= 0.9999 },
             new ConquistaDef { Id = "cinconoves", Nome = "Cinco noves", Descricao = "Uptime de 99,999%", Condicao = e => e.Uptime >= 0.99999 },
             new ConquistaDef { Id = ConquistaRefresh, Nome = "Cheiro de novo", Descricao = "Fazer o refresh do hardware" },
-            new ConquistaDef { Id = "promovido", Nome = "Crachá novo", Descricao = "Primeira promoção", Condicao = e => e.Cargo >= Catalogo.CargoSysadmin },
+            new ConquistaDef { Id = "promovido", Nome = "Crachá novo", Descricao = "Ser contratado por uma empresa", Condicao = e => e.Cargo >= Catalogo.CargoTecnico },
             new ConquistaDef { Id = "sre", Nome = "Pager no bolso", Descricao = "Chegar a SRE", Condicao = e => e.Cargo >= Catalogo.CargoSre },
             new ConquistaDef { Id = "cto", Nome = "De estagiário a CTO", Descricao = "Chegar a CTO", Condicao = e => e.Cargo >= Catalogo.CargoCto },
             new ConquistaDef { Id = "milhao", Nome = "Primeiro milhão", Descricao = "Faturar R$ 1 milhão", Condicao = e => e.Estado.totalGanho >= 1e6 },

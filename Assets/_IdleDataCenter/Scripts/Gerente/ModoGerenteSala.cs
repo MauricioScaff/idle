@@ -42,6 +42,7 @@ namespace IdleDataCenter.Gerente
         {
             switch (E.Cargo)
             {
+                case Catalogo.CargoFreelancer: return Catalogo.SiteCliente;
                 case Catalogo.CargoTecnico: return Catalogo.Servidor;
                 case Catalogo.CargoSysadmin: return E.TemRack ? Catalogo.Servidor1U : Catalogo.Rack;
                 case Catalogo.CargoAnalista: return Catalogo.RackCheio;

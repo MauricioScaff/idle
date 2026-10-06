@@ -32,7 +32,7 @@ namespace IdleDataCenter.Gerente
         bool TemArteNova => true;
 
         /// <summary>Armário 4 × 4 (apertado), salinha 6 × 6, sala de racks 8 × 8, sala virtualizada 10 × 10, data center 12 × 12 casas.</summary>
-        static readonly int[] TamanhoDaSala = { 4, 6, 8, 10, 12 };
+        static readonly int[] TamanhoDaSala = { 4, 4, 6, 8, 10, 12 };
 
         // ---------------- Sprites ----------------
 
@@ -117,6 +117,7 @@ namespace IdleDataCenter.Gerente
             ParedesEPisoArte();
             switch (E.Cargo)
             {
+                case Catalogo.CargoFreelancer:
                 case Catalogo.CargoTecnico: Armario(); break;
                 case Catalogo.CargoSysadmin: Salinha(); break;
                 default: SalaGrande(); break;
@@ -134,6 +135,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Cores das paredes por cargo: face da esquerda, face da direita, rodapés e friso do topo.</summary>
         static readonly string[][] CoresDasParedes =
         {
+            new[] { "2f4c80", "28416f", "1c2b4f", "18264a", "7a9bd4", "6886bd" },   // armário: azul-marinho
             new[] { "2f4c80", "28416f", "1c2b4f", "18264a", "7a9bd4", "6886bd" },   // armário: azul-marinho
             new[] { "3f5a86", "364f78", "243553", "1f2f4c", "8aa6d6", "7893c4" },   // salinha: azul acinzentado
             new[] { "5b6a8a", "4f5d7c", "2e3750", "283149", "a9b8d6", "95a5c6" },   // sala de racks: cinza técnico
@@ -529,8 +531,8 @@ namespace IdleDataCenter.Gerente
         {
             // corredor onde as pessoas andam: na frente do canto do técnico
             int cargo = E.Cargo;
-            float gy = cargo == Catalogo.CargoTecnico ? 2.3f : cargo == Catalogo.CargoSysadmin ? 3.0f : 2.4f;
-            float gxFim = cargo == Catalogo.CargoTecnico ? 3.3f : cargo == Catalogo.CargoSysadmin ? 4.6f : 3.6f;   // da sala de racks em diante, só no lado do escritório
+            float gy = cargo <= Catalogo.CargoTecnico ? 2.3f : cargo == Catalogo.CargoSysadmin ? 3.0f : 2.4f;
+            float gxFim = cargo <= Catalogo.CargoTecnico ? 3.3f : cargo == Catalogo.CargoSysadmin ? 4.6f : 3.6f;   // da sala de racks em diante, só no lado do escritório
             float gxAndando = PosicaoAndando(1.2f, gxFim, 0f, 0.55f, out bool voltando);
             // técnico: conserta o que travou (ajoelhado ao lado), comemora logo depois de uma compra, senão passeia
             if (tecnicoConsertando) PessoaArte(Pessoa("tecnico_conserta", "tecnico"), lugarDoTecnico.x, lugarDoTecnico.y, false);

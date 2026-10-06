@@ -17,7 +17,7 @@ namespace IdleDataCenter.Gerente
     public partial class SalaIso
     {
         // tamanho da sala (em quadrados) por cargo
-        static readonly Vector2Int[] Tamanhos = { new Vector2Int(6, 5), new Vector2Int(9, 7), new Vector2Int(12, 9), new Vector2Int(14, 10), new Vector2Int(16, 11) };
+        static readonly Vector2Int[] Tamanhos = { new Vector2Int(6, 5), new Vector2Int(6, 5), new Vector2Int(9, 7), new Vector2Int(12, 9), new Vector2Int(14, 10), new Vector2Int(16, 11) };
         const int AlturaParede = 56;
 
         /// <summary>Em que cargo cada setor passa a existir (-1 = não é setor).</summary>
@@ -25,7 +25,8 @@ namespace IdleDataCenter.Gerente
         {
             switch (id)
             {
-                case "Compute": case "Equipe": case "Storage": case "Seguranca": return Catalogo.CargoTecnico;   // Storage: a linha de backup começa no HD externo
+                case "Compute": case "Bancada": return Catalogo.CargoFreelancer;
+                case "Equipe": case "Storage": case "Seguranca": return Catalogo.CargoTecnico;   // Storage: a linha de backup começa no HD externo
                 case "Energia": case "Refrigeracao": return Catalogo.CargoSysadmin;
                 case "Rede": case "Automacao": return Catalogo.CargoAnalista;
                 case "NOC": return Catalogo.CargoDevOps;
@@ -421,6 +422,7 @@ namespace IdleDataCenter.Gerente
             Vector2? lugar = null;
             switch (E.Cargo)
             {
+                case Catalogo.CargoFreelancer:
                 case Catalogo.CargoTecnico: if (E.Torres < 3) lugar = new Vector2(2f + E.Torres, 0.2f); break;
                 case Catalogo.CargoSysadmin: lugar = new Vector2(5.1f, 0.1f); break;
                 case Catalogo.CargoAnalista: if (E.RacksCheios < 4) lugar = new Vector2(4f + E.RacksCheios, 3f); break;

@@ -31,7 +31,7 @@ namespace IdleDataCenter.Gerente
             var r = RetHelpDesk;
             bool p1 = chamados[0].prioridade == 1;
             ui.Caixa(r, IsoGui.Painel, p1 && Pisca ? CorDaPrioridade(1) : IsoGui.Borda);
-            ui.Texto("Help desk", r.x + 14, r.y + 12, IsoGui.Muted, 2);
+            ui.Texto(E.Cargo == Catalogo.CargoFreelancer ? "Bancada" : "Help desk", r.x + 14, r.y + 12, IsoGui.Muted, 2);
             string fila = chamados.Count + "/" + Catalogo.ChamadosNaFila;
             ui.Texto(fila, r.xMax - 14 - ui.Largura(fila, 2), r.y + 12, IsoGui.Muted, 2);
 

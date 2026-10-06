@@ -17,8 +17,9 @@ namespace IdleDataCenter.Testes
         /// <summary>Renda de uma torre sem melhorias (as contas dos testes partem dela).</summary>
         const double R = Catalogo.ReceitaBaseServidor;
 
+        /// <summary>Empresa nova já no Técnico (quase todos os testes são das salas); o Freelancer tem os testes dele.</summary>
         static Economia Nova(double dinheiro = 0, double sorteio = 0.9999) =>
-            new Economia(new EstadoJogo { dinheiro = dinheiro }, new SorteioFixo(sorteio));
+            new Economia(new EstadoJogo { dinheiro = dinheiro, cargo = Catalogo.CargoTecnico }, new SorteioFixo(sorteio));
 
         static void DefinirNivel(Economia e, string id, int nivel) =>
             e.Estado.melhorias.Add(new NivelMelhoria { id = id, nivel = nivel });
@@ -227,7 +228,7 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             Assert.IsFalse(e.PodePromover);
             DefinirNivel(e, Catalogo.Servidor, 2);
-            e.Estado.totalGanho = 120000;
+            e.Estado.totalGanho = 200000;
             Assert.IsFalse(e.PodePromover, "faltam os incidentes");
             e.Estado.incidentesResolvidos = 8;
             Assert.IsTrue(e.PodePromover);
@@ -235,8 +236,8 @@ namespace IdleDataCenter.Testes
             int novoCargo = -1;
             e.Promoveu += c => novoCargo = c;
             Assert.IsTrue(e.Promover());
-            Assert.AreEqual(1, e.Cargo);
-            Assert.AreEqual(1, novoCargo);
+            Assert.AreEqual(Catalogo.CargoSysadmin, e.Cargo);
+            Assert.AreEqual(Catalogo.CargoSysadmin, novoCargo);
             Assert.IsFalse(e.PodePromover, "o Sysadmin tem metas próprias");
         }
 
@@ -805,6 +806,8 @@ namespace IdleDataCenter.Testes
                                 + "\"melhorias\":[{\"id\":\"ssd\",\"nivel\":1}],\"travamentos\":[],\"ultimoSalvamentoUnix\":1000,\"jaClicouNoServidor\":true}";
             var estado = UnityEngine.JsonUtility.FromJson<EstadoJogo>(antigo);
             var e = new Economia(estado, new SorteioFixo(0.9999));
+            Assert.AreEqual(Catalogo.CargoTecnico, e.Cargo, "save de antes do Freelancer: quem era Técnico continua Técnico");
+            Assert.AreEqual(EstadoJogo.VersaoAtual, e.Estado.versao);
             Assert.AreEqual(2 * R, e.ReceitaPorSegundo, 1e-9);
             Assert.IsFalse(e.TemQuedaDeEnergia);
             Assert.IsFalse(e.TemPaneRegional);
@@ -812,6 +815,89 @@ namespace IdleDataCenter.Testes
             e.Avancar(1);
             Assert.IsFalse(e.TemChamado, "o primeiro chamado espera o tempo normal");
             Assert.IsFalse(e.EmPico);
+        }
+
+        // ---------- Freelancer ----------
+
+        static Economia Freelancer(double dinheiro = 0) => new Economia(new EstadoJogo { dinheiro = dinheiro }, new SorteioFixo(0.9999));
+
+        [Test]
+        public void JogoNovoComecaComoFreelancer()
+        {
+            var e = Freelancer();
+            Assert.AreEqual(Catalogo.CargoFreelancer, e.Cargo);
+            CollectionAssert.AreEquivalent(new[] { Catalogo.SiteCliente, Catalogo.KitFerramentas, Catalogo.CartaoDeVisita, Catalogo.Hospedagem },
+                System.Linq.Enumerable.Select(e.MelhoriasDoCargo(), m => m.Id));
+            Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9, "só a torre velha");
+        }
+
+        [Test]
+        public void SitesRendemNaTorreVelhaAteOLimite()
+        {
+            var e = Freelancer();
+            DefinirNivel(e, Catalogo.SiteCliente, 4);
+            Assert.AreEqual(R + 4 * Catalogo.ReceitaSite, e.ReceitaPorSegundo, 1e-9);
+            DefinirNivel(e, Catalogo.Hospedagem, 1);
+            Assert.AreEqual(R + 4 * Catalogo.ReceitaSite * 1.5, e.ReceitaPorSegundo, 1e-9, "hospedagem caprichada: +50%");
+            e.Estado.melhorias.Clear();
+            DefinirNivel(e, Catalogo.SiteCliente, Catalogo.SitesNaTorre);
+            Assert.IsTrue(e.NoMaximo(Catalogo.SiteCliente), "a torre velha não aguenta mais sites");
+        }
+
+        [Test]
+        public void ConsertoDoFreelancerTemPrecoDeBairro()
+        {
+            var e = Freelancer();
+            e.Estado.proximoChamado = 1e9;
+            var c = e.AbrirChamado(3);
+            CollectionAssert.Contains(Catalogo.TextosDosConsertos[2], c.texto, "chega um PC na bancada, não um chamado de empresa");
+            Assert.AreEqual(Catalogo.PrecoDoConserto[2], e.AtenderChamado(), 1e-9);
+            DefinirNivel(e, Catalogo.KitFerramentas, 2);
+            e.AbrirChamado(4);
+            Assert.AreEqual(Catalogo.PrecoDoConserto[3] * 2, e.AtenderChamado(), 1e-9, "kit nível 2: +100%");
+        }
+
+        [Test]
+        public void FreelancerConsertaSozinhoDevagar()
+        {
+            var e = Freelancer();
+            e.Estado.proximoChamado = 1e9;
+            e.AbrirChamado(3);
+            e.AbrirChamado(2);
+            double pago = 0;
+            e.ChamadoEncerrado += (c, b, equipe) => { if (equipe) pago = b; };
+            for (int i = 0; i < Catalogo.TempoDoFreelancerNoConserto - 1; i++) e.Avancar(1);
+            Assert.AreEqual(2, e.Chamados.Count, "ainda no meio do conserto");
+            e.Avancar(1);
+            Assert.AreEqual(1, e.Chamados.Count);
+            Assert.AreEqual(2, e.Chamados[0].prioridade, "o P2 é urgente: espera você");
+            Assert.AreEqual(Catalogo.PrecoDoConserto[2] * Catalogo.FracaoDaEquipe, pago, 1e-9);
+            Assert.AreEqual(1, e.Estado.chamadosAtendidos);
+        }
+
+        [Test]
+        public void CartaoDeVisitaTrazMaisPcs()
+        {
+            var e = Freelancer();
+            DefinirNivel(e, Catalogo.CartaoDeVisita, 2);
+            e.Estado.proximoChamado = 0.5;
+            e.Avancar(1);
+            Assert.IsTrue(e.TemChamado);
+            double normal = Catalogo.IntervaloChamadoMin + 0.9999 * (Catalogo.IntervaloChamadoMax - Catalogo.IntervaloChamadoMin);
+            Assert.AreEqual(normal * (1 - 2 * Catalogo.MaisPcsPorCartao), e.Estado.proximoChamado, 1e-6);
+        }
+
+        [Test]
+        public void MetasDoFreelancerTrazemAContratacao()
+        {
+            var e = Freelancer();
+            DefinirNivel(e, Catalogo.SiteCliente, 5);
+            e.Estado.totalGanho = 15000;
+            Assert.IsFalse(e.PodePromover, "faltam os consertos");
+            e.Estado.chamadosAtendidos = 10;
+            Assert.IsTrue(e.Promover());
+            Assert.AreEqual(Catalogo.CargoTecnico, e.Cargo);
+            Assert.AreEqual(R + 5 * Catalogo.ReceitaSite, e.ReceitaPorSegundo, 1e-9, "os sites vêm junto para a empresa");
         }
 
         // ---------- Automações ----------
@@ -894,7 +980,7 @@ namespace IdleDataCenter.Testes
             Assert.IsFalse(e.TomarCafe(), "ainda recarregando");
             e.Avancar(Catalogo.DuracaoCafe);
             Assert.IsFalse(e.CafeAtivo);
-            Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R * e.FatorConquistas, e.ReceitaPorSegundo, 1e-9);   // depois do Avancar: o crachá novo (contratado) já valeu
             e.Avancar(Catalogo.RecargaCafe - Catalogo.DuracaoCafe);
             Assert.IsTrue(e.PodeTomarCafe);
         }
@@ -914,7 +1000,7 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual(antes + 25, e.Dinheiro, 1e-9);
             Assert.IsFalse(e.TemChamado);
             e.AbrirChamado(1);
-            Assert.AreEqual(Catalogo.BonusDoChamadoEmSegundos[0] * R, e.AtenderChamado(), 1e-9, "P1 paga 1 min de receita");
+            Assert.AreEqual(Catalogo.BonusDoChamadoEmSegundos[0] * R * e.FatorConquistas, e.AtenderChamado(), 1e-9, "P1 paga 1 min de receita");
         }
 
         [Test]
@@ -1188,12 +1274,12 @@ namespace IdleDataCenter.Testes
             e.ProporCliente();
             for (int i = 0; i < Catalogo.TempoParaAceitar; i++) e.Avancar(1);
             Assert.IsFalse(e.TemPropostaDeCliente, "venceu");
-            for (int i = 0; i < Catalogo.CapacidadeDeClientes(1); i++) { e.ProporCliente(); Assert.IsTrue(e.AceitarCliente()); }
+            for (int i = 0; i < Catalogo.CapacidadeDeClientes(Catalogo.CargoSysadmin); i++) { e.ProporCliente(); Assert.IsTrue(e.AceitarCliente()); }
             e.ProporCliente();
             Assert.IsFalse(e.PodeAceitarCliente, "o Sysadmin cuida de 3 clientes");
             Assert.IsFalse(e.AceitarCliente());
-            Assert.AreEqual(Catalogo.CapacidadeDeClientes(1), e.Clientes.Count);
-            Assert.AreEqual(Catalogo.CapacidadeDeClientes(1), new System.Collections.Generic.HashSet<string>(e.Clientes.ConvertAll(c => c.nome)).Count, "nomes diferentes");
+            Assert.AreEqual(Catalogo.CapacidadeDeClientes(Catalogo.CargoSysadmin), e.Clientes.Count);
+            Assert.AreEqual(Catalogo.CapacidadeDeClientes(Catalogo.CargoSysadmin), new System.Collections.Generic.HashSet<string>(e.Clientes.ConvertAll(c => c.nome)).Count, "nomes diferentes");
         }
 
         // ---------- Offline ----------

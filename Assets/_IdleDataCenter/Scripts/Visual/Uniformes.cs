@@ -20,7 +20,7 @@ namespace IdleDataCenter
         public static Texture2D TexturaDoCargo(string arquivo, string prefixo, int cargo)
         {
             var t = ArteGerada.Textura(arquivo);
-            if (prefixo != "tecnico" || cargo == Catalogo.CargoTecnico) return t;
+            if (prefixo != "tecnico" || cargo <= Catalogo.CargoTecnico) return t;
             // sprites da arte nova (Iso/): só o tronco muda, porque a calça jeans também é azul
             bool novo = arquivo.StartsWith("Iso/");
             float cabeca = novo ? 0.30f : 0.36f, pernas = novo ? 0.45f : 0f;

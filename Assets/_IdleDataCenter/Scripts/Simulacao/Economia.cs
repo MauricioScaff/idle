@@ -57,6 +57,7 @@ namespace IdleDataCenter.Simulacao
         public Economia(EstadoJogo estado, Random sorteio = null)
         {
             Estado = estado ?? new EstadoJogo();
+            MigrarSave();
             this.sorteio = sorteio ?? new Random();
         }
 
@@ -67,6 +68,8 @@ namespace IdleDataCenter.Simulacao
         public CargoDef CargoAtual => Catalogo.Cargos[Estado.cargo];
 
         public int Torres => 1 + Nivel(Catalogo.Servidor);
+        /// <summary>Sites de clientes que o freelancer hospeda na torre velha (seguem rendendo depois da contratação).</summary>
+        public int Sites => Nivel(Catalogo.SiteCliente);
         public int ServidoresRack => Nivel(Catalogo.Servidor1U);
         public int TotalServidores => Torres + ServidoresRack;
         public bool EhTorre(int servidor) => servidor < Torres;
@@ -157,6 +160,9 @@ namespace IdleDataCenter.Simulacao
             * (1 + (TemSsd ? Catalogo.BonusSsd : 0))
             * (1 + Ventoinhas * Catalogo.BonusVentoinha)
             * BonusDoAlvo(Catalogo.AlvoTorres) * FatorMarcos(Torres);
+
+        /// <summary>Renda de todos os sites de clientes (hospedagem caprichada e marcos).</summary>
+        public double ReceitaSites => Sites * Catalogo.ReceitaSite * BonusDoAlvo(Catalogo.AlvoSites) * FatorMarcos(Sites) * FatorGeral;
 
         /// <summary>Renda de um servidor 1U (cabos organizados, firmware e marcos).</summary>
         public double Receita1U => Catalogo.ReceitaServidor1U * BonusDoAlvo(Catalogo.Alvo1U) * FatorMarcos(ServidoresRack);
@@ -328,7 +334,7 @@ namespace IdleDataCenter.Simulacao
                 int torresTravadas = 0, u1Travados = 0;
                 foreach (var t in Estado.travamentos) if (EhTorre(t.servidor)) torresTravadas++; else u1Travados++;
                 double soma = ((Torres - torresTravadas) * ReceitaTorre + (ServidoresRack - u1Travados) * Receita1U) * FatorGeral * FatorVirtualizacao;
-                return ((soma + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes) * FatorCampus + ReceitaDatacenters + ReceitaMundial) * FatorGlobal * FatorCertificacoes;
+                return ((soma + ReceitaSites + ReceitaDosRacksCheios + ReceitaApps + ReceitaKubernetes) * FatorCampus + ReceitaDatacenters + ReceitaMundial) * FatorGlobal * FatorCertificacoes;
             }
         }
 
@@ -829,6 +835,14 @@ namespace IdleDataCenter.Simulacao
 
         // ---------------- Carreira ----------------
 
+        /// <summary>Saves da versão 2 não tinham o Freelancer: o cargo de todo mundo anda uma casa (o Técnico continua Técnico).</summary>
+        void MigrarSave()
+        {
+            if (Estado.versao >= EstadoJogo.VersaoAtual) return;
+            if (Estado.versao < 3) Estado.cargo++;
+            Estado.versao = EstadoJogo.VersaoAtual;
+        }
+
         public double Progresso(MetaDef meta)
         {
             switch (meta.Tipo)
@@ -842,6 +856,8 @@ namespace IdleDataCenter.Simulacao
                 case TipoMeta.PicosSobrevividos: return Estado.picosSobrevividos;
                 case TipoMeta.Datacenters: return TotalDatacenters;
                 case TipoMeta.Regioes: return TotalRegioes;
+                case TipoMeta.Consertos: return Estado.chamadosAtendidos;
+                case TipoMeta.Sites: return Sites;
                 default: return Estado.incidentesResolvidos;
             }
         }

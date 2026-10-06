@@ -25,12 +25,13 @@ namespace IdleDataCenter
 
         static readonly Dictionary<int, string[]> Novidades = new Dictionary<int, string[]>
         {
-            [1] = new[] { "O armário vira uma salinha.", "Rack 42U com servidores 1U.", "Energia e temperatura", "passam a importar." },
-            [2] = new[] { "A salinha vira sala de racks,", "com energia e ar de precisão.", "Racks cheios, storage e backup.", "A banda do link passa a importar." },
-            [3] = new[] { "A sala escurece: vira", "sala virtualizada.", "Hypervisor, containers e CI.", "Deploys às vezes quebram." },
-            [4] = new[] { "Data center pequeno com", "cluster Kubernetes e NOC.", "Picos de tráfego: escale", "a tempo ou pague multa de SLA." },
-            [5] = new[] { "A sala vira o prédio DC-01", "num campus com vários", "datacenters, fibra e CDN.", "Cuidado com quedas de energia." },
-            [6] = new[] { "O campus vira um ponto", "no mapa-múndi: regiões,", "cabos submarinos e IA.", "No fim, o IPO." },
+            [Catalogo.CargoTecnico] = new[] { "Uma empresa de TI te contratou.", "Escritório com gente, chamados", "e a bancada da TI.", "Seus sites vêm junto." },
+            [Catalogo.CargoSysadmin] = new[] { "A TI ganha uma salinha.", "Rack 42U com servidores 1U.", "Energia e temperatura", "passam a importar." },
+            [Catalogo.CargoAnalista] = new[] { "A salinha vira sala de racks,", "com energia e ar de precisão.", "Racks cheios, storage e backup.", "A banda do link passa a importar." },
+            [Catalogo.CargoDevOps] = new[] { "A sala escurece: vira", "sala virtualizada.", "Hypervisor, containers e CI.", "Deploys às vezes quebram." },
+            [Catalogo.CargoSre] = new[] { "Data center pequeno com", "cluster Kubernetes e NOC.", "Picos de tráfego: escale", "a tempo ou pague multa de SLA." },
+            [Catalogo.CargoArquiteto] = new[] { "A sala vira o prédio DC-01", "num campus com vários", "datacenters, fibra e CDN.", "Cuidado com quedas de energia." },
+            [Catalogo.CargoCto] = new[] { "O campus vira um ponto", "no mapa-múndi: regiões,", "cabos submarinos e IA.", "No fim, o IPO." },
         };
 
         Faixa faixa;
@@ -599,6 +600,7 @@ namespace IdleDataCenter
 
         static readonly ConfigCena[] Cenas =
         {
+            new ConfigCena { Arte = "cena_homelab", Terminal = new Rect(0, 0, 0.35f, 1), Leds = new Rect(0.72f, 0.25f, 0.28f, 0.75f), Luzes = new Rect(0.39f, 0, 0.30f, 0.47f), Pele = new Rect(0.33f, 0, 0.12f, 1), TemGato = true },   // Freelancer: o homelab em casa
             new ConfigCena { Arte = "cena_homelab", Terminal = new Rect(0, 0, 0.35f, 1), Leds = new Rect(0.72f, 0.25f, 0.28f, 0.75f), Luzes = new Rect(0.39f, 0, 0.30f, 0.47f), Pele = new Rect(0.33f, 0, 0.12f, 1), TemGato = true },
             new ConfigCena { Arte = "cena_sysadmin", Terminal = Rect.zero, Leds = new Rect(0.42f, 0.2f, 0.58f, 0.8f), Luzes = new Rect(0, 0, 0.15f, 0.6f), Pele = new Rect(0.36f, 0, 0.12f, 0.35f) },
             new ConfigCena { Arte = "cena_infra", Terminal = Rect.zero, Leds = new Rect(0.33f, 0.1f, 0.67f, 0.8f), Luzes = new Rect(0, 0.4f, 0.17f, 0.3f), Pele = new Rect(0.18f, 0.1f, 0.14f, 0.35f) },
