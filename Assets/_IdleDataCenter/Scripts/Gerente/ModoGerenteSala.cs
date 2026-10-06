@@ -217,8 +217,10 @@ namespace IdleDataCenter.Gerente
                              || (a.Tipo == "storage" && E.DiscoQueimado) || (a.Tipo == "containers" && E.DeployQuebrado)
                              || (a.Tipo == "dc:" + E.DatacenterSemEnergia && E.TemQuedaDeEnergia) || (a.Tipo == "regiao:" + E.RegiaoEmPane && E.TemPaneRegional);
                 if (quebrado) Faiscas(r);
-                else if (a.Tipo.StartsWith("servidor:") || a.Tipo == "rack" || a.Tipo == "equipamento" || a.Tipo == "containers" || a.Tipo == "k8s" || a.Tipo.StartsWith("dc:") || a.Tipo.StartsWith("regiao:"))
+                else if (a.Tipo.StartsWith("servidor:") || a.Tipo == "rack" || a.Tipo == "equipamento" || a.Tipo == "containers" || a.Tipo == "k8s" || a.Tipo.StartsWith("dc:"))
                     renda.Add(r);
+                else if (a.Tipo.StartsWith("regiao:"))
+                    renda.Add(new Rect(r.x, r.y - 30 * zoomSala, r.width, r.height));   // acima do nome da região, não por cima dele
                 if (a.Tipo == "cafe" && E.CafeAtivo) Fumaca(r);
             }
             if (renda.Count > 0 && Time.unscaledTime >= proximaRenda && E.ReceitaPorSegundo > 0)

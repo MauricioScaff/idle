@@ -181,6 +181,7 @@ namespace IdleDataCenter.Simulacao
         public const double GrausPorArCondicionado = 6;
         public const double TemperaturaQuente = 32;    // acima: desempenho cai e travam mais
         public const double TemperaturaCritica = 40;
+        public const double TemperaturaMaxima = 60;    // teto: acima disso a sala já estaria desligada (antes chegava a 274 °C)
         /// <summary>Ar de precisão da sala de racks.</summary>
         public const double GrausArDePrecisao = 12;
         /// <summary>Com piso técnico e corredor frio, só metade do calor dos equipamentos fica na sala.</summary>

@@ -224,13 +224,13 @@ namespace IdleDataCenter.Simulacao
 
         // Temperatura
         /// <summary>O ar-condicionado esfria até um limite: a sala nunca fica abaixo de TemperaturaMinima.</summary>
-        public double Temperatura => Math.Max(Catalogo.TemperaturaMinima,
+        public double Temperatura => Math.Min(Catalogo.TemperaturaMaxima, Math.Max(Catalogo.TemperaturaMinima,
             Catalogo.TemperaturaAmbiente + ConsumoKw * Catalogo.GrausPorKw * (NaSalaDeRacks ? Catalogo.FatorCalorSalaDeRacks : 1)
             - Nivel(Catalogo.ArCondicionado) * Catalogo.GrausPorArCondicionado
             - (NaSalaDeRacks ? Catalogo.GrausArDePrecisao : 0)
             - (NaSalaVirtualizada ? Catalogo.GrausSalaVirtualizada : 0)
             - (NoDataCenter ? Catalogo.GrausDataCenter : 0)
-            - SomaDoAlvo(Catalogo.AlvoGraus));
+            - SomaDoAlvo(Catalogo.AlvoGraus)));
         public bool Quente => Temperatura > Catalogo.TemperaturaQuente;
         public double FatorTemperatura =>
             Temperatura > Catalogo.TemperaturaCritica ? 0.3 : Quente ? 0.6 : 1;

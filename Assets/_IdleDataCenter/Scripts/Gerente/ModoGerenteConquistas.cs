@@ -10,7 +10,7 @@ namespace IdleDataCenter.Gerente
         {
             int feitas = E.NumeroDeConquistas, total = Catalogo.Conquistas.Count;
             ui.Texto("Conquistas: " + feitas + " / " + total, modal.x + 24, modal.y + 95, Ouro, 3);
-            string bonus = "+" + Numero(Mathf.Round((float)((E.FatorConquistas - 1) * 100))) + "% de renda, para sempre";
+            string bonus = "+" + ((E.FatorConquistas - 1) * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + "% de renda, para sempre";
             ui.Texto(bonus, modal.xMax - 24 - ui.Largura(bonus, 2), modal.y + 99, IsoGui.Verde, 2);
 
             const int colunas = 4;

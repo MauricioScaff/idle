@@ -189,8 +189,9 @@ namespace IdleDataCenter
                 return;
             }
             ui.Texto(E.TemProximoCargo ? "Meta para " + Catalogo.Cargos[E.Cargo + 1].Nome : "Meta para o IPO", x + 12, 82, IsoGui.Muted, 1);
-            ui.Texto(Cortar(proxima.Texto, 20), x + 12, 92, IsoGui.Branco, 2);
             string fracao = feitas + "/" + metas.Length;
+            // o texto da meta para antes da fração (cortar por letras deixava "15 automações ativas" por cima do "1/3")
+            ui.Texto(CaberEm(proxima.Texto, LarguraHud - 32 - ui.Largura(fracao, 2), 2), x + 12, 92, IsoGui.Branco, 2);
             ui.Texto(fracao, x + LarguraHud - 12 - ui.Largura(fracao, 2), 92, IsoGui.Cyan, 2);
             ui.Barra(new Rect(x + 12, 106, LarguraHud - 24, 10), E.Progresso(proxima) / proxima.Alvo, IsoGui.Cyan);
         }
@@ -351,5 +352,12 @@ namespace IdleDataCenter
         }
 
         static string Cortar(string s, int maximo) => s.Length <= maximo ? s : s.Substring(0, Mathf.Max(1, maximo - 1)) + ".";
+
+        string CaberEm(string texto, float largura, int escala)
+        {
+            if (ui.Largura(texto, escala) <= largura) return texto;
+            while (texto.Length > 1 && ui.Largura(texto + "...", escala) > largura) texto = texto.Substring(0, texto.Length - 1);
+            return texto.TrimEnd() + "...";
+        }
     }
 }

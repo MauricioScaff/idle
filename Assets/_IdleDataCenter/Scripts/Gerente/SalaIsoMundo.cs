@@ -88,8 +88,10 @@ namespace IdleDataCenter.Gerente
             // brilho roxo da nuvem de IA (GPU) na sede
             if (r == 0 && E.Nivel(Catalogo.Gpu) > 0)
             {
-                var roxo = IsoDesenho.C("b48cff"); roxo.a = (byte)(60 + pulso * 80);
-                for (int k = 0; k < E.Nivel(Catalogo.Gpu); k++) tela.Circulo(p.x, p.y, 12 + k * 5, roxo);
+                // um anel a mais a cada 10 clusters, até 3 (a GPU vai até 100: antes, um círculo por cluster cobria o mapa)
+                var roxo = IsoDesenho.C("b48cff"); roxo.a = (byte)(25 + pulso * 35);
+                int aneis = Mathf.Min(3, 1 + E.Nivel(Catalogo.Gpu) / 10);
+                for (int k = 0; k < aneis; k++) tela.Circulo(p.x, p.y, 10 + k * 4, roxo);
                 tela.Circulo(p.x, p.y, 3, IsoDesenho.C("ffd65c"));
             }
             if (pane && Piscar()) tela.Texto("!", p.x - 1, p.y - 16, IsoDesenho.C("ff3b4e"), true, 2);

@@ -26,7 +26,7 @@ namespace IdleDataCenter.Gerente
                 ui.Caixa(r, IsoGui.Painel, maximo ? IsoGui.Verde : nivel > 0 ? IsoGui.Cor("ffd65c") : IsoGui.Borda);
                 ui.Texto(c.Nome, r.x + 12, r.y + 12, IsoGui.Branco, 2);
                 ui.Texto("Nível " + nivel + " / " + c.NivelMaximo, r.x + 12, r.y + 34, IsoGui.Cyan, 2);
-                ui.Texto(Cortar(c.Efeito, 34), r.x + 12, r.y + 56, IsoGui.Muted, 2);
+                ui.Texto(CaberEm(c.Efeito, r.width - 24, 2), r.x + 12, r.y + 56, IsoGui.Muted, 2);
                 if (!maximo) ui.Texto(c.Custo(nivel) + " certificações", r.x + 12, r.y + 80, E.PodeComprarCertificacao(c.Id) ? IsoGui.Cor("ffd65c") : IsoGui.Muted, 2);
                 string rotulo = maximo ? "Completo" : E.PodeComprarCertificacao(c.Id) ? "Estudar" : "Faltam certificações";
                 if (ui.Botao(new Rect(r.x + 10, r.yMax - 40, r.width - 20, 32), rotulo, IsoGui.Cor("ffd65c"), E.PodeComprarCertificacao(c.Id)))
@@ -44,11 +44,11 @@ namespace IdleDataCenter.Gerente
             if (!E.PodeVender)
             {
                 ui.Texto("Vender a empresa", barra.x + 16, barra.y + 16, IsoGui.Laranja, 3);
-                ui.Texto("Libera no cargo SRE. Quanto mais você faturar, mais certificações. Depois do IPO vale o dobro.", barra.x + 16, barra.y + 52, IsoGui.Muted, 2);
+                ui.Texto(CaberEm("Libera no cargo SRE. Quanto mais você faturar, mais certificações. Depois do IPO vale o dobro.", barra.width - 32, 2), barra.x + 16, barra.y + 52, IsoGui.Muted, 2);
                 return;
             }
-            ui.Texto("Vender a empresa: +" + E.CertificacoesDaVenda + " certificações", barra.x + 16, barra.y + 16, IsoGui.Laranja, 3);
-            ui.Texto("Recomeça no armário com os bônus. " + (E.IpoFeito ? "Depois do IPO: vale o dobro." : "Se fizer o IPO antes, vale o dobro."), barra.x + 16, barra.y + 52, IsoGui.Muted, 2);
+            ui.Texto(CaberEm("Vender a empresa: +" + E.CertificacoesDaVenda + " certificações", barra.width - 284, 3), barra.x + 16, barra.y + 16, IsoGui.Laranja, 3);
+            ui.Texto(CaberEm("Recomeça no armário com os bônus. " + (E.IpoFeito ? "Depois do IPO: vale o dobro." : "Se fizer o IPO antes, vale o dobro."), barra.width - 284, 2), barra.x + 16, barra.y + 52, IsoGui.Muted, 2);
             if (ui.Botao(new Rect(barra.xMax - 236, barra.y + 26, 220, 36), "Vender...", IsoGui.Laranja)) janela = "Vender";
         }
 

@@ -439,7 +439,7 @@ namespace IdleDataCenter.Gerente
         /// Trechos livres do pé da parede da direita em cada sala grande (sem portas): equipamentos da parede, em ordem.
         /// Fileiras: profundidade (gy) de cada fileira de racks no piso técnico, do fundo para a frente.
         /// </summary>
-        (float de, float ate)[] TrechosDaParede => E.Cargo >= 4 ? new[] { ((float)IP(0.4f, 0).x, (float)IP(2.3f, 0).x), ((float)IP(4.4f, 0).x, (float)IP(11.7f, 0).x) } : new[] { ((float)IP(3.7f, 0).x, (float)IP(9.7f, 0).x) };
+        (float de, float ate)[] TrechosDaParede => E.Cargo >= 4 ? new[] { ((float)IP(0.4f, 0).x, (float)IP(2.3f, 0).x), ((float)IP(4.4f, 0).x, (float)IP(11.7f, 0).x) } : new[] { ((float)IP(4.2f, 0).x, (float)IP(9.9f, 0).x) };   // depois da porta DADOS (antes, 3,7: o rack cobria o batente)
         float[] Fileiras => E.Cargo >= 4 ? new[] { 2.8f, 5.0f, 7.2f, 9.4f } : new[] { 2.8f, 5.0f, 7.2f };
         const float InicioDaFileira = 2.8f;
 
@@ -729,6 +729,27 @@ namespace IdleDataCenter.Gerente
 
         void Ronda(Vector2Int frente, bool ladoGx) => pontosDeRonda.Add(NaFrenteDe(frente, ladoGx));
 
+        /// <summary>Onde a pessoa está ou para onde está indo.</summary>
+        static Vector2 Destino(Trabalhador p) => p.caminho.Count > 0 ? p.caminho[p.caminho.Count - 1] : p.pos;
+
+        /// <summary>
+        /// Um ponto de ronda que ninguém mais ocupa nem está indo ocupar (null se todos estão tomados): sem isso, com poucos
+        /// equipamentos, o robô e os engenheiros paravam um em cima do outro.
+        /// </summary>
+        (Vector2 lugar, string olhar)? RondaLivre(Trabalhador p)
+        {
+            var livres = new List<(Vector2 lugar, string olhar)>();
+            foreach (var r in pontosDeRonda)
+            {
+                bool ocupado = false;
+                foreach (var o in pessoas.Values)
+                    if (o != p && (Destino(o) - r.lugar).sqrMagnitude < 0.36f) { ocupado = true; break; }
+                if (!ocupado) livres.Add(r);
+            }
+            if (livres.Count == 0) return null;
+            return livres[sorteioDasPessoas.Next(livres.Count)];
+        }
+
         /// <summary>Caminho pelos corredores: nunca corta o meio das fileiras nem passa pelos móveis.</summary>
         void Rota(Trabalhador p, Vector2 destino)
         {
@@ -775,12 +796,16 @@ namespace IdleDataCenter.Gerente
                     if (chave.StartsWith("engenheiro")) p.camisa = CamisasDosEngenheiros[chave[chave.Length - 1] - '0'];
                     // começa no lugar de trabalho (técnico) ou num ponto de ronda
                     if (chave == "tecnico") { p.pos = Mesa.lugar; p.olhar = Mesa.olhar; p.naMesa = true; p.paradaAte = t + 8 + (float)sorteioDasPessoas.NextDouble() * 15; }
-                    else if (pontosDeRonda.Count > 0)
+                    else if (RondaLivre(p) is (Vector2, string) livre)
                     {
-                        var r = pontosDeRonda[sorteioDasPessoas.Next(pontosDeRonda.Count)];
-                        p.pos = r.lugar; p.olhar = r.olhar; p.paradaAte = t + 2 + (float)sorteioDasPessoas.NextDouble() * 4;
+                        p.pos = livre.Item1; p.olhar = livre.Item2; p.paradaAte = t + 2 + (float)sorteioDasPessoas.NextDouble() * 4;
                     }
-                    else p.pos = areaAtual != null ? new Vector2(Sala.casas / 2f, Sala.casas / 2f) : Mesa.lugar + new Vector2(0.8f, 0.8f);
+                    else
+                    {
+                        // sem ponto livre: espera no meio da sala, cada um num lugar
+                        var meio = areaAtual != null ? new Vector2(Sala.casas / 2f, Sala.casas / 2f) : Mesa.lugar + new Vector2(0.8f, 0.8f);
+                        p.pos = meio + new Vector2(pessoas.Count * 1.3f, 0);
+                    }
                     pessoas[chave] = p;
                 }
                 if (chave == "tecnico") PensarTecnico(p); else PensarRonda(p);
@@ -813,10 +838,12 @@ namespace IdleDataCenter.Gerente
                 return;
             }
             if (p.caminho.Count > 0 || t < p.paradaAte) return;
-            if (p.naMesa && pontosDeRonda.Count > 0)
+            var olhada = p.naMesa ? RondaLivre(p) : null;
+            if (p.naMesa && olhada == null) { p.paradaAte = t + 10; return; }   // tudo ocupado: continua na mesa
+            if (p.naMesa)
             {
                 // levanta para dar uma olhada num equipamento
-                var r = pontosDeRonda[sorteioDasPessoas.Next(pontosDeRonda.Count)];
+                var r = olhada.Value;
                 p.naMesa = false;
                 Rota(p, r.lugar); p.olhandoDestino = r.olhar;
                 p.paradaAte = float.MaxValue;   // definido ao chegar
@@ -835,7 +862,9 @@ namespace IdleDataCenter.Gerente
         void PensarRonda(Trabalhador p)
         {
             if (p.caminho.Count > 0 || t < p.paradaAte || pontosDeRonda.Count == 0) return;
-            var r = pontosDeRonda[sorteioDasPessoas.Next(pontosDeRonda.Count)];
+            var livre = RondaLivre(p);
+            if (livre == null) { p.paradaAte = t + 3; return; }   // tudo ocupado: espera onde está
+            var r = livre.Value;
             Rota(p, r.lugar); p.olhandoDestino = r.olhar;
             p.paradaAte = float.MaxValue;
         }

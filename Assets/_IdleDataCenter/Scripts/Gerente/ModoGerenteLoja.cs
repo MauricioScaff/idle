@@ -165,13 +165,15 @@ namespace IdleDataCenter.Gerente
         }
 
         /// <summary>Texto em até duas linhas, quebrando nos espaços.</summary>
-        void TextoQuebrado(string s, float x, float y, int maximo, Color cor, int escala = 2)
+        /// <summary>Até duas linhas que cabem na largura (medida na letra de verdade; a segunda corta com reticências).</summary>
+        void TextoQuebrado(string s, float x, float y, float largura, Color cor, int escala = 2)
         {
-            if (s.Length <= maximo) { ui.Texto(s, x, y, cor, escala); return; }
-            int corte = s.LastIndexOf(' ', maximo);
-            if (corte <= 0) corte = maximo;
+            if (ui.Largura(s, escala) <= largura) { ui.Texto(s, x, y, cor, escala); return; }
+            int corte = s.Length;
+            while (corte > 0) { corte = s.LastIndexOf(' ', corte - 1); if (corte <= 0 || ui.Largura(s.Substring(0, corte), escala) <= largura) break; }
+            if (corte <= 0) corte = s.Length / 2;
             ui.Texto(s.Substring(0, corte), x, y, cor, escala);
-            ui.Texto(Cortar(s.Substring(corte).Trim(), maximo), x, y + escala * 5 + 6, cor, escala);
+            ui.Texto(CaberEm(s.Substring(corte).Trim(), largura, escala), x, y + escala * 5 + 6, cor, escala);
         }
 
         void CardMelhoria(Rect r, string id)
@@ -184,12 +186,12 @@ namespace IdleDataCenter.Gerente
             if (!cedo && req && def.Gerador)
             {
                 int marco = E.ProximoMarco(id);
-                ui.Texto(E.UnidadesDoGerador(id) + (marco > 0 ? "  ·  marco em " + marco + " (renda ×2)" : "  ·  todos os marcos"), r.x + 16, r.y + 44, IsoGui.Cyan, 2);
+                ui.Texto(CaberEm(E.UnidadesDoGerador(id) + (marco > 0 ? "  ·  marco em " + marco + " (renda ×2)" : "  ·  todos os marcos"), r.width - 32, 2), r.x + 16, r.y + 44, IsoGui.Cyan, 2);
             }
             else if (!cedo && req && def.NivelMaximo > 1) ui.Texto(E.Nivel(id) + "/" + def.NivelMaximo, r.x + 16, r.y + 44, IsoGui.Cyan, 2);
             else ui.Texto(cedo ? "Libera no " + Catalogo.Cargos[def.Cargo].Nome : !req ? "Precisa: " + NomeLongo(def.Requisito) : "",
                 r.x + 16, r.y + 44, IsoGui.Laranja, 2);
-            TextoQuebrado(def.Efeito, r.x + 16, r.y + 70, 33, IsoGui.Muted);
+            TextoQuebrado(def.Efeito, r.x + 16, r.y + 70, r.width - 32, IsoGui.Muted);
             if (!maximo && !cedo) ui.Texto(Dinheiro(E.Custo(id)), r.x + 16, r.y + 118, E.PodeComprar(id) ? IsoGui.Verde : IsoGui.Laranja, 3);
             string texto = maximo ? "Completo" : cedo ? "Bloqueado" : !req ? "Falta requisito" : E.PodeComprar(id) ? "Comprar" : "Sem dinheiro";
             if (ui.Botao(new Rect(r.x + 14, r.yMax - 50, r.width - 28, 38), texto, IsoGui.Verde, PodeComprarAqui(id), 3)) Comprar(id);
@@ -204,7 +206,7 @@ namespace IdleDataCenter.Gerente
             string linha2 = cedo ? "Libera no " + Catalogo.Cargos[a.Cargo].Nome
                           : Math.Ceiling(a.Segundos / 60) + " min" + (!E.RequisitoAutomacaoOk(a) ? " / precisa " + NomeLongo(a.Requisito) : " para escrever");
             ui.Texto(Cortar(linha2, 33), r.x + 16, r.y + 44, cedo ? IsoGui.Laranja : IsoGui.Roxo, 2);
-            TextoQuebrado(a.Descricao, r.x + 16, r.y + 70, 33, IsoGui.Muted);
+            TextoQuebrado(a.Descricao, r.x + 16, r.y + 70, r.width - 32, IsoGui.Muted);
             if (escrevendo) ui.Barra(new Rect(r.x + 16, r.y + 120, r.width - 32, 18), E.ProgressoEscrita, IsoGui.Roxo);
             else if (!cedo) ui.Texto(pronta ? "Ativa" : Dinheiro(a.Custo), r.x + 16, r.y + 118, pronta ? IsoGui.Verde : IsoGui.Roxo, 3);
             string texto = pronta ? "Ativa" : escrevendo ? "Escrevendo " + Numero(Math.Floor(E.ProgressoEscrita * 100)) + "%"
@@ -232,7 +234,7 @@ namespace IdleDataCenter.Gerente
                 : E.EmPico ? "Pico: " + E.NomeDoPico + (E.PicoFoiEscalado ? " / escalado, rende 2×" : E.PicoViolado ? " / SLA violado" : "")
                 : E.NosKubernetes == 0 ? "Sem cluster: sem picos" : "Próximo pico em " + Numero(Math.Ceiling(E.SegundosAteProximoPico / 60)) + " min";
             ui.Texto(pico, r.x + 16, r.yMax - 30, E.EmPico ? IsoGui.Laranja : IsoGui.Muted, 2);
-            ui.Texto("Picos superados: " + E.Estado.picosSobrevividos + " DE " + E.Estado.picosTotal, r.x + 16, r.yMax - 12, IsoGui.Muted, 1);
+            if (E.NoDataCenter) ui.Texto("Picos superados: " + E.Estado.picosSobrevividos + " de " + E.Estado.picosTotal, r.x + 16, r.yMax - 52, IsoGui.Muted, 2);
             if (ui.Botao(new Rect(r.xMax - 250, r.yMax - 50, 234, 34), "Escalar cluster", IsoGui.Laranja, E.EmPico && !E.PicoFoiEscalado)) Escalar();
         }
 
