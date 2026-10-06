@@ -276,7 +276,7 @@ namespace IdleDataCenter.Simulacao
             },
             new CargoDef
             {
-                Nome = "Técnico de TI", Lugar = "Armário",
+                Nome = "Técnico de TI", Lugar = "Escritório",
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.Servidores, Alvo = 3, Texto = "Ter 3 servidores" },

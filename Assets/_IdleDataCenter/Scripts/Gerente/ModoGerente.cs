@@ -53,7 +53,7 @@ namespace IdleDataCenter.Gerente
         {
             Aberto = true;
             janela = "";
-            Notificar("Data center de " + E.CargoAtual.Nome + ". O botão Faixa deixa o jogo discreto enquanto você trabalha.", 7);
+            Notificar(E.NomeDoCargo + " · " + E.CargoAtual.Lugar + ". O botão Faixa deixa o jogo discreto enquanto você trabalha.", 7);
         }
 
         public void Fechar() => Aberto = false;
