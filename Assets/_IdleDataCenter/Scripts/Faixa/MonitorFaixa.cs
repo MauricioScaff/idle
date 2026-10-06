@@ -78,8 +78,39 @@ namespace IdleDataCenter
 
         /// <summary>Canto de cima à esquerda do monitor, em pixels de tela (coordenadas do GUI).</summary>
         Vector2 Origem => new Vector2(
-            Ajustes.Direita ? Mathf.Floor(Screen.width - (areaTotal.width + Margem) * Unidade) : Margem * Unidade,
+            XPadrao + DeslocamentoX,
             Screen.height - Altura * Unidade);
+
+        /// <summary>Onde o monitor fica sem ninguém ter arrastado: encostado na esquerda ou na direita (Ajustes).</summary>
+        float XPadrao => Ajustes.Direita ? Mathf.Floor(Screen.width - (areaTotal.width + Margem) * Unidade) : Margem * Unidade;
+
+        /// <summary>O quanto o jogador arrastou para o lado (pixels de tela), sem deixar o monitor sair da tela.</summary>
+        public float DeslocamentoX => Mathf.Clamp(Ajustes.FaixaX, -XPadrao, Mathf.Max(-XPadrao, Screen.width - areaTotal.width * Unidade - XPadrao));
+
+        // arrastar pela alça: onde o cursor e a faixa estavam quando o botão desceu
+        bool arrastando;
+        Vector2Int cursorNoInicio;
+        int xNoInicio, yNoInicio;
+        static readonly Rect Alca = new Rect(0, 6, 8, 62);
+
+        /// <summary>Arrastando a faixa: segue o cursor (lido do Windows) até o botão subir; aí grava a posição.</summary>
+        bool Arrastar()
+        {
+            if (!arrastando) return false;
+            if (!JanelaDesktop.BotaoEsquerdo)
+            {
+                arrastando = false;
+                Ajustes.FaixaX = Mathf.RoundToInt(DeslocamentoX);   // grava já limitado à tela
+                PlayerPrefs.Save();
+                return true;
+            }
+            var c = JanelaDesktop.CursorNaTela;
+            Ajustes.FaixaX = xNoInicio + (c.x - cursorNoInicio.x);
+            Ajustes.FaixaY = Mathf.Clamp(yNoInicio - (c.y - cursorNoInicio.y), 0, janela.SubidaMaxima);
+            janela.DefinirClicavel(true);
+            janela.Reposicionar();
+            return true;
+        }
 
         /// <summary>O cursor (coordenadas de tela do Unity, origem embaixo) está sobre alguma parte do monitor?</summary>
         public bool Contem(Vector2 posicaoTela)
@@ -93,10 +124,19 @@ namespace IdleDataCenter
         /// <summary>Atualiza o cursor e, num clique, executa o alvo sob ele. Retorna se o clique foi do monitor.</summary>
         public bool Processar(Vector2 posicaoTela, bool sobreAJanela, bool clicou)
         {
+            if (Arrastar()) return true;
             if (!Visivel || !sobreAJanela) { cursor = new Vector2(-1, -1); return false; }
             var o = Origem;
             cursor = new Vector2((posicaoTela.x - o.x) / Unidade, (Screen.height - posicaoTela.y - o.y) / Unidade);
             if (!clicou) return false;
+            if (Alca.Contains(cursor))
+            {
+                arrastando = true;
+                cursorNoInicio = JanelaDesktop.CursorNaTela;
+                xNoInicio = Mathf.RoundToInt(DeslocamentoX);
+                yNoInicio = Ajustes.FaixaY;
+                return true;
+            }
             for (int i = alvos.Count - 1; i >= 0; i--)
                 if (alvos[i].area.Contains(cursor))
                 {
@@ -125,7 +165,7 @@ namespace IdleDataCenter
             alvos.Clear();
 
             // largura: a janela da sala encolhe em telas estreitas e some se nem assim couber
-            float fixo = 4 + LarguraHud + 12 + 10 + LarguraLado + 8 + LarguraIcones + 4;
+            float fixo = 10 + LarguraHud + 12 + 10 + LarguraLado + 8 + LarguraIcones + 4;
             float livre = LarguraTela - Margem * 2 - fixo;
             larguraJanela = livre >= JanelaMinima ? Mathf.Min(JanelaPadrao, livre) : 0;
             float largura = fixo + larguraJanela - (larguraJanela > 0 ? 0 : 12);
@@ -135,7 +175,8 @@ namespace IdleDataCenter
             var o = Origem;
             GUI.matrix = Matrix4x4.TRS(new Vector3(o.x, o.y, 0), Quaternion.identity, new Vector3(Unidade, Unidade, 1));
 
-            float x = 4;
+            AlcaDeArrastar();
+            float x = 10;
             Hud(x);
             x += LarguraHud + 12;
             if (larguraJanela > 0) { Sala(x, larguraJanela); x += larguraJanela + 10; }
@@ -144,6 +185,15 @@ namespace IdleDataCenter
             Icones(x);
 
             GUI.matrix = anterior;
+        }
+
+        /// <summary>A alça na ponta esquerda: duas colunas de pontinhos (mais claros com o cursor em cima ou arrastando).</summary>
+        void AlcaDeArrastar()
+        {
+            bool ativa = arrastando || Alca.Contains(cursor);
+            ui.Ret(new Rect(Alca.x, Alca.y, Alca.width, Alca.height), ativa ? IsoGui.Cor("23314f") : IsoGui.Cor("101c30"));
+            for (float y = Alca.y + 6; y < Alca.yMax - 4; y += 6)
+                for (int k = 0; k < 2; k++) ui.Ret(new Rect(Alca.x + 2 + k * 3, y, 2, 2), ativa ? IsoGui.Branco : IsoGui.Borda);
         }
 
         bool Pisca => Mathf.FloorToInt(Time.unscaledTime * 3) % 2 == 0;
@@ -351,10 +401,11 @@ namespace IdleDataCenter
                     if (linhas[j][i] == '#') ui.Ret(new Rect(x + i * escala, y + j * escala, escala, escala), cor);
         }
 
-        static string Cortar(string s, int maximo) => s.Length <= maximo ? s : s.Substring(0, Mathf.Max(1, maximo - 1)) + ".";
+        static string Cortar(string s, int maximo) { s = Idiomas.T(s); return s.Length <= maximo ? s : s.Substring(0, Mathf.Max(1, maximo - 1)) + "."; }
 
         string CaberEm(string texto, float largura, int escala)
         {
+            texto = Idiomas.T(texto);   // corta já no idioma da tela
             if (ui.Largura(texto, escala) <= largura) return texto;
             while (texto.Length > 1 && ui.Largura(texto + "...", escala) > largura) texto = texto.Substring(0, texto.Length - 1);
             return texto.TrimEnd() + "...";

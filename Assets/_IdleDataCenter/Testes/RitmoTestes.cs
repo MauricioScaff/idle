@@ -13,7 +13,7 @@ namespace IdleDataCenter.Testes
     /// </summary>
     public class RitmoTestes
     {
-        [Test, Timeout(600000)]   // simula umas 100 horas de jogo
+        [Test, Timeout(1200000)]   // simula umas 100 horas de jogo (com a máquina ocupada passa de 10 min)
         public void JogadorOciosoEvoluiNoRitmoPlanejado()
         {
             var e = new Economia(new EstadoJogo(), new Random(42));

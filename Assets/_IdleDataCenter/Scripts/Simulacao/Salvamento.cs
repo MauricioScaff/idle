@@ -35,6 +35,26 @@ namespace IdleDataCenter.Simulacao
             return new EstadoJogo();
         }
 
+        /// <summary>
+        /// Guarda uma cópia do save atual com a data no nome (save-20261006-1830.json), antes de um novo jogo apagar o progresso.
+        /// Retorna o nome do arquivo (ou null se não havia save).
+        /// </summary>
+        public static string GuardarCopia()
+        {
+            try
+            {
+                if (!File.Exists(Arquivo)) return null;
+                string copia = Path.Combine(Pasta, "save-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json");
+                File.Copy(Arquivo, copia, true);
+                return Path.GetFileName(copia);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Falha ao copiar o save: " + e.Message);
+                return null;
+            }
+        }
+
         public static void Salvar(EstadoJogo estado)
         {
             try

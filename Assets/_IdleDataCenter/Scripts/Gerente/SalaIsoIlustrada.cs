@@ -227,11 +227,13 @@ namespace IdleDataCenter.Gerente
             tecnicoConsertando = false;
             pontosDeRonda.Clear();
             lugaresDeChamado.Clear();
+            obstaculos.Clear();
             conteudo();
             PessoasIlustradas();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
             foreach (var (_, desenhar) in fila) desenhar();
             FaiscasDaCompraIlustrada();
+            DesenharObstaculos();
             if (lugaresDeChamado.Count > 0) BaloesDeChamado(); else ChamadoIlustrado();
             DesenharDestaque();
             tela.Aplicar();
@@ -758,7 +760,7 @@ namespace IdleDataCenter.Gerente
         void Rota(Trabalhador p, Vector2 destino)
         {
             p.caminho.Clear();
-            if (areaAtual == null && E.Cargo == Catalogo.CargoTecnico) { RotaNoEscritorio(p, destino); return; }
+            if (UsaCaminhos) { RotaLivre(p, destino); return; }   // salas com obstáculos declarados: caminho de verdade
             if (areaAtual == null && E.Cargo >= Catalogo.CargoAnalista)
             {
                 // salas grandes: troca de corredor pelo corredor ao lado das fileiras

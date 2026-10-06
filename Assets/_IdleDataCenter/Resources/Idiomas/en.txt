@@ -1,0 +1,982 @@
+# Idle Data Center: português TAB inglês. Linhas com ~ são modelos ({1}, {2}... variam).
++0.5/s, a torre aguenta 8	+0.5/s, the tower holds 8
++0.8 kW	+0.8 kW
++1 pessoa no escritório: mais chamados	+1 person in the office: more tickets
++1 torre	+1 tower
++1.5 kW	+1.5 kW
++10% de receita por nível	+10% revenue per level
++144/s, 1.6 kW, 160 Mb	+144/s, 1.6 kW, 160 Mb
++1500 Mbps	+1500 Mbps
++18/s, 0.4 kW	+18/s, 0.4 kW
++30% e -30% de tráfego	+30% and -30% traffic
++300 Mbps	+300 Mbps
++4 h de limite offline por nível	+4 h offline limit per level
++500/s em apps, 1 kW, 120 Mb	+500/s in apps, 1 kW, 120 Mb
++800/s, 0.8 kW, 150 Mb	+800/s, 0.8 kW, 150 Mb
+-3 graus	-3 degrees
+-6 graus	-6 degrees
+10 automações ativas	10 active automations
+10% menos incidentes por nível	10% fewer incidents per level
+12 automações ativas	12 active automations
+15 automações ativas	15 active automations
+3 automações ativas	3 active automations
+4 hosts de containers	4 container hosts
+4x menos deploys quebrados	4x fewer broken deploys
+7 automações ativas	7 active automations
+A cafeteira quebrou de vez	The coffee machine is broken for good
+AIOps	AIOps
+AWS Certified Estagiário	AWS Certified Intern
+Alerta antes da falha: metade dos incidentes	Alert before failure: half the incidents
+América do Norte	North America
+América do Sul	South America
+Analista de help desk	Help desk analyst
+Antivírus	Antivirus
+Apps +30%	Apps +30%
+Apps +50%	Apps +50%
+Ar-cond.	A/C
+Autoscaling	Autoscaling
+Backup do outro lado do mundo: não perde nada, +2% renda	Backup across the world: lose nothing, +2% income
+Backup em outro prédio: perde só 1/32, +2% renda	Backup in another building: lose only 1/32, +2% income
+Backup fita	Tape backup
+Backup separado: perde só 1/16, +2% renda	Separate backup: lose only 1/16, +2% income
+Backup: disco queimado perde metade, +2% renda	Backup: a dead disk loses half, +2% income
+Backup: perde só 1/4, +2% renda	Backup: lose only 1/4, +2% income
+Backup: perde só 1/8, +2% renda	Backup: lose only 1/8, +2% income
+Balanceamento global	Global load balancing
+Black Friday	Black Friday
+CDN	CDN
+CTO	CTO
+Cabo sub.	Subsea cable
+Cabos organizados	Tidy cables
+Cache Redis	Redis cache
+Café dura +10 s por nível	Coffee lasts +10 s per level
+Campus de datacenters	Datacenter campus
+Cartão de visita	Business card
+Centro de segurança: bloqueia 63/64	Security center: blocks 63/64
+Certified Uptime Wizard	Certified Uptime Wizard
+Chaos engineering	Chaos engineering
+Chegam 25% mais PCs	25% more PCs come in
+Chips próprios	Custom chips
+Cliques não rendem (consertar ainda vale)	Clicks earn nothing (fixing still counts)
+Começa com R$ 1K por nível	Start with R$ 1K per level
+Consertar 10 PCs	Fix 10 PCs
+Conserto em 15s	Fixes in 15s
+Consertos +50%	Repairs +50%
+Containers	Containers
+Contratar funcionário	Hire an employee
+Contrato de energia	Power contract
+Cron de faturamento	Billing cron
+DC de recuperação	Recovery DC
+Data center pequeno	Small data center
+Datacenter	Datacenter
+Datacenters +30%	Datacenters +30%
+Datacenters +50%	Datacenters +50%
+Deploy contínuo: apps +50%	Continuous deploy: apps +50%
+Deploy quebrado volta em 5 s	Broken deploy recovers in 5 s
+Disco reserva entra sozinho em 5 s	Spare disk kicks in by itself in 5 s
+Edge computing	Edge computing
+Encher o rack	Fill the rack
+Energia verde: +15%	Green energy: +15%
+Escala o cluster sozinho nos picos	Scales the cluster by itself during peaks
+Escritório	Office
+Estagiário	Intern
+Estar em 4 regiões	Be in 4 regions
+Europa	Europe
+Failover entre DCs	Failover between DCs
+Failover multirregião	Multi-region failover
+Falhas testadas antes: metade dos incidentes	Failures tested first: half the incidents
+Faturar R$ 15 mil	Earn R$ 15K
+Faturar R$ 180 mi	Earn R$ 180M
+Faturar R$ 200 mil	Earn R$ 200K
+Faturar R$ 24 bi	Earn R$ 24B
+Faturar R$ 240 bi	Earn R$ 240B
+Faturar R$ 3,6 tri	Earn R$ 3.6T
+Faturar R$ 6 bi	Earn R$ 6B
+Faturar R$ 7,2 mi	Earn R$ 7.2M
+Fecha os chamados P3 e P4 sozinho	Closes P3 and P4 tickets by itself
+Fecha também os chamados P2	Also closes P2 tickets
+Fibra	Fiber
+Filtro de linha	Power strip
+Final da copa	World Cup final
+Firewall	Firewall
+Firmware novo	New firmware
+Freelancer	Freelancer
+GPU +50%	GPU +50%
+GPU / IA	GPU / AI
+Gerador	Generator
+HD externo	External HD
+Hospedagem caprichada	Premium hosting
+Hospedar 5 sites	Host 5 sites
+IA cuidando da operação: +20%	AI running operations: +20%
+ITIL da Gambiarra	ITIL of Duct Tape
+Imagens enxutas	Slim images
+Infra como código	Infrastructure as code
+K8s +25%, +10 s p/ escalar	K8s +25%, +10 s to scale
+Kit de ferramentas	Toolkit
+Kubernetes Whisperer	Kubernetes Whisperer
+Lançamento	Product launch
+Liga um DC: receita +20%	Links a DC: revenue +20%
+Liga uma região: +25%	Links a region: +25%
+Link 10G	10G link
+Link fibra	Fiber link
+Linux+ do Plantão	On-call Linux+
+Live famosa	Famous livestream
+Mapa-múndi	World map
+Melhorias 15% mais baratas	Upgrades 15% cheaper
+Monitoramento	Monitoring
+NAS	NAS
+Ninguém é confiável: bloqueia quase todos	Trust no one: blocks almost all
+No-break	UPS
+Nova região: +200 mil/s	New region: +200K/s
+Novo prédio: +10 mil/s	New building: +10K/s
+Nuvem de IA: +120 mil/s	AI cloud: +120K/s
+Não dá para contratar o estagiário	You can't hire the intern
+Nó K8s	K8s node
+Observab.	Observab.
+Observabilidade: +15% (SLA)	Observability: +15% (SLA)
+Offline a 100%, até 24 h	Offline at 100%, up to 24 h
+Pane regional volta em 2 s	Regional outage recovers in 2 s
+Pasta térmica	Thermal paste
+Pipeline com testes	Pipeline with tests
+Piso elevado	Raised floor
+Plantão 24h	24h on-call
+Promoção	Sale
+Quarto	Bedroom
+Queda de energia volta em 2 s	Power outage recovers in 2 s
+Queda de luz: volta em 5 s	Blackout: back in 5 s
+RAID: receita +25%	RAID: revenue +25%
+Racks cheios +30%	Full racks +30%
+Receita offline sobe para 75%	Offline revenue goes up to 75%
+Região	Region
+Regiões +30%	Regions +30%
+Reinicia servidor travado em 5 s	Restarts a frozen server in 5 s
+Renovável	Renewable
+Resfriamento líquido	Liquid cooling
+Resolver 60 incidentes	Resolve 60 incidents
+Resolver 8 incidentes	Resolve 8 incidents
+Restaurar um backup	Restore a backup
+Runbooks automáticos	Automatic runbooks
+SSD	SSD
+Sala de backup	Backup room
+Sala de racks	Rack room
+Sala virtualizada	Virtualized room
+Salinha	Small room
+Scanner de vulnerabilidades	Vulnerability scanner
+Scripts 15% mais rápidos por nível	Scripts 15% faster per level
+Scrum Master do Café	Coffee Scrum Master
+Segurança no pipeline: bloqueia 15/16	Pipeline security: blocks 15/16
+Segurança: bloqueia 3/4 dos ataques	Security: blocks 3/4 of attacks
+Segurança: bloqueia 31/32 dos ataques	Security: blocks 31/32 of attacks
+Segurança: bloqueia 7/8 dos ataques	Security: blocks 7/8 of attacks
+Segurança: bloqueia metade dos ataques	Security: blocks half of attacks
+Sem café	No coffee
+Sem desafio	No challenge
+Sem estagiário	No intern
+Service desk 24h	24h service desk
+Service mesh	Service mesh
+Servidor	Server
+Servidor 1U	1U server
+Servidor CI	CI server
+Servidores 1U +25%	1U servers +25%
+Servidores 1U +40%	1U servers +40%
+Site de cliente	Client site
+Sites +50%	Sites +50%
+Superar 5 picos	Survive 5 peaks
+Só automação	Automation only
+Ter 3 servidores	Have 3 servers
+Ter 4 datacenters	Have 4 datacenters
+Todo conserto automático em 3 s	Every fix automatic in 3 s
+Torres +30%	Towers +30%
+Torres +50%	Towers +50%
+Torres ×2	Towers ×2
+Troca de disco	Disk swap
+Tráfego no DC certo: receita +15%	Traffic in the right DC: revenue +15%
+Uma empresa normal	A normal company
+VMs: servidores +40%	VMs: servers +40%
+VPN e MFA	VPN and MFA
+Vagas para servidores 1U	Slots for 1U servers
+Ventilador	Desk fan
+Ventoinha	Case fan
+WAF anti-DDoS	Anti-DDoS WAF
+Watchdog	Watchdog
+Zero Trust	Zero Trust
+Ásia	Asia
+Técnico de TI	IT Technician
+Sysadmin	Sysadmin
+Analista de Infra	Infrastructure Analyst
+Engenheiro DevOps	DevOps Engineer
+SRE	SRE
+Arquiteto	Architect
+CEO	CEO
+Rack 42U	42U rack
+Rack cheio	Full rack
+Storage	Storage
+Hypervisor	Hypervisor
+Balanceador	Load balancer
+Observabilidade	Observability
+WAF	WAF
+SOC 24h	24h SOC
+Backup em outra região	Backup in another region
+Cabo submarino	Subsea cable
+Energia renovável	Renewable energy
+Cluster de GPU	GPU cluster
+Ar-condicionado	Air conditioning
+HD externo de backup	External backup HD
+NAS de backup	Backup NAS
+Link de fibra	Fiber link
+Servidor de CI	CI server
+Host de containers	Container host
+Nó Kubernetes	Kubernetes node
+Novo datacenter	New datacenter
+Fibra entre DCs	Fiber between DCs
+Gerador diesel	Diesel generator
+Nova região	New region
+Servidor torre	Tower server
+A TI ganha uma salinha.	IT gets a small room.
+A banda do link passa a importar.	Link bandwidth starts to matter.
+A sala escurece: vira	The room goes dark: it becomes
+A sala vira o prédio DC-01	The room becomes the DC-01 building
+A salinha vira sala de racks,	The small room becomes a rack room,
+Aguarde	Wait
+Ajustes	Settings
+Ativa	Active
+Automação	Automation
+Banda	Bandwidth
+CTO / Fundador	CTO / Founder
+Continua sendo escrito com o jogo fechado.	Keeps being written with the game closed.
+Cuidado com quedas de energia.	Watch out for power outages.
+Cumpra as metas	Meet the goals
+Cumpra as metas e leve a empresa	Meet the goals and take the company
+Data center pequeno com	Small data center with
+De técnico de TI num armário a CTO	From IT tech in a closet to CTO
+Deploy quebrado	Broken deploy
+Deploys às vezes quebram.	Deploys sometimes break.
+Desligado	Off
+Direita	Right
+Disco queimado	Dead disk
+Empresa na bolsa!	Company went public!
+Energia	Power
+Energia e temperatura	Power and temperature
+Escalado: rende 2x	Scaled: earns 2x
+Esconder e mostrar a faixa: 	Hide and show the strip:
+Esconder em tela cheia	Hide in full screen
+Escrever	Write
+Escritório com gente, chamados	An office with people, tickets
+Esquerda	Left
+Fim da carreira	End of career
+Hypervisor, containers e CI.	Hypervisor, containers and CI.
+IPO: abrir o capital	IPO: go public
+Idle Data Center	Idle Data Center
+Incidentes	Incidents
+Lado da tela	Screen side
+Ligado	On
+Melhorias	Upgrades
+Máximo	Max
+No fim, o IPO.	In the end, the IPO.
+Não	No
+O campus vira um ponto	The campus becomes a dot
+O grande final	The grand finale
+O jogo continua rendendo com a faixa escondida.	The game keeps earning with the strip hidden.
+O técnico escreve um script por vez, e cada um trabalha sozinho para sempre.	The tech writes one script at a time, and each one works by itself forever.
+Picos de tráfego: escale	Traffic peaks: scale
+Próximo cargo	Next role
+Rack 42U com servidores 1U.	42U rack with 1U servers.
+Racks cheios, storage e backup.	Full racks, storage and backup.
+Receita	Revenue
+Recursos	Resources
+SLA violado	SLA breached
+Servidores	Servers
+Seus sites vêm junto.	Your sites come along.
+Sim	Yes
+Som	Sound
+Som ambiente	Ambient sound
+Temp	Temp
+Travado	Frozen
+Trocar	Swap
+Tudo funcionando	All systems up
+Uma empresa de TI te contratou.	An IT company hired you.
+Venda em Prestígio.	Sell it in Prestige.
+Visão geral	Overview
+Você chegou ao topo.	You reached the top.
+Volume	Volume
+a tempo ou pague multa de SLA.	in time or pay an SLA fine.
+cabos submarinos e IA.	subsea cables and AI.
+cluster Kubernetes e NOC.	Kubernetes cluster and NOC.
+com energia e ar de precisão.	with power and precision A/C.
+datacenters, fibra e CDN.	datacenters, fiber and CDN.
+de uma nuvem global. Venda a empresa	of a global cloud. Sell the company
+e a bancada da TI.	and the IT workbench.
+em Prestígio (modo gerente).	in Prestige (manager mode).
+no mapa-múndi: regiões,	on the world map: regions,
+num campus com vários	on a campus with many
+para a bolsa de valores.	to the stock exchange.
+passam a importar.	start to matter.
+sala virtualizada.	virtualized room.
+~{1} restantes	{1} left
+~{1} sem luz	{1} without power
+~+{1} outros	+{1} more
+~Automação  ({1}/{2} ativas)	Automation  ({1}/{2} active)
+~Libera no {1}	Unlocks at {1}
+~Melhorias de {1}	{1} upgrades
+~Nível {1}/{2}	Level {1}/{2}
+~Promoção: {1}	Promotion: {1}
+~Servidores ({1})	Servers ({1})
+~{1} resolvidos	{1} resolved
+~{1}s p/ escalar	{1}s to scale
+~{1}s, SEM backup	{1}s, NO backup
+~{1}s, com backup	{1}s, with backup
+~{1}s, apps fora	{1}s, apps down
+~{1} unidades	{1} units
+~{1}/{2} metas	{1}/{2} goals
+~{1} min {2} s	{1} min {2} s
+~Esconder e mostrar a faixa: {1}	Hide and show the strip: {1}
+< Anterior	< Previous
+A empresa está na bolsa. Você chegou ao topo da carreira.	The company is public. You reached the top of your career.
+A empresa é vendida e uma nova começa	The company is sold and a new one starts
+Ar-condicionado: sala fria rende mais e trava menos	Air conditioning: a cold room earns more and freezes less
+As compras valem na hora, também na faixa  ·  Esc fecha	Purchases apply right away, in the strip too  ·  Esc closes
+Backup em fita	Tape backup
+Banda: link saturado deixa tudo lento	Bandwidth: a saturated link slows everything down
+Bloqueada	Locked
+Bloqueado	Locked
+Cada uma dá +0,5% de renda, para sempre	Each one gives +0.5% income, forever
+Campus	Campus
+Centro de operações: incidentes, picos e SLA	Operations center: incidents, peaks and SLA
+Certificações: bônus que passam de uma empresa para a outra	Certifications: bonuses that carry over from one company to the next
+Completo	Complete
+Conquistas	Achievements
+Consertos: ferramentas e clientes do bairro	Repairs: tools and neighborhood clients
+Dados	Data
+Deploy quebrado / apps fora	Broken deploy / apps down
+Disco queimado no storage	Dead disk in storage
+Discos em RAID e backup	RAID disks and backup
+Em prestígio, venda a empresa e recomece com bônus permanentes.	In prestige, sell the company and start over with permanent bonuses.
+Equipe	Team
+Esc fecha	Esc closes
+Escalar cluster	Scale cluster
+Falta requisito	Missing requirement
+Incidentes agora	Incidents now
+Loja	Shop
+Metas para a próxima promoção	Goals for the next promotion
+Mundo	World
+NOC	NOC
+No-breaks: mais capacidade, menos sobrecarga	UPS units: more capacity, less overload
+O técnico escreve um script por vez	The tech writes one script at a time
+Picos de tráfego chegam no SRE	Traffic peaks arrive at SRE
+Prestígio	Prestige
+Prédios novos, fibra entre eles, CDN e geradores	New buildings, fiber between them, CDN and generators
+Próxima >	Next >
+Próximo: abrir o capital (IPO)	Next: go public (IPO)
+Quem conserta as coisas quando você não está	Who fixes things when you're away
+Rede	Network
+Refrig.	Cooling
+Regiões, cabos submarinos, energia verde e nuvem de IA	Regions, subsea cables, green energy and AI cloud
+Resolver tudo	Fix everything
+Segurança	Security
+Sem cluster: sem picos	No cluster: no peaks
+Sem dinheiro	No money
+Sites, servidores, racks, virtualização, containers e Kubernetes	Sites, servers, racks, virtualization, containers and Kubernetes
+Storage RAID	RAID storage
+Tudo	All
+Tudo o que dá para comprar, de todos os setores	Everything you can buy, from every sector
+Técnico ocupado	Tech is busy
+Vender	Sell
+Vender a empresa	Sell the company
+Carreira	Career
+Bancada	Workbench
+Clientes	Clients
+~{1}  ·  marco em {2} (renda ×2)	{1}  ·  milestone at {2} (income ×2)
+~{1}  ·  todos os marcos	{1}  ·  all milestones
+~Precisa: {1}	Requires: {1}
+~{1} min para escrever	{1} min to write
+~{1} min / precisa {2}	{1} min / requires {2}
+~Escrevendo {1}%	Writing {1}%
+~Servidor travado / volta em {1}s	Server frozen / back in {1}s
+~Queda de energia no DC-0{1}	Power outage at DC-0{1}
+~Pane regional: {1}	Regional outage: {1}
+~Nenhum. {1} resolvidos até hoje.	None. {1} resolved so far.
+~Pico: {1} / escalado, rende 2×	Peak: {1} / scaled, earns 2×
+~Pico: {1} / SLA violado	Peak: {1} / SLA breached
+~Pico: {1}	Peak: {1}
+~Próximo pico em {1} min	Next peak in {1} min
+~Picos superados: {1} de {2}	Peaks survived: {1} of {2}
+~Cargo atual: {1}	Current role: {1}
+~Próximo: {1}	Next: {1}
+~Receita +{1}/s   ·   bônus do storage +{2}%   /   {3} incidentes resolvidos	Revenue +{1}/s   ·   storage bonus +{2}%   /   {3} incidents resolved
+~Com o jogo fechado: {1}% da receita, até {2} h	With the game closed: {1}% of revenue, up to {2} h
+99 bugs no código. Corrige um, compila: 127 bugs no código.	99 bugs in the code. Fix one, compile: 127 bugs in the code.
+A cafeteira ainda está esquentando.	The coffee machine is still heating up.
+Arquivo sem graça. Tente o senhas.txt.	Boring file. Try passwords.txt.
+Boa tentativa. O auditor anotou o seu nome.	Nice try. The auditor wrote down your name.
+Calma. O estagiário já tentou isso uma vez.	Easy. The intern tried that once.
+Funciona na minha máquina.	Works on my machine.
+Há 10 tipos de pessoas: as que entendem binário e as que não.	There are 10 kinds of people: those who understand binary and those who don't.
+Já tentou desligar e ligar de novo?	Have you tried turning it off and on again?
+Não deu: falta dinheiro para isso.	Can't do it: not enough money.
+Não existe nuvem: é só o computador de outra pessoa.	There is no cloud: it's just someone else's computer.
+O estagiário tem acesso root. Durma bem.	The intern has root access. Sleep well.
+Quebrado agora (um comando que resolve):	Broken now (a command that fixes it):
+Senha forte: Senha123! (anotada no post-it do monitor).	Strong password: Password123! (written on a sticky note on the monitor).
+Teste em produção é teste com plateia.	Testing in production is testing with an audience.
+Tudo funcionando. Quando algo quebrar, o sintoma aparece aqui em vermelho.	All systems up. When something breaks, the symptom shows up here in red.
+Você entrou no vim. Ninguém sabe sair. Tente :q!	You entered vim. Nobody knows how to leave. Try :q!
+Você saiu do vim. Coloque isso no currículo.	You left vim. Put that on your résumé.
+backup.sh   deploy.yaml   runbooks/   senhas.txt	backup.sh   deploy.yaml   runbooks/   passwords.txt
+cafeteira: reservatório vazio · produtividade caindo	coffee-machine: tank empty · productivity dropping
+calendar: "Alinhamento rápido" em 2 min (1h30, 14 pessoas)	calendar: "Quick sync" in 2 min (1h30, 14 people)
+meeting decline --motivo 'podia ser um e-mail'	meeting decline --reason 'could have been an email'
+md0: Disk failure on sdc, disabling device · RAID degradado	md0: Disk failure on sdc, disabling device · RAID degraded
+named: SERVFAIL resolvendo api.interno · é sempre o DNS	named: SERVFAIL resolving api.internal · it's always DNS
+nano? Aqui é terminal de respeito. (brincadeira)	nano? This is a serious terminal. (just kidding)
+nginx: 48.000 conexões/s de 203.0.113.0/24	nginx: 48,000 connections/s from 203.0.113.0/24
+ping 8.8.8.8: Destination Host Unreachable · o link de fibra caiu	ping 8.8.8.8: Destination Host Unreachable · the fiber link is down
+rack02-pdu: outlet 1 sem energia (tiraram da tomada?)	rack02-pdu: outlet 1 without power (someone unplugged it?)
+rm: nada removido (ainda bem).	rm: nothing removed (thankfully).
+sda: I/O error, dev sda, sector 4821733 · EXT4-fs: remontado só leitura	sda: I/O error, dev sda, sector 4821733 · EXT4-fs: remounted read-only
+smbd: 9.214 arquivos renomeados para *.chora em /srv/financeiro	smbd: 9,214 files renamed to *.weep in /srv/finance
+restic restore latest --target /srv/financeiro	restic restore latest --target /srv/finance
+Idle Data Center · terminal. Quando algo quebrar, o sintoma aparece aqui em vermelho.	Idle Data Center · terminal. When something breaks, the symptom shows up here in red.
+Digite help para ver o comando que resolve. Acertos seguidos rendem combo.	Type help to see the command that fixes it. Hits in a row build a combo.
+~ALERTA {1}: 12k req/s · capacidade 6k req/s	ALERT {1}: 12k req/s · capacity 6k req/s
+~healthcheck {1}: 0/12 healthy · região fora do ar	healthcheck {1}: 0/12 healthy · region down
+~OK · resolvido · +R$ {1}  (combo x{2})	OK · fixed · +R$ {1}  (combo x{2})
+~OK · resolvido · +R$ {1}	OK · fixed · +R$ {1}
+~uptime da última hora: {1} · {2} servidores	uptime over the last hour: {1} · {2} servers
+~{1} servidores · {2} travados · renda R$ {3}/s	{1} servers · {2} frozen · income R$ {3}/s
+~energia {1}/{2} kW · {3} °C	power {1}/{2} kW · {3} °C
+~/dev/md0   {1}T   RAID degradado	/dev/md0   {1}T   RAID degraded
+~/dev/sda   1T   só leitura	/dev/sda   1T   read-only
+~Café pronto! Renda x{1} por um tempo.	Coffee's ready! Income x{1} for a while.
+~Servidores: {1} · Uptime: {2} · Automações: {3}	Servers: {1} · Uptime: {2} · Automations: {3}
+~{1}: nada para consertar com isso agora (digite help)	{1}: nothing to fix with that right now (type help)
+~Outros: {1}. Tab completa, setas trazem o histórico.	Others: {1}. Tab completes, arrows bring back history.
+10 servidores torre	10 tower servers
+A faxineira desligou o rack	The cleaner unplugged the rack
+A tomada era do aspirador	The outlet was for the vacuum
+Abrir o capital e virar CEO	Go public and become CEO
+Agora é sério	Now it's serious
+Apagando incêndio	Putting out fires
+Aqui não, hacker	Not here, hacker
+Assinado e entregue	Signed and delivered
+Atender um chamado P1	Handle a P1 ticket
+Atender um pedido de cliente	Fulfill a client request
+Automatize tudo	Automate everything
+Backup salva	Backup saves the day
+Bloquear um ataque	Block an attack
+Bombeiro de plantão	Firefighter on call
+Chegar a CTO	Reach CTO
+Chegar a SRE	Reach SRE
+Cheiro de novo	New hardware smell
+Cinco noves	Five nines
+Comprar o Zero Trust	Buy Zero Trust
+Comprar o primeiro rack	Buy the first rack
+Confiar em ninguém	Trust no one
+Crachá novo	New badge
+Cresceu com a gente	Grew with us
+De estagiário a CTO	From intern to CTO
+Deploy na sexta	Friday deploy
+Exit	Exit
+Faturar R$ 1 bilhão	Earn R$ 1 billion
+Faturar R$ 1 milhão	Earn R$ 1 million
+Fazenda de torres	Tower farm
+Fazer e dar certo	Do it and have it work
+Fazer o refresh do hardware	Refresh the hardware
+Hello, world	Hello, world
+Já tentou reiniciar?	Tried restarting it?
+Linha de comando	Command line
+Movido a café	Coffee-powered
+O certificado SSL expirou	The SSL certificate expired
+Pager no bolso	Pager in your pocket
+Passar por uma pane de DNS	Survive a DNS outage
+Podia ser um e-mail	Could have been an email
+Primeiro milhão	First million
+Quatro noves	Four nines
+Quem precisa de mouse?	Who needs a mouse?
+Restaurar o backup num ransomware	Restore the backup after ransomware
+Roeu o cabo	Chewed the cable
+Ser contratado por uma empresa	Get hired by a company
+Sobreviver a uma reunião	Survive a meeting
+Ter 2 servidores	Have 2 servers
+Toca o sino	Ring the bell
+Três noves	Three nines
+Um cliente chegou a Gigante	A client reached Giant
+Um rato roeu o cabo de rede	A rat chewed the network cable
+Unicórnio	Unicorn
+Uptime de 99,9%	99.9% uptime
+Uptime de 99,99%	99.99% uptime
+Uptime de 99,999%	99.999% uptime
+Venceu ontem	Expired yesterday
+Vender uma empresa	Sell a company
+É sempre o DNS	It's always DNS
+~Tomar {1} cafés	Drink {1} coffees
+~Fechar {1} chamados	Close {1} tickets
+~Resolver {1} incidentes	Resolve {1} incidents
+~{1} automações rodando	{1} automations running
+~Resolver {1} problemas no terminal	Fix {1} problems in the terminal
+A faxineira desligou o rack da tomada para ligar o aspirador. Religue!	The cleaner unplugged the rack to plug in the vacuum. Plug it back in!
+A garantia dos servidores venceu: vão travar 2x mais. Faça o refresh no cartão à direita.	The servers' warranty expired: they'll freeze 2x more. Do the refresh on the card on the right.
+A internet do bairro caiu: renda pela metade por 60 s. Ligue o 4G do celular!	The neighborhood internet is down: half income for 60 s. Turn on your phone's 4G!
+A meta fica no topo. Cumpra as três e uma empresa de TI te contrata.	The goal is at the top. Meet all three and an IT company hires you.
+A renda deles dobrou.	Their income doubled.
+A sala cresceu. Novos setores e equipamentos na loja.	The room grew. New sectors and equipment in the shop.
+Alguém	Someone
+Ataque DDoS: tráfego falso derrubando a renda. Bloqueie os IPs!	DDoS attack: fake traffic crushing income. Block the IPs!
+Auditoria em 60 s! Deixe tudo funcionando para ganhar um bônus.	Audit in 60 s! Keep everything running to earn a bonus.
+Bem-vindo! Você é freelancer. Clique na sua torre velha para ganhar dinheiro.	Welcome! You're a freelancer. Click your old tower to make money.
+CEO!	CEO!
+Café novo na mesa: o técnico voltou ao normal.	Fresh coffee on the desk: the tech is back to normal.
+Café! Receita ×2	Coffee! Revenue ×2
+Conquista	Achievement
+Conquista!	Achievement!
+Conquistas!	Achievements!
+Contratado!	Hired!
+Dados de volta: o ransomware acabou.	Data is back: the ransomware is over.
+De freelancer no quarto a CEO de uma nuvem global.	From freelancer in a bedroom to CEO of a global cloud.
+Deu ruim: o deploy de sexta quebrou. Rollback!	It went wrong: the Friday deploy broke. Rollback!
+Hora do café: clique na caneca da mesa. A receita dobra por 30 s.	Coffee time: click the mug on the desk. Revenue doubles for 30 s.
+Hospede mais um site: o marcador laranja compra o próximo.	Host one more site: the orange marker buys the next one.
+Hospede o site de um cliente na torre: compre na loja.	Host a client's site on the tower: buy it in the shop.
+IPO feito: a empresa está na bolsa	IPO done: the company is public
+Malware na rede: renda a 70%. Clique em Limpar no cartão à direita.	Malware on the network: income at 70%. Click Clean on the card on the right.
+Marco!	Milestone!
+Ninguém acha o site. Não é a rede, não é o servidor... é sempre o DNS.	Nobody can find the site. It's not the network, it's not the server... it's always DNS.
+O café acabou e o técnico ficou lento. Compre café no cartão à direita.	The coffee ran out and the tech got slow. Buy coffee on the card on the right.
+O certificado SSL expirou: o site está com cadeado vermelho e os clientes fugindo. Renove!	The SSL certificate expired: the site shows a red padlock and clients are fleeing. Renew it!
+O deploy ficou para segunda. Sábado em paz.	The deploy was moved to Monday. A peaceful Saturday.
+O estagiário	The intern
+O time está numa reunião que podia ser um e-mail: tudo conserta mais devagar.	The team is in a meeting that could have been an email: everything gets fixed slower.
+Promovido!	Promoted!
+Pular	Skip
+Ransomware criptografou os dados! Restaure do backup no cartão à direita.	Ransomware encrypted the data! Restore from backup on the card on the right.
+Ransomware criptografou os dados! Sem backup em fita, é pagar o resgate ou esperar.	Ransomware encrypted the data! Without tape backup, it's pay the ransom or wait.
+Servidores no fim da vida: travam 3x mais. Hora do refresh!	Servers at end of life: they freeze 3x more. Time for a refresh!
+Sexta-feira, 18h, alguém quer subir uma versão nova. Arrisca o deploy?	Friday, 6 PM, someone wants to ship a new version. Risk the deploy?
+Um P2 foi embora sem resposta.	A P2 left without an answer.
+Um app de cliente viralizou! Renda x1,5 por 2 minutos.	A client's app went viral! Income x1.5 for 2 minutes.
+Um cliente grande quer pagar o dobro por 90 s! Aceite no cartão à direita, mas nada pode travar.	A big client wants to pay double for 90 s! Accept on the card on the right, but nothing can freeze.
+Um rato roeu o cabo de rede: um servidor ficou fora do ar.	A rat chewed the network cable: a server went offline.
+Uma empresa de TI quer você. Seus sites vêm junto.	An IT company wants you. Your sites come along.
+Uma empresa nova começa no armário, com os bônus.	A new company starts in the closet, with the bonuses.
+Uma empresa nova começa do zero, com os bônus.	A new company starts from scratch, with the bonuses.
+Vai trabalhar? O botão Faixa deixa o jogo discreto acima da barra de tarefas.	Going to work? The Strip button keeps the game discreet above the taskbar.
+Vendida!	Sold!
+OK	OK
+~A renda deles dobrou. Próximo marco: {1}.	Their income doubled. Next milestone: {1}.
+~A renda deles dobrou. Todos os marcos!	Their income doubled. All milestones!
+~{1} de uma vez	{1} at once
+~+{1}% de renda, para sempre. Veja na Carreira.	+{1}% income, forever. See Career.
+~{1}. +0,5% de renda, para sempre.	{1}. +0.5% income, forever.
+~+{1} certificações	+{1} certifications
+~Chamado P{1}: {2}! Atenda no painel do help desk, à esquerda.	P{1} ticket: {2}! Handle it in the help desk panel on the left.
+~{1} bloqueou um ataque de {2}.	{1} blocked a {2} attack.
+~O P1 "{1}" estourou o prazo: o uptime sentiu.	The P1 "{1}" missed its deadline: uptime took a hit.
+~Café em {1}s	Coffee in {1}s
+~{1} clicou num link de phishing: servidores travaram! Compre segurança na loja.	{1} clicked a phishing link: servers froze! Buy security in the shop.
+~Auditoria aprovada: +{1}	Audit passed: +{1}
+~Auditoria achou problemas: multa de {1}	Audit found problems: a {1} fine
+~Algo travou: o cliente cancelou e cobrou {1} de multa.	Something froze: the client canceled and charged a {1} fine.
+~Resgate pago: {1}. Backup em fita evita isso.	Ransom paid: {1}. Tape backup prevents this.
+~O deploy de sexta deu certo: +{1}. Desta vez.	The Friday deploy worked: +{1}. This time.
+~Dica {1}/{2}	Tip {1}/{2}
+~{1}× {2}	{1}× {2}
+Autoscaling escalou	Autoscaling scaled up
+Backup restaurado!	Backup restored!
+Café! Receita x2 por 30s	Coffee! Revenue x2 for 30s
+Cluster escalado: rende 2x	Cluster scaled: earns 2x
+Deploy quebrou!	Deploy broke!
+Disco queimou!	Disk died!
+Garantia venceu: refresh!	Warranty expired: refresh!
+Hardware no fim da vida	Hardware at end of life
+IPO! Agora você é CEO!	IPO! Now you're the CEO!
+O café ainda faz efeito	The coffee is still working
+O pico passou	The peak is over
+Pico superado!	Peak survived!
+Reiniciado!	Restarted!
+Reiniciado	Restarted
+Rollback automático	Automatic rollback
+Rollback feito	Rollback done
+Servidor travou!	Server froze!
+Técnico consertou	Tech fixed it
+Watchdog reiniciou	Watchdog restarted it
+A segurança	Security
+Auditoria	Audit
+Bloquear IPs	Block IPs
+Cadeado vermelho: renda a 60%	Red padlock: income at 60%
+Clicaram no link: servidores travaram	Someone clicked the link: servers froze
+Cliente grande	Big client
+DDoS	DDoS
+Fazer o deploy	Deploy it
+Internet caiu	Internet down
+Ligar o 4G	Turn on 4G
+Limpar	Clean
+Malware	Malware
+Ninguém acha o site	Nobody can find the site
+O café acabou	Coffee ran out
+Paga o dobro por 90 s	Pays double for 90 s
+Phishing	Phishing
+Precisava ligar o aspirador	Needed to plug in the vacuum
+Rack desligado	Rack unplugged
+Ransomware	Ransomware
+Rato no cabo	Rat in the cable
+Reiniciar o DNS	Restart DNS
+Religar na tomada	Plug it back in
+Renda a 70% até limpar	Income at 70% until cleaned
+Renovar	Renew
+Restaurar backup	Restore backup
+Reunião	Meeting
+SSL expirou	SSL expired
+Sexta, 18h. Vai arriscar?	Friday, 6 PM. Gonna risk it?
+Time consertando 2x mais devagar	Team fixing 2x slower
+Tráfego falso: renda pela metade	Fake traffic: half income
+Técnico 2x mais lento	Tech 2x slower
+Um servidor ficou sem rede	A server lost its network
+Viralizou	Went viral
+Deploy na sexta	Friday deploy
+É sempre o DNS	It's always DNS
+Disco trocado	Disk swapped
+Tráfego redirecionado	Traffic rerouted
+Energia de volta	Power is back
+Escalado	Scaled
+Rollback	Rollback
+~Renda x2: {1} s, nada pode travar	Income x2: {1} s, nothing can freeze
+~Em {1} s: tudo funcionando	In {1} s: everything running
+~Renda pela metade: {1} s	Half income: {1} s
+~No 4G: {1} s	On 4G: {1} s
+~Renda x1,5: {1} s	Income x1.5: {1} s
+~IPs bloqueados: {1} s	IPs blocked: {1} s
+~Dados criptografados: {1} s	Data encrypted: {1} s
+~Aceitar {1}s	Accept {1}s
+~Café R$ {1}	Coffee R$ {1}
+~Resgate R$ {1}	Ransom R$ {1}
+~Pico: {1}! Escale	Peak: {1}! Scale up
+~SLA violado: -R$ {1}	SLA breached: -R$ {1}
+~Chamado P{1}: {2}	P{1} ticket: {2}
+~Cliente novo: {1} (abra o gerente)	New client: {1} (open the manager)
+~{1} virou {2}!	{1} became {2}!
+~{1} foi embora	{1} left
+~{1} fez um pedido (abra o gerente)	{1} placed a request (open the manager)
+~Conquista: {1} (+0,5%)	Achievement: {1} (+0.5%)
+~{1} bloqueou {2}	{1} blocked {2}
+~O P{1} foi embora	The P{1} left
+~Queda de energia no DC-0{1}!	Power outage at DC-0{1}!
+~DC-0{1} religado	DC-0{1} back on
+~Pane: {1}!	Outage: {1}!
+~{1} de volta	{1} is back
+~Enquanto você estava fora: +R$ {1} ({2}% da receita)	While you were away: +R$ {1} ({2}% of revenue)
+~Enquanto você estava fora: +R$ {1}	While you were away: +R$ {1}
+~Falta R$ {1}	Missing R$ {1}
+~Chamado resolvido: +R$ {1}	Ticket solved: +R$ {1}
+~Empresa vendida! +{1} certificações	Company sold! +{1} certifications
+~Backup salvou a maior parte: -R$ {1}	Backup saved most of it: -R$ {1}
+~Sem backup: -R$ {1}	No backup: -R$ {1}
+~Volta com {1}	Bring it back with {1}
+~Automação pronta: {1}	Automation ready: {1}
+~Escrevendo: {1}	Writing: {1}
+~Marco! {1}	Milestone! {1}
+~Promovido! {1}	Promoted! {1}
+~Contratado! {1}	Hired! {1}
+~{1}: renda ×2	{1}: income ×2
+~{1}: +R$ {2}	{1}: +R$ {2}
+~{1}: -R$ {2}	{1}: -R$ {2}
+~{1}!	{1}!
+~{1}: {2}	{1}: {2}
+~{1} · {2}	{1} · {2}
+~{1} / {2}	{1} / {2}
+< Voltar	< Back
+Automações chegam no cargo Analista de Infra.	Automations arrive at the Infrastructure Analyst role.
+Campus da sede, na América do Sul.	Headquarters campus, in South America.
+Cargo máximo por ora	Top role for now
+DC-01	DC-01
+Dados e backup	Data and backup
+Dados e backup: storage, fitas e o DR. A porta ou o VOLTAR leva de volta para a sala.	Data and backup: storage, tapes and DR. The door or BACK takes you back to the room.
+Dentro do DC-01. O botão CAMPUS volta para o quarteirão.	Inside DC-01. The CAMPUS button goes back to the block.
+Deploy	Deploy
+Faixa	Strip
+Falta dinheiro para isso.	Not enough money for that.
+Falta dinheiro para o refresh.	Not enough money for the refresh.
+O NOC está piscando	The NOC is blinking
+Prestígio: venda e recomece com bônus	Prestige: sell and start over with bonuses
+Rede e segurança	Network and security
+Rede e segurança: links, segurança e o SOC. A porta ou o VOLTAR leva de volta para a sala.	Network and security: links, security and the SOC. The door or BACK takes you back to the room.
+Refresh feito: servidores novos, na garantia de novo.	Refresh done: new servers, under warranty again.
+Você chegou ao topo	You reached the top
+Abrir o capital!	Go public!
+Abrir o modo gerente	Open manager mode
+Apps fora do ar	Apps down
+Comprar	Buy
+Deploy quebrou	Deploy broke
+Dinheiro	Money
+Dinheiro · café ×2	Money · coffee ×2
+Disco queimou	Disk died
+Empresa na bolsa	Company is public
+Escalar	Scale
+Fim de vida	End of life
+Fora da garantia	Out of warranty
+HD da torre	Tower HD
+Juntando...	Saving up...
+Meta para o IPO	Goal for the IPO
+Metas cumpridas	Goals met
+Neste cargo	In this role
+No storage	In storage
+O técnico vai consertar	The tech will fix it
+Pane regional	Regional outage
+Próxima compra	Next purchase
+Queda de energia	Power outage
+Redirecionar	Reroute
+Reiniciar	Restart
+Religar	Power on
+SLA violado!	SLA breached!
+Ser promovido!	Get promoted!
+Servidor travou	Server froze
+Trocar disco	Swap disk
+Tudo comprado	Everything bought
+Tudo pronto	All done
+Ver metas	See goals
+Atender	Handle
+Mesa do técnico	Tech's desk
+Bancada de consertos	Repair workbench
+Bancada da TI	IT workbench
+Funcionário	Employee
+Café: renda em dobro	Coffee: double income
+~{1}: travou, clique para reiniciar	{1}: froze, click to restart
+~{1}: HD queimou, clique para trocar	{1}: HD died, click to swap
+~{1}: disco queimou, clique para trocar	{1}: disk died, click to swap
+~{1}: um travou, clique	{1}: one froze, click
+~{1} (fim de vida)	{1} (end of life)
+~{1} (fora da garantia)	{1} (out of warranty)
+~Dinheiro  ·  café ×2: {1}s	Money  ·  coffee ×2: {1}s
+~Uptime {1}  SLA +{2}%	Uptime {1}  SLA +{2}%
+~Meta para {1}	Goal for {1}
+~Escale em {1}s	Scale within {1}s
+~{1} incidentes	{1} incidents
+~DC-0{1} apagado	DC-0{1} dark
+~Energia de volta no DC-0{1}.	Power back at DC-0{1}.
+~Servidores travam {1}x mais	Servers freeze {1}x more
+~Travam {1}x mais	Freeze {1}x more
+~Refresh {1}	Refresh {1}
+~Refresh R$ {1}	Refresh R$ {1}
+~Chamado P{1}	P{1} ticket
+~Atender {1}s	Handle {1}s
+~{1} nº {2}	{1} #{2}
+~{1} servidores travados	{1} servers frozen
+~+ {1}	+ {1}
+~Servidor torre {1}	Tower server {1}
+Banco Pixel	Pixel Bank
+Cartório Digital	Digital Notary
+Delivery Turbo	Turbo Delivery
+E-commerce	E-commerce
+Escola Ctrl+Z	Ctrl+Z School
+Fintech Cripto Feliz	Happy Crypto Fintech
+Gigante	Giant
+Hospital São Byte	Saint Byte Hospital
+Jogo de Fazendinha	Little Farm Game
+Loja do Seu Zé	Joe's Shop
+Loja virtual	Online store
+Mercadinho Online	Online Mini-Market
+Plataforma	Platform
+Prefeitura de Bitópolis	Bitopolis City Hall
+Página	Page
+Rede Social Bolha	Bubble Social Network
+Streaming Pipoca	Popcorn Streaming
+Sistema pesado: deixe 25% de folga de energia	Heavy system: leave 25% power headroom
+502 Bad Gateway	502 Bad Gateway
+< Antes	< Before
+Aceitar	Accept
+Clientes novos chegam	New clients arrive
+Cresceu!	Grew!
+Depois >	Next >
+Novo cliente	New client
+Recusar	Decline
+Site em construção	Site under construction
+Site fora do ar!	Site down!
+Site no ar e uptime dentro do SLA: o cliente fica feliz e cresce. Site fora: ele se irrita e pode ir embora.	Site up and uptime within SLA: the client is happy and grows. Site down: they get annoyed and may leave.
+Vaga livre	Open slot
+quando o uptime está alto	when uptime is high
+Help desk	Help desk
+Backup de ontem falhou	Yesterday's backup failed
+Banco de dados fora do ar	Database is down
+Cadeira rangendo	Squeaky chair
+Certificado expirou em produção	Certificate expired in production
+E-mail não chega	Email isn't arriving
+Esqueci a senha	Forgot my password
+Formatar o PC do vizinho	Format the neighbor's PC
+HD da gráfica fazendo barulho	The print shop's HD is making noise
+Impressora não imprime	Printer won't print
+Instalar a impressora da papelaria	Install the stationery store's printer
+Instalar o Office	Install Office
+Instalar o jogo do filho da vizinha	Install the neighbor's kid's game
+Limpar o teclado do escritório	Clean the office keyboard
+Migalha no teclado	Crumbs in the keyboard
+Mouse do sobrinho parou	Nephew's mouse stopped working
+Mouse sem pilha	Mouse out of battery
+Ninguém consegue logar	Nobody can log in
+Notebook com vírus	Laptop with a virus
+O site caiu!	The site is down!
+PC da padaria não liga	The bakery's PC won't turn on
+PC da padaria parou	The bakery's PC stopped
+Pagamentos falhando	Payments failing
+Planilha travou	Spreadsheet froze
+Pode olhar meu celular?	Can you look at my phone?
+Quero um monitor maior	I want a bigger monitor
+Recuperar as fotos do pendrive	Recover the photos from the USB stick
+Relatório do diretor travou	The director's report froze
+Senha do Wi-Fi	Wi-Fi password
+Sistema lento	Slow system
+Tela azul no caixa da loja	Blue screen on the store's register
+Trocar a pasta térmica do PC gamer	Replace the gaming PC's thermal paste
+Trocar o papel de parede	Change the wallpaper
+VPN caindo toda hora	VPN keeps dropping
+Wi-Fi da tia não conecta	Auntie's Wi-Fi won't connect
+É sempre o DNS	It's always DNS
+~Mais capacidade: chegue a {1} servidores	More capacity: reach {1} servers
+~Quer backup melhor: compre {1}	Wants better backup: buy {1}
+~Quer mais segurança: compre {1}	Wants more security: buy {1}
+~O servidor esquenta: baixe a sala para {1} °C	The server runs hot: cool the room to {1} °C
+~Campanha no ar: uptime acima de {1} até o prazo	Campaign live: uptime above {1} until the deadline
+~Novo cliente: {1} quer hospedar o site aqui (exige {2} de uptime).	New client: {1} wants to host their site here (requires {2} uptime).
+~{1} foi embora: o site caiu demais.	{1} left: the site went down too much.
+~{1} pede: {2}.	{1} asks: {2}.
+~Pedido de {1} atendido: +{2}. Ele cresce mais rápido.	{1}'s request fulfilled: +{2}. They grow faster.
+~{1} ficou bravo: o pedido venceu sem resposta.	{1} got angry: the request expired with no answer.
+~Clientes {1}/{2}	Clients {1}/{2}
+~Exige uptime de {1}	Requires {1} uptime
+~{1} agora hospeda aqui. Site no ar e uptime acima de {2} deixam ele feliz.	{1} now hosts here. Site up and uptime above {2} keep them happy.
+~Sem vaga ({1}/{2})	No slot ({1}/{2})
+~{1} de {2} clientes	{1} of {2} clients
+~+{1}% de renda	+{1}% income
+~Exige {1} de uptime	Requires {1} uptime
+~Atender: paga {1} (a equipe já está nele)	Handle: pays {1} (the team is already on it)
+~Atender: paga {1}	Handle: pays {1}
+~P{1}: {2}	P{1}: {2}
+Backup em outra região	Backup in another region
+Biblioteca de fitas	Tape library
+Cofre de fitas (sala de backup)	Tape vault (backup room)
+DADOS	DATA
+DC de recuperação: pronto para o failover	Recovery DC: ready for failover
+DR OK	DR OK
+Dados e backup: disco queimou lá dentro!	Data and backup: a disk died in there!
+Dados e backup: entrar	Data and backup: enter
+Mesa de monitoramento	Monitoring desk
+REDE	NETWORK
+REGIAO OK	REGION OK
+Rack de rede (links)	Network rack (links)
+Rede e segurança: entrar	Network and security: enter
+Rede e segurança: problema lá dentro!	Network and security: trouble in there!
+Rede: link saturado!	Network: link saturated!
+SALA	ROOM
+SOC 24h	24h SOC
+Segurança: ataque em andamento!	Security: attack in progress!
+Storage (RAID)	Storage (RAID)
+Storage: disco queimou, clique para trocar	Storage: disk died, click to swap
+Voltar para a sala	Back to the room
+Dica: aperte F1 (ou o botão Terminal) e digite help para resolver pelo teclado, com bônus.	Tip: press F1 (or the Terminal button) and type help to fix things from the keyboard, with a bonus.
+Terminal	Terminal
+Cluster escalado: o pico rende o dobro.	Cluster scaled: the peak earns double.
+Deploy quebrou. Clique em Deploy para o rollback.	Deploy broke. Click Deploy to roll back.
+Deploys chegam no cargo Engenheiro DevOps.	Deploys arrive at the DevOps Engineer role.
+Disco queimou no storage. Clique no storage para trocar.	A disk died in storage. Click the storage to swap it.
+Instale um host de containers para fazer deploys.	Install a container host to deploy.
+Já está no nível máximo.	Already at max level.
+O HD da torre queimou! Clique na torre com o alerta para trocar o disco.	The tower's HD died! Click the tower with the alert to swap the disk.
+Rollback feito: os apps voltaram.	Rollback done: the apps are back.
+Servidor travou. Clique no NOC ou em Reiniciar.	A server froze. Click the NOC or Restart.
+Tudo funcionando.	All systems up.
+A empresa nova começa no armário, com todos os bônus. Escolha um desafio (opcional):	The new company starts in the closet, with every bonus. Pick a challenge (optional):
+A empresa nova começa do zero, com todos os bônus. Escolha um desafio (opcional):	The new company starts from scratch, with every bonus. Pick a challenge (optional):
+Cancelar	Cancel
+Depois do IPO: vale o dobro.	After the IPO: worth double.
+Estudar	Study
+Faltam certificações	Not enough certifications
+Libera no cargo SRE. Quanto mais você faturar, mais certificações. Depois do IPO vale o dobro.	Unlocks at the SRE role. The more you earn, the more certifications. After the IPO it's worth double.
+Nenhuma empresa vendida ainda	No company sold yet
+Se fizer o IPO antes, vale o dobro.	If you go public first, it's worth double.
+Sem bônus nem regras extras	No bonuses or extra rules
+Vender e começar	Sell and start
+Vender...	Sell...
+cinco noves	five nines
+quatro noves	four nines
+três noves	three nines
+Help desk: atender o chamado mais urgente	Help desk: handle the most urgent ticket
+Host de containers: deploy quebrado	Container host: broken deploy
+Nó Kubernetes: no pico, escale!	Kubernetes node: scale during the peak!
+Enquanto você estava fora	While you were away
+Nenhum servidor travou.	No server froze.
+O técnico consertou 1 servidor.	The tech fixed 1 server.
+CONSTRUIR	BUILD
+Laboratório	Lab
+Refrigeração	Cooling
+Refrigeracao	Cooling
+Seguranca	Security
+Alto	High
+Baixo	Low
+Médio	Medium
+Completo!	Complete!
+Novo!	New!
+IPO	IPO
+tela azul	blue screen
+~Rack de segurança: {1}	Security rack: {1}
+~{1}: 502 Bad Gateway (o site de {2} caiu junto)	{1}: 502 Bad Gateway ({2}'s site went down too)
+~{1}  ·  terminal  ·  help: comandos  ·  Tab completa  ·  Esc fecha	{1}  ·  terminal  ·  help: commands  ·  Tab completes  ·  Esc closes
+~Pane regional: {1} fora do ar! Clique na região para redirecionar o tráfego.	Regional outage: {1} is down! Click the region to reroute traffic.
+~{1} incidente resolvido.	{1} incident resolved.
+~{1} incidentes resolvidos.	{1} incidents resolved.
+~{1} instalado. A receita já mudou.	{1} installed. Revenue already changed.
+~Queda de energia no DC-0{1}! Clique no prédio apagado para religar.	Power outage at DC-0{1}! Click the dark building to power it back on.
+~Pico de tráfego: {1}! Escale o cluster.	Traffic peak: {1}! Scale the cluster.
+~Contratado como {1}! Novos setores liberados.	Hired as {1}! New sectors unlocked.
+~Promovido a {1}! Novos setores liberados.	Promoted to {1}! New sectors unlocked.
+~{1} · {2}. O botão Faixa deixa o jogo discreto enquanto você trabalha.	{1} · {2}. The Strip button keeps the game discreet while you work.
+~Deploy entregue: +{1}	Deploy shipped: +{1}
+~Falta {1}.	Missing {1}.
+~Libera no cargo {1}.	Unlocks at the {1} role.
+~O técnico começou a escrever: {1}.	The tech started writing: {1}.
+~Precisa antes: {1}.	Requires first: {1}.
+~Automação pronta: {1}	Automation ready: {1}
+~{1} certificações e um troféu para a mesa.	{1} certifications and a trophy for the desk.
+~{1} empresa vendida	{1} company sold
+~{1} empresas vendidas	{1} companies sold
+~{1} ganhas no total	{1} earned in total
+~Certificação: {1}	Certification: {1}
+~Certificações da próxima venda ×{1}	Certifications from the next sale ×{1}
+~Certificações: {1}	Certifications: {1}
+~Nível {1}	Level {1}
+~{1} (nível {2})	{1} (level {2})
+~Recomeça no armário com os bônus. {1}	Starts over in the closet with the bonuses. {1}
+~Recomeça do zero com os bônus. {1}	Starts over from scratch with the bonuses. {1}
+~Vender a empresa: +{1}	Sell the company: +{1}
+~Você recebe +{1}	You get +{1}
+~({1}% da receita normal)	({1}% of normal revenue)
+~O técnico consertou {1} servidores.	The tech fixed {1} servers.
+~Rendeu só as primeiras {1} h.	Only the first {1} h counted.
+~{1} no nível máximo	{1} at max level
+~{1}% de renda, para sempre	{1}% income, forever
+~Conquistas: {1}	Achievements: {1}
+~Sede: {1}	HQ: {1}
+~{1} torres	{1} towers
+~Rack 42U: {1} servidores 1U	42U rack: {1} 1U servers
+~Servidor torre {1}	Tower server {1}
+A faixa se move arrastando pela alça (o pontilhado na ponta dela).	Move the strip by dragging its handle (the dotted bit at its end).
+Abrir o jogo	Open the game
+Começar do zero	Start from scratch
+Começar do zero?	Start from scratch?
+Configurações	Settings
+Continuar	Continue
+De freelancer no quarto a CEO de uma nuvem global	From freelancer in a bedroom to CEO of a global cloud
+English	English
+Faixa de volta à barra	Strip back to the taskbar
+IDLE DATA CENTER	IDLE DATA CENTER
+Idioma	Language
+Lado da faixa	Strip side
+Monitor da faixa	Strip monitor
+Na faixa	In the strip
+Na sala	In the room
+Novo jogo	New game
+Novo jogo!	New game!
+Português	Português
+Sair	Quit
+Você volta a ser freelancer, sem dinheiro nem certificações.	You go back to being a freelancer, with no money or certifications.
+Voltar	Back
+Voltar ao jogo	Back to the game
+~Novo jogo! O anterior ficou guardado em {1}.	New game! The previous one was saved to {1}.
+~O jogo atual ({1}, {2}) fica guardado numa cópia.	The current game ({1}, {2}) is kept in a copy.
+~{1} · {2} · +{3} enquanto fora	{1} · {2} · +{3} while away

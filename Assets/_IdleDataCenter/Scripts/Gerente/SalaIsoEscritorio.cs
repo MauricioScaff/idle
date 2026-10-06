@@ -42,8 +42,15 @@ namespace IdleDataCenter.Gerente
             fila.Add((3, () => DesenharSprite(bancada, l.x, l.y)));
             Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, bancada.w, bancada.h), Tipo = "equipamento", Px = bancada.px, Prof = 3, Nome = "Bancada de consertos" });
             pontoDaBancada = l + new Vector2Int(bancada.w / 2, 18);
-            // no quarto todo PC que chega vai para a bancada
-            lugaresDeChamado.Add(new LugarDeChamado { tipo = "bancada", grade = Grade(l + b.frente) + new Vector2(0.15f, 0.35f), olhar = "nw", balao = l + new Vector2Int(bancada.w / 2, 4) });
+            // no quarto todo PC que chega vai para a bancada; o freelancer trabalha pelo lado esquerdo dela (sem subir em cima)
+            lugaresDeChamado.Add(new LugarDeChamado { tipo = "bancada", grade = new Vector2(1.95f, 3.2f), olhar = "se", balao = l + new Vector2Int(bancada.w / 2, 4) });
+
+            // o que ocupa o piso do quarto (em casas): planta, mesa, cadeira, a torre velha e a bancada (até a cadeira: sem corredor atrás dela)
+            Bloquear(0, 0, 0.7f, 0.7f);
+            Bloquear(1.6f, 0, 4, 1.15f);
+            Bloquear(2.25f, 0.8f, 2.95f, 1.45f);
+            Bloquear(0, 2.6f, 0.75f, 3.7f);
+            Bloquear(2.3f, 1.75f, 4, 3.75f);
         }
 
         // ---------------- Técnico: o escritório ----------------
@@ -55,7 +62,7 @@ namespace IdleDataCenter.Gerente
         static readonly Vector2[] TorresDoEscritorio = { new Vector2(6.75f, 1.8f), new Vector2(6.05f, 1.8f), new Vector2(6.75f, 2.5f), new Vector2(6.05f, 2.5f) };
 
         /// <summary>Onde o técnico trabalha no escritório: na frente da bancada da TI, olhando para ela.</summary>
-        (Vector2 lugar, string olhar) LugarNaBancada => (new Vector2(6.55f, 4.55f), "nw");
+        (Vector2 lugar, string olhar) LugarNaBancada => (new Vector2(6.45f, 5.85f), "ne");   // na face da frente (atrás ele ficaria desenhado por cima da bancada)
 
         Vector2Int pontoDaBancada, pontoDoFuncionario;
 
@@ -63,6 +70,17 @@ namespace IdleDataCenter.Gerente
         {
             TorresNoPiso(TorresDoEscritorio);
             Funcionarios();
+
+            // o que ocupa o piso (em casas): planta do fundo, as duas fileiras de mesas, impressora, cafeteira, armarinho de
+            // servidor, a bancada da TI e a mesinha da planta da frente (as torres e os funcionários se bloqueiam sozinhos)
+            Bloquear(0, 0, 0.6f, 0.6f);
+            Bloquear(0.4f, 1.1f, 3.4f, 2.6f);
+            Bloquear(0.2f, 4.0f, 3.4f, 5.5f);
+            Bloquear(2.9f, 0, 3.9f, 0.9f);
+            Bloquear(5.3f, 0, 7, 1.1f);
+            Bloquear(6.1f, 2.55f, 7, 3.45f);
+            Bloquear(5.3f, 3.2f, 7, 5.45f);
+            Bloquear(5.2f, 5.75f, 5.9f, 6.35f);
 
             // a cafeteira é o café; a impressora e a bancada são de onde vêm os chamados
             Alvos.Add(new Alvo { Area = new RectInt(450, 190, 36, 38), Tipo = "cafe", Prof = 1, Nome = "Café: renda em dobro" });
@@ -107,6 +125,7 @@ namespace IdleDataCenter.Gerente
                     tela.Imagem(s.px, s.w, s.h, pe.x - s.w / 2, pe.y - pes - balanco);
                 }));
                 Alvos.Add(new Alvo { Area = new RectInt(pe.x - s.w / 2, pe.y - pes, s.w, pes), Tipo = "equipamento", Px = s.px, Prof = 9, Nome = "Funcionário" });
+                Bloquear(Cadeiras[i].x - 0.22f, Cadeiras[i].y - 0.22f, Cadeiras[i].x + 0.22f, Cadeiras[i].y + 0.22f);
                 lugaresDeChamado.Add(new LugarDeChamado { tipo = "pessoa", grade = Cadeiras[i] + new Vector2(0.65f, 0.1f), olhar = "nw", balao = pe + new Vector2Int(0, -pes - 4) });
                 if (i == n - 1) pontoDoFuncionario = pe + new Vector2Int(0, -pes / 2);
             }
@@ -136,6 +155,7 @@ namespace IdleDataCenter.Gerente
                 fila.Add((prof, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = "servidor:" + i, Px = s.px, Prof = prof, Nome = "Servidor torre " + (i + 1) });
                 if (travado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente, false);
+                Bloquear(lugares[i].x - 0.7f, lugares[i].y - 0.7f, lugares[i].x, lugares[i].y);
                 Ronda(l + b.frente, false);
             }
             var ultima = NoPiso(torre, lugares[Mathf.Clamp(E.Torres - 1, 0, lugares.Length - 1)].x, lugares[Mathf.Clamp(E.Torres - 1, 0, lugares.Length - 1)].y);
@@ -144,28 +164,6 @@ namespace IdleDataCenter.Gerente
                 Placas.Add(new Placa { Setor = "Compute", Nome = E.Torres + " torres", Pos = ultima + new Vector2Int(b.frente.x, 4), Cor = IsoGui.Cyan });
             if (E.Torres < lugares.Length) ContornoDaBase(torre, NoPiso(torre, lugares[E.Torres].x, lugares[E.Torres].y));
             else Marcador = ultima + new Vector2Int(b.frente.x + 8, b.frente.y + 4);
-        }
-
-        /// <summary>
-        /// Caminho no escritório: as mesas formam duas fileiras (fundo e frente) do lado da janela; do outro lado fica o
-        /// corredor livre. Para chegar numa mesa, a pessoa desce o corredor e entra pela passagem certa: a do meio para as
-        /// mesas do fundo, a da frente para as da frente. Assim ninguém atravessa mesa nem funcionário.
-        /// </summary>
-        void RotaNoEscritorio(Trabalhador p, Vector2 destino)
-        {
-            const float Corredor = 4.3f, LadoDasMesas = 3.6f;
-            float Passagem(Vector2 v) => v.y > 5f ? 6.65f : 4.1f;
-            bool deMesa = p.pos.x < LadoDasMesas, paraMesa = destino.x < LadoDasMesas;
-            if (deMesa) p.caminho.Add(new Vector2(p.pos.x, Passagem(p.pos)));
-            if (deMesa && paraMesa && Mathf.Abs(Passagem(p.pos) - Passagem(destino)) < 0.01f)
-                p.caminho.Add(new Vector2(destino.x, Passagem(destino)));
-            else
-            {
-                p.caminho.Add(new Vector2(Corredor, deMesa ? Passagem(p.pos) : p.pos.y));
-                p.caminho.Add(new Vector2(Corredor, paraMesa ? Passagem(destino) : destino.y));
-                if (paraMesa) p.caminho.Add(new Vector2(destino.x, Passagem(destino)));
-            }
-            p.caminho.Add(destino);
         }
 
         // ---------------- Chamados como balões ----------------

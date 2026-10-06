@@ -59,6 +59,7 @@ namespace IdleDataCenter.Gerente
         public float Largura(string s, int escala = 2)
         {
             if (string.IsNullOrEmpty(s)) return 0;
+            s = Idiomas.T(s);
             var e = Estilo;
             e.fontSize = Tamanho(escala);
             return e.CalcSize(new GUIContent(s)).x;
@@ -67,6 +68,7 @@ namespace IdleDataCenter.Gerente
         public void Texto(string s, float x, float y, Color? c = null, int escala = 2, bool centro = false)
         {
             if (string.IsNullOrEmpty(s) || Event.current.type != EventType.Repaint) return;
+            s = Idiomas.T(s);   // o jogo escreve em português; aqui vira inglês se for o idioma escolhido
             var e = Estilo;
             // tamanho e posição na tela de verdade
             var m = GUI.matrix;

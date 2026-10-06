@@ -126,6 +126,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Quebra por palavras para caber na largura (palavras maiores que a linha ficam inteiras).</summary>
         List<string> QuebrarLinha(string texto, float largura, int escala = 2)
         {
+            texto = Idiomas.T(texto);
             var linhas = new List<string>();
             string atual = "";
             foreach (var palavra in (texto ?? "").Split(' '))

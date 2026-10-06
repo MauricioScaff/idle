@@ -839,6 +839,12 @@ namespace IdleDataCenter.Simulacao
 
         // ---------------- Carreira ----------------
 
+        /// <summary>Novo jogo: tudo do zero (inclusive o prestígio), começando como freelancer com o tutorial.</summary>
+        public void ComecarDoZero()
+        {
+            Estado = new EstadoJogo { ultimoSalvamentoUnix = Estado.ultimoSalvamentoUnix };
+        }
+
         /// <summary>Saves da versão 2 não tinham o Freelancer: o cargo de todo mundo anda uma casa (o Técnico continua Técnico).</summary>
         void MigrarSave()
         {

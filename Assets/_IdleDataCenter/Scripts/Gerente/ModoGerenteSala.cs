@@ -34,7 +34,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Textos "+R$" que sobem de onde se clicou (ou de onde o dinheiro está sendo feito).</summary>
         readonly List<(string texto, Vector2 pos, float nasceu, Color cor)> flutuantes = new List<(string, Vector2, float, Color)>();
 
-        bool Livre => string.IsNullOrEmpty(janela);
+        bool Livre => string.IsNullOrEmpty(janela) && !NaTelaInicial;
         bool Pisca => Mathf.FloorToInt(Time.unscaledTime * 3) % 2 == 0;
 
         /// <summary>O que o marcador "+ ..." do piso compra em cada cargo (o equipamento principal da fase).</summary>
@@ -530,6 +530,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Corta o texto (com reticências) até caber na largura.</summary>
         string CaberEm(string texto, float largura, int escala)
         {
+            texto = Idiomas.T(texto);   // corta já no idioma da tela
             if (ui.Largura(texto, escala) <= largura) return texto;
             while (texto.Length > 1 && ui.Largura(texto + "...", escala) > largura) texto = texto.Substring(0, texto.Length - 1);
             return texto.TrimEnd() + "...";
@@ -542,6 +543,6 @@ namespace IdleDataCenter.Gerente
                     if (linhas[j][i] == '#') ui.Ret(new Rect(x + i * escala, y + j * escala, escala, escala), cor);
         }
 
-        static string Cortar(string s, int maximo) => s.Length <= maximo ? s : s.Substring(0, Mathf.Max(1, maximo - 1)) + ".";
+        static string Cortar(string s, int maximo) { s = Idiomas.T(s); return s.Length <= maximo ? s : s.Substring(0, Mathf.Max(1, maximo - 1)) + "."; }
     }
 }

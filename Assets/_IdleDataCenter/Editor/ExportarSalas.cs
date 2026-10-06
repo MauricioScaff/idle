@@ -23,6 +23,7 @@ namespace IdleDataCenter.Ferramentas
                 var estado = JsonUtility.FromJson<EstadoJogo>(File.ReadAllText(arquivo));
                 var economia = new Economia(estado);
                 var sala = new SalaIso(economia);
+                sala.MostrarObstaculos = System.Array.Exists(System.Environment.GetCommandLineArgs(), a => a == "-obstaculos");   // teste: piso bloqueado e caminhos
                 var nome = Path.Combine(pasta, Path.GetFileNameWithoutExtension(arquivo));
                 Salvar(sala, 1.3f, SalaIso.Vista.Sala, nome + "_sala.png");
                 if (economia.NoCampus) Salvar(sala, 1.3f, SalaIso.Vista.Campus, nome + "_campus.png");

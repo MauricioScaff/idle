@@ -48,7 +48,7 @@ namespace IdleDataCenter.Gerente
                 return;
             }
             ui.Texto(CaberEm("Vender a empresa: +" + E.CertificacoesDaVenda + " certificações", barra.width - 284, 3), barra.x + 16, barra.y + 16, IsoGui.Laranja, 3);
-            ui.Texto(CaberEm("Recomeça no armário com os bônus. " + (E.IpoFeito ? "Depois do IPO: vale o dobro." : "Se fizer o IPO antes, vale o dobro."), barra.width - 284, 2), barra.x + 16, barra.y + 52, IsoGui.Muted, 2);
+            ui.Texto(CaberEm("Recomeça do zero com os bônus. " + (E.IpoFeito ? "Depois do IPO: vale o dobro." : "Se fizer o IPO antes, vale o dobro."), barra.width - 284, 2), barra.x + 16, barra.y + 52, IsoGui.Muted, 2);
             if (ui.Botao(new Rect(barra.xMax - 236, barra.y + 26, 220, 36), "Vender...", IsoGui.Laranja)) janela = "Vender";
         }
 
@@ -56,7 +56,7 @@ namespace IdleDataCenter.Gerente
         void TelaVender(Rect modal)
         {
             ui.Texto("Você recebe +" + E.CertificacoesDaVenda + " certificações e um troféu para a mesa.", modal.x + 24, modal.y + 100, IsoGui.Cor("ffd65c"), 2);
-            ui.Texto("A empresa nova começa no armário, com todos os bônus. Escolha um desafio (opcional):", modal.x + 24, modal.y + 124, IsoGui.Muted, 2);
+            ui.Texto("A empresa nova começa do zero, com todos os bônus. Escolha um desafio (opcional):", modal.x + 24, modal.y + 124, IsoGui.Muted, 2);
             for (int i = 0; i < Catalogo.Desafios.Count; i++)
             {
                 var dsf = Catalogo.Desafios[i];

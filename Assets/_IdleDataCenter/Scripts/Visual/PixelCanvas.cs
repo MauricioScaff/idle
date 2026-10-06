@@ -104,7 +104,7 @@ namespace IdleDataCenter
         /// <summary>Texto na fonte 3×5, com sombra opcional um pixel abaixo e à direita.</summary>
         public void Texto(string s, int x, int y, Color32 cor, bool sombra = true, int escala = 1)
         {
-            s = PixelTexto.Normalizar(s);
+            s = PixelTexto.Normalizar(Idiomas.T(s));
             if (sombra) DesenharTexto(s, x + escala, y + escala, new Color32(27, 26, 46, cor.a), escala);
             DesenharTexto(s, x, y, cor, escala);
         }

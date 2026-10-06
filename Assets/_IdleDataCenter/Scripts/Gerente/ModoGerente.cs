@@ -61,7 +61,7 @@ namespace IdleDataCenter.Gerente
         void Update()
         {
             if (!Aberto) return;
-            if (Input.GetKeyDown(KeyCode.Escape) && !terminalAberto && !string.IsNullOrEmpty(janela)) Abrir("Visao");   // Esc fecha a janela aberta
+            if (!EscNoMenu() && Input.GetKeyDown(KeyCode.Escape) && !terminalAberto && !string.IsNullOrEmpty(janela)) Abrir("Visao");   // Esc fecha a janela aberta (sem janela: o menu)
             flashCompra = Mathf.Max(0, flashCompra - Time.unscaledDeltaTime);
             AtualizarSala();
             AtualizarTerminal();
@@ -175,6 +175,10 @@ namespace IdleDataCenter.Gerente
             GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - W * escala) / 2, (Screen.height - H * escala) / 2, 0),
                 Quaternion.identity, new Vector3(escala, escala, 1));
             EventosDoTerminal();   // antes de tudo: aberto, o terminal fica com o teclado e os cliques dele
+            // tela inicial ao abrir o jogo: só a cidade, o emblema e o menu
+            if (NaTelaInicial && menuDoInicio) { TelaInicial(); GUI.matrix = anterior; return; }
+            // menu no meio do jogo: a tela do jogo fica atrás, sem receber cliques
+            GUI.enabled = !NaTelaInicial;
             DesenharSala();
             Hud();
             PainelHelpDesk();
@@ -187,6 +191,9 @@ namespace IdleDataCenter.Gerente
             if (!string.IsNullOrEmpty(janela)) Loja();
             Terminal();
             Confetes();   // por cima da loja: a compra pode ter sido feita nela
+            if (!NaTelaInicial && Livre) BotaoDoMenu();
+            GUI.enabled = true;
+            TelaInicial();
             GUI.matrix = anterior;
         }
     }

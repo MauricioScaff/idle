@@ -170,6 +170,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Até duas linhas que cabem na largura (medida na letra de verdade; a segunda corta com reticências).</summary>
         void TextoQuebrado(string s, float x, float y, float largura, Color cor, int escala = 2)
         {
+            s = Idiomas.T(s);
             if (ui.Largura(s, escala) <= largura) { ui.Texto(s, x, y, cor, escala); return; }
             int corte = s.Length;
             while (corte > 0) { corte = s.LastIndexOf(' ', corte - 1); if (corte <= 0 || ui.Largura(s.Substring(0, corte), escala) <= largura) break; }

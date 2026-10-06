@@ -153,6 +153,52 @@ namespace IdleDataCenter
             }
         }
 
+        /// <summary>Cursor em pixels da área de trabalho (origem em cima à esquerda), para arrastar a faixa mesmo saindo da janela.</summary>
+        public static Vector2Int CursorNaTela
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                if (GetCursorPos(out var p)) return new Vector2Int(p.x, p.y);
+#endif
+                return new Vector2Int(Mathf.RoundToInt(Input.mousePosition.x), Screen.height - Mathf.RoundToInt(Input.mousePosition.y));
+            }
+        }
+
+        /// <summary>Botão esquerdo apertado agora, lido do Windows (a janela da faixa nem sempre recebe o mouse).</summary>
+        public static bool BotaoEsquerdo
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                return (GetAsyncKeyState(0x01) & 0x8000) != 0;
+#else
+                return Input.GetMouseButton(0);
+#endif
+            }
+        }
+
+        /// <summary>Quanto a faixa pode subir (pixels) sem sair da área de trabalho.</summary>
+        public int SubidaMaxima
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                return Mathf.Max(0, (ultimaArea.Bottom - ultimaArea.Top) - AlturaFisica());
+#else
+                return 0;
+#endif
+            }
+        }
+
+        /// <summary>Reposiciona já (a faixa sendo arrastada).</summary>
+        public void Reposicionar()
+        {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+            if (Ativa && !ModoGerente) Posicionar();
+#endif
+        }
+
         /// <summary>
         /// True só se um clique agora iria de fato para a faixa: janela visível e ela mesma sob o cursor.
         /// A Unity lê o mouse mesmo em segundo plano, então sem essa checagem cliques feitos em
@@ -313,7 +359,7 @@ namespace IdleDataCenter
         void Posicionar()
         {
             int altura = AlturaFisica();
-            SetWindowPos(hwnd, HWND_TOPMOST, ultimaArea.Left, ultimaArea.Bottom - altura, ultimaArea.Largura, altura,
+            SetWindowPos(hwnd, HWND_TOPMOST, ultimaArea.Left, ultimaArea.Bottom - altura - Mathf.Clamp(Ajustes.FaixaY, 0, Mathf.Max(0, (ultimaArea.Bottom - ultimaArea.Top) - altura)), ultimaArea.Largura, altura,
                 SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
         }
 

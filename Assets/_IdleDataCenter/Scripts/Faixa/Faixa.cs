@@ -127,8 +127,23 @@ namespace IdleDataCenter
             if (forcaGerente || (!forcaFaixa && Ajustes.AbrirNoGerente)) AbrirGerente(lembrar: false);
             string secao = Array.Find(args, a => a.StartsWith("-gerente="));
             if (secao != null) gerente.AbrirSecao(secao.Substring(9));
+            // a tela inicial (continuar, novo jogo, configurações) abre junto com o modo gerente; os testes vão direto para o jogo
+            string[] deTeste = { "-gerente", "-faixa", "-painel", "-terminal", "-atender", "-promover", "-incidente", "-hora", "-alternar", "-simular" };
+            bool emTeste = Array.Exists(args, a => Array.Exists(deTeste, t => a.StartsWith(t)));
+            if (gerente.Aberto && !emTeste) gerente.MostrarTelaInicial(ganhoOffline);
             if (gerente.Aberto && ganhoOffline > 0)
                 gerente.Avisar("Enquanto você estava fora: +R$ " + Formatar(ganhoOffline) + " (" + (economia.TaxaOffline * 100).ToString("0") + "% da receita)", 12);
+        }
+
+        /// <summary>Novo jogo: guarda uma cópia do save atual e recomeça do zero, como freelancer. Retorna o nome da cópia.</summary>
+        public string NovoJogo()
+        {
+            Salvamento.Salvar(economia.Estado);   // a cópia leva o progresso até agora
+            string copia = Salvamento.GuardarCopia();
+            economia.ComecarDoZero();
+            ganhoOffline = 0;
+            Salvamento.Salvar(economia.Estado);
+            return copia;
         }
 
         /// <summary>Aviso curto na faixa (a barra de notícias do modo gerente tem os seus).</summary>
@@ -374,6 +389,7 @@ namespace IdleDataCenter
             if (gerente.Aberto) janela.DefinirClicavel(true);   // no modo gerente a janela inteira recebe cliques (OnGUI)
             else ProcessarCursor();
 
+            Economia.Ingles = Idiomas.Ingles;   // números no formato do idioma escolhido
             economia.Avancar(Time.deltaTime);
             Sons.Ambiente(economia.Cargo, economia.TotalServidores, economia.Nivel(Catalogo.ArCondicionado) > 0);
 
@@ -394,8 +410,9 @@ namespace IdleDataCenter
             float larguraTela = larguraSimulada > 0 ? larguraSimulada : Screen.width / (float)janela.Escala;
             float y = JanelaDesktop.AlturaVirtual + Painel.Espaco;
             painel.transform.localScale = resumo.transform.localScale = Vector3.one * s;
-            painel.transform.position = new Vector3(Ajustes.Direita ? Mathf.Floor(larguraTela - Painel.Largura * s - PainelX) : PainelX, y, 0);
-            resumo.transform.position = new Vector3(Ajustes.Direita ? Mathf.Floor(larguraTela - ResumoOffline.Largura * s - PainelX) : PainelX, y, 0);
+            float arrastado = Mathf.Round(monitor.DeslocamentoX / janela.Escala);   // a faixa foi arrastada para o lado: o painel vai junto
+            painel.transform.position = new Vector3((Ajustes.Direita ? Mathf.Floor(larguraTela - Painel.Largura * s - PainelX) : PainelX) + arrastado, y, 0);
+            resumo.transform.position = new Vector3((Ajustes.Direita ? Mathf.Floor(larguraTela - ResumoOffline.Largura * s - PainelX) : PainelX) + arrastado, y, 0);
         }
 
         /// <summary>
@@ -453,7 +470,11 @@ namespace IdleDataCenter
             else escolhido.Clicar();
         }
 
-        void OnApplicationQuit() => Salvamento.Salvar(economia.Estado);
+        void OnApplicationQuit()
+        {
+            Salvamento.Salvar(economia.Estado);
+            Idiomas.SalvarFaltando();   // em inglês: lista o que apareceu sem tradução (para completar a tabela)
+        }
 
         /// <summary>Dinheiro em português (ver Economia.FormatarDinheiro): R$ 16.342, R$ 1,23 mi, R$ 45,6 bi.</summary>
         public static string Formatar(double v) => Economia.FormatarDinheiro(v);

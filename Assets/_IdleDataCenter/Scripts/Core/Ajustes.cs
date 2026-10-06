@@ -58,6 +58,33 @@ namespace IdleDataCenter
             set => Gravar("telaCheia", value ? 1 : 0);
         }
 
+        /// <summary>Idioma do jogo: 0 = português (padrão), 1 = inglês.</summary>
+        public static int Idioma
+        {
+            get => Mathf.Clamp(PlayerPrefs.GetInt("idioma", 0), 0, 1);
+            set => Gravar("idioma", Mathf.Clamp(value, 0, 1));
+        }
+
+        /// <summary>
+        /// Onde o jogador arrastou a faixa: deslocamento em pixels de tela a partir do lugar padrão (canto de baixo, em cima da
+        /// barra de tarefas). X para a direita, Y para cima. (0, 0) = no lugar de sempre.
+        /// </summary>
+        public static int FaixaX
+        {
+            get => PlayerPrefs.GetInt("faixaX", 0);
+            set => PlayerPrefs.SetInt("faixaX", value);   // grava em disco ao soltar a alça (PlayerPrefs.Save)
+        }
+
+        public static int FaixaY
+        {
+            get => Mathf.Max(0, PlayerPrefs.GetInt("faixaY", 0));
+            set => PlayerPrefs.SetInt("faixaY", Mathf.Max(0, value));
+        }
+
+        public static bool FaixaMovida => FaixaX != 0 || FaixaY != 0;
+
+        public static void DevolverFaixa() { FaixaX = 0; FaixaY = 0; PlayerPrefs.Save(); Mudou?.Invoke(); }
+
         /// <summary>Em que modo o jogo abre: o último usado (padrão: modo gerente, a vista isométrica). Não dispara Mudou.</summary>
         public static bool AbrirNoGerente
         {

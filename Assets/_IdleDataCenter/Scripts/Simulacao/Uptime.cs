@@ -73,11 +73,17 @@ namespace IdleDataCenter.Simulacao
         {
             double p = u * 100;
             string s = u >= 0.9999 ? p.ToString("0.000") : u >= 0.99 ? p.ToString("0.00") : p.ToString("0.0");
-            return s.Replace('.', ',') + "%";
+            return (Ingles ? s : s.Replace('.', ',')) + "%";
         }
 
         static readonly System.Globalization.NumberFormatInfo FormatoBr =
             new System.Globalization.NumberFormatInfo { NumberDecimalSeparator = ",", NumberGroupSeparator = "." };
+        static readonly System.Globalization.NumberFormatInfo FormatoEn =
+            new System.Globalization.NumberFormatInfo { NumberDecimalSeparator = ".", NumberGroupSeparator = "," };
+
+        /// <summary>Números no formato inglês (1,234.5 e M/B/T). Quem desenha a tela liga conforme o idioma escolhido.</summary>
+        public static bool Ingles;
+        static System.Globalization.NumberFormatInfo Formato => Ingles ? FormatoEn : FormatoBr;
 
         /// <summary>
         /// Dinheiro em português: todos os dígitos até 1 milhão (16.342, que sobe a cada instante), depois mi, bi, tri...
@@ -86,15 +92,15 @@ namespace IdleDataCenter.Simulacao
         public static string FormatarDinheiro(double v)
         {
             if (v < 0) return "-" + FormatarDinheiro(-v);
-            if (v < 10 && v % 1 != 0) return (Math.Floor(v * 10) / 10).ToString("0.#", FormatoBr);
-            if (v < 1e6) return Math.Floor(v).ToString("#,0", FormatoBr);
-            string[] sufixos = { " mi", " bi", " tri", " quatri", " quint" };
+            if (v < 10 && v % 1 != 0) return (Math.Floor(v * 10) / 10).ToString("0.#", Formato);
+            if (v < 1e6) return Math.Floor(v).ToString("#,0", Formato);
+            string[] sufixos = Ingles ? new[] { " M", " B", " T", " Qa", " Qi" } : new[] { " mi", " bi", " tri", " quatri", " quint" };
             int i = 0;
             v /= 1e6;
             while (v >= 1000 && i < sufixos.Length - 1) { v /= 1000; i++; }
             int casas = v < 10 ? 2 : v < 100 ? 1 : 0;
             double p = Math.Pow(10, casas);
-            return (Math.Floor(v * p) / p).ToString(casas == 2 ? "0.00" : casas == 1 ? "0.0" : "0", FormatoBr) + sufixos[i];
+            return (Math.Floor(v * p) / p).ToString(casas == 2 ? "0.00" : casas == 1 ? "0.0" : "0", Formato) + sufixos[i];
         }
     }
 }

@@ -46,7 +46,7 @@ namespace IdleDataCenter
         static string G(params string[] linhas) => string.Concat(linhas);
 
         /// <summary>Largura em pixels que um texto ocupa (3 px por letra + 1 de espaço).</summary>
-        public static int Largura(string texto) => Mathf.Max(0, Normalizar(texto).Length * 4 - 1);
+        public static int Largura(string texto) => Mathf.Max(0, Normalizar(Idiomas.T(texto)).Length * 4 - 1);
 
         /// <summary>
         /// Tamanho dos textos "ampliados" da faixa em relação à arte da faixa (a Faixa atualiza todo quadro).
@@ -97,7 +97,7 @@ namespace IdleDataCenter
 
         public void Definir(string texto)
         {
-            texto = Normalizar(texto);
+            texto = Normalizar(Idiomas.T(texto));   // traduz antes: a tabela tem os acentos
             if (texto == atual) return;
             atual = texto;
             int w = Mathf.Max(1, texto.Length * 4 - 1), h = 5;
