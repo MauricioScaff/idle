@@ -1705,5 +1705,18 @@ namespace IdleDataCenter.Testes
             }
             Assert.IsTrue(e.TemConquista("terminal"));
         }
+        [Test]
+        public void DinheiroEmPortuguesComTodosOsDigitosAteUmMilhao()
+        {
+            Assert.AreEqual("0", Economia.FormatarDinheiro(0));
+            Assert.AreEqual("2,5", Economia.FormatarDinheiro(2.56));
+            Assert.AreEqual("16.342", Economia.FormatarDinheiro(16342.9));
+            Assert.AreEqual("999.999", Economia.FormatarDinheiro(999999.99));
+            Assert.AreEqual("1,23 mi", Economia.FormatarDinheiro(1239000));
+            Assert.AreEqual("45,6 bi", Economia.FormatarDinheiro(45.69e9));
+            Assert.AreEqual("600 bi", Economia.FormatarDinheiro(600e9));
+            Assert.AreEqual("-1.500", Economia.FormatarDinheiro(-1500));
+        }
+
     }
 }

@@ -455,13 +455,7 @@ namespace IdleDataCenter
 
         void OnApplicationQuit() => Salvamento.Salvar(economia.Estado);
 
-        public static string Formatar(double v)
-        {
-            if (v < 1000) return v < 10 && v % 1 != 0 ? v.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) : ((long)v).ToString();
-            string[] sufixos = { "K", "M", "B", "T" };
-            int i = -1;
-            while (v >= 1000 && i < sufixos.Length - 1) { v /= 1000; i++; }
-            return v.ToString(v < 10 ? "0.0" : "0", System.Globalization.CultureInfo.InvariantCulture) + sufixos[i];
-        }
+        /// <summary>Dinheiro em português (ver Economia.FormatarDinheiro): R$ 16.342, R$ 1,23 mi, R$ 45,6 bi.</summary>
+        public static string Formatar(double v) => Economia.FormatarDinheiro(v);
     }
 }

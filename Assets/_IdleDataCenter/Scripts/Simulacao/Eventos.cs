@@ -176,8 +176,7 @@ namespace IdleDataCenter.Simulacao
             }
         }
 
-        static string Formatar(double v) =>
-            v >= 1e9 ? (v / 1e9).ToString("0.#") + " bi" : v >= 1e6 ? (v / 1e6).ToString("0.#") + " mi" : v >= 1e3 ? (v / 1e3).ToString("0.#") + " mil" : v.ToString("0");
+        static string Formatar(double v) => FormatarDinheiro(v);
 
         void AvancarEvento(double segundos)
         {

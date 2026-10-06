@@ -75,5 +75,26 @@ namespace IdleDataCenter.Simulacao
             string s = u >= 0.9999 ? p.ToString("0.000") : u >= 0.99 ? p.ToString("0.00") : p.ToString("0.0");
             return s.Replace('.', ',') + "%";
         }
+
+        static readonly System.Globalization.NumberFormatInfo FormatoBr =
+            new System.Globalization.NumberFormatInfo { NumberDecimalSeparator = ",", NumberGroupSeparator = "." };
+
+        /// <summary>
+        /// Dinheiro em português: todos os dígitos até 1 milhão (16.342, que sobe a cada instante), depois mi, bi, tri...
+        /// com três algarismos (1,23 mi; 45,6 bi; 600 bi). Corta em vez de arredondar: nunca mostra mais do que tem.
+        /// </summary>
+        public static string FormatarDinheiro(double v)
+        {
+            if (v < 0) return "-" + FormatarDinheiro(-v);
+            if (v < 10 && v % 1 != 0) return (Math.Floor(v * 10) / 10).ToString("0.#", FormatoBr);
+            if (v < 1e6) return Math.Floor(v).ToString("#,0", FormatoBr);
+            string[] sufixos = { " mi", " bi", " tri", " quatri", " quint" };
+            int i = 0;
+            v /= 1e6;
+            while (v >= 1000 && i < sufixos.Length - 1) { v /= 1000; i++; }
+            int casas = v < 10 ? 2 : v < 100 ? 1 : 0;
+            double p = Math.Pow(10, casas);
+            return (Math.Floor(v * p) / p).ToString(casas == 2 ? "0.00" : casas == 1 ? "0.0" : "0", FormatoBr) + sufixos[i];
+        }
     }
 }

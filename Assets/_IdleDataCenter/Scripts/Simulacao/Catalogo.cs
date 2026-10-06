@@ -258,7 +258,7 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.Servidores, Alvo = 3, Texto = "Ter 3 servidores" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 20000, Texto = "Faturar R$ 20K" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 20000, Texto = "Faturar R$ 20 mil" },
                     new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 8, Texto = "Resolver 8 incidentes" },
                 },
             },
@@ -268,7 +268,7 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.ServidoresRack, Alvo = VagasNoRack, Texto = "Encher o rack" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 1200000, Texto = "Faturar R$ 1.2M" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 1200000, Texto = "Faturar R$ 1,2 mi" },
                     new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 60, Texto = "Resolver 60 incidentes" },
                 },
             },
@@ -279,7 +279,7 @@ namespace IdleDataCenter.Simulacao
                 {
                     new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 1, Texto = "Restaurar um backup" },
                     new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 3, Texto = "3 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 30000000, Texto = "Faturar R$ 30M" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 30000000, Texto = "Faturar R$ 30 mi" },
                 },
             },
             new CargoDef
@@ -289,7 +289,7 @@ namespace IdleDataCenter.Simulacao
                 {
                     new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 7, Texto = "7 automações ativas" },
                     new MetaDef { Tipo = TipoMeta.HostsContainers, Alvo = 4, Texto = "4 hosts de containers" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 1000000000, Texto = "Faturar R$ 1B" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 1000000000, Texto = "Faturar R$ 1 bi" },
                 },
             },
             new CargoDef
@@ -299,7 +299,7 @@ namespace IdleDataCenter.Simulacao
                 {
                     new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 5, Texto = "Superar 5 picos" },
                     new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 10, Texto = "10 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 4000000000, Texto = "Faturar R$ 4B" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 4000000000, Texto = "Faturar R$ 4 bi" },
                 },
             },
             new CargoDef
@@ -309,7 +309,7 @@ namespace IdleDataCenter.Simulacao
                 {
                     new MetaDef { Tipo = TipoMeta.Datacenters, Alvo = 4, Texto = "Ter 4 datacenters" },
                     new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 12, Texto = "12 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 40000000000, Texto = "Faturar R$ 40B" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 40000000000, Texto = "Faturar R$ 40 bi" },
                 },
             },
             // o último cargo: as "metas" do CTO são as do IPO (abrir o capital), o fim da carreira
@@ -320,7 +320,7 @@ namespace IdleDataCenter.Simulacao
                 {
                     new MetaDef { Tipo = TipoMeta.Regioes, Alvo = 4, Texto = "Estar em 4 regiões" },
                     new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 15, Texto = "15 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 600000000000, Texto = "Faturar R$ 600B" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 600000000000, Texto = "Faturar R$ 600 bi" },
                 },
             },
         };
