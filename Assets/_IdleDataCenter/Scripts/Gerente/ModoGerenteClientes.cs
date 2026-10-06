@@ -114,7 +114,7 @@ namespace IdleDataCenter.Gerente
                 modal.x + 28, modal.y + 110, IsoGui.Muted, 2);
 
             const int colunas = 3, porPagina = 6;
-            float largura = (modal.width - 56 - (colunas - 1) * 12) / colunas, altura = 244;
+            float largura = (modal.width - 56 - (colunas - 1) * 12) / colunas, altura = 250;
             int vagas = Mathf.Max(clientes.Count, Mathf.Min(E.CapacidadeDeClientes, porPagina));
             int paginas = Mathf.Max(1, (vagas + porPagina - 1) / porPagina);
             pagina = Mathf.Clamp(pagina, 0, paginas - 1);
@@ -151,16 +151,14 @@ namespace IdleDataCenter.Gerente
             string bonus = "+" + Numero(Mathf.Round((float)(E.BonusDoCliente(c) * 100))) + "%";
             ui.Texto(bonus, r.xMax - 12 - ui.Largura(bonus, 2), r.y + 134, IsoGui.Verde, 2);
             ui.Barra(new Rect(r.x + 12, r.y + 152, r.width - 24, 14), c.satisfacao / 100, CorDaSatisfacao(c.satisfacao));
-            string sat = "Satisfação " + Mathf.RoundToInt((float)c.satisfacao);
-            ui.Texto(sat, r.x + 18, r.y + 155, IsoGui.Branco, 1);
             if (c.porte < Catalogo.PorteMaximo) ui.Barra(new Rect(r.x + 12, r.y + 170, r.width - 24, 8), c.crescimento, IsoGui.Cyan);
 
-            float y = r.y + 186;
+            float y = r.y + 184;
             if (pedido)
             {
                 var linhas = QuebrarLinha(E.TextoDoPedido(c), r.width - 24, 2);
                 for (int k = 0; k < linhas.Count && k < 2; k++) ui.Texto(linhas[k].Trim(), r.x + 12, y + k * 18, IsoGui.Laranja, 2);
-                var b = new Rect(r.x + 12, r.yMax - 30, r.width - 24, 22);
+                var b = new Rect(r.x + 12, r.yMax - 28, r.width - 24, 22);
                 var item = string.IsNullOrEmpty(c.pedidoItem) ? null : Catalogo.Buscar(c.pedidoItem);
                 string prazo = Relogio(c.pedidoRestante);
                 if (item != null && !E.NoMaximo(item.Id))
