@@ -34,8 +34,8 @@ namespace IdleDataCenter.Gerente
         /// <summary>Uma por cargo: o DevOps tem a sua (mesma planta da sala de racks, outra decoração); do SRE em diante, o data center.</summary>
         static readonly Ilustracao[] Ilustracoes =
         {
-            new Ilustracao { nome = "armario", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },   // Freelancer (provisório: o quarto vem na etapa da arte)
-            new Ilustracao { nome = "armario", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },
+            new Ilustracao { nome = "armario", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },      // Freelancer: o quarto em casa
+            new Ilustracao { nome = "escritorio", equip = "", fundo = new Vector2(279.5f, 156), esquerda = new Vector2(55, 272), direita = new Vector2(504, 272), casas = 7 },   // Técnico: o escritório da empresa
             new Ilustracao { nome = "salinha_hd", equip = "_g", fundo = new Vector2(244, 140), esquerda = new Vector2(20, 252), direita = new Vector2(468, 252), casas = 7 },
             new Ilustracao { nome = "racks_hd", equip = "_g", escala = 2, fundo = new Vector2(338, 152), esquerda = new Vector2(18, 312), direita = new Vector2(658, 312), casas = 10 },
             new Ilustracao { nome = "devops_hd", equip = "_g", escala = 2, fundo = new Vector2(338, 152), esquerda = new Vector2(18, 312), direita = new Vector2(658, 312), casas = 10 },
@@ -205,7 +205,7 @@ namespace IdleDataCenter.Gerente
         void DesenharIlustrada()
         {
             areaAtual = null;
-            DesenharCena(() => { if (E.Cargo <= Catalogo.CargoTecnico) ArmarioIlustrado(); else if (E.Cargo == Catalogo.CargoSysadmin) SalinhaIlustrada(); else SalaGrandeIlustrada(); });
+            DesenharCena(() => { if (E.Cargo == Catalogo.CargoFreelancer) QuartoIlustrado(); else if (E.Cargo == Catalogo.CargoTecnico) EscritorioIlustrado(); else if (E.Cargo == Catalogo.CargoSysadmin) SalinhaIlustrada(); else SalaGrandeIlustrada(); });
         }
 
         /// <summary>Uma das áreas atrás das portas (só existem da sala de racks em diante).</summary>
@@ -226,12 +226,13 @@ namespace IdleDataCenter.Gerente
 
             tecnicoConsertando = false;
             pontosDeRonda.Clear();
+            lugaresDeChamado.Clear();
             conteudo();
             PessoasIlustradas();
             fila.Sort((a, b) => a.prof.CompareTo(b.prof));
             foreach (var (_, desenhar) in fila) desenhar();
             FaiscasDaCompraIlustrada();
-            ChamadoIlustrado();
+            if (lugaresDeChamado.Count > 0) BaloesDeChamado(); else ChamadoIlustrado();
             DesenharDestaque();
             tela.Aplicar();
         }
@@ -319,7 +320,7 @@ namespace IdleDataCenter.Gerente
 
         void ArmarioIlustrado()
         {
-            TorresNaParede(61, 5, true);
+            TorresNaParede(61, 5, false);   // no quarto o "+" é do site (o QuartoIlustrado marca)
             Alvos.Add(new Alvo { Area = new RectInt(244, 128, 90, 108), Tipo = "equipamento", Prof = -20, Nome = "Mesa do técnico" });   // mesa da ilustração (atrás de tudo que fica em cima dela)
             Caneca("caneca", new Vector2Int(305, 183));
             BackupNaMesa(new Vector2Int(294, 182), new Vector2Int(262, 170));
@@ -679,6 +680,7 @@ namespace IdleDataCenter.Gerente
             public float paradaAte;                // até quando fica parada no destino
             public bool naMesa;                    // técnico: está trabalhando na mesa
             public bool consertando;
+            public bool atendendo;                 // técnico: indo até um chamado que você clicou
             public float fase;
             public float andado;                   // pixels andados: escolhe o quadro do passo (o pé não patina)
         }
@@ -697,13 +699,14 @@ namespace IdleDataCenter.Gerente
 
         /// <summary>Mesa de trabalho do técnico em cada sala (em casas) e para onde ele olha nela.</summary>
         (Vector2 lugar, string olhar) Mesa =>
-            E.Cargo <= Catalogo.CargoTecnico ? (new Vector2(2.0f, 1.55f), "ne")     // ao lado da cadeira, virado para o monitor
+            E.Cargo == Catalogo.CargoFreelancer ? (new Vector2(2.0f, 1.55f), "ne")     // ao lado da cadeira, virado para o monitor
+            : E.Cargo == Catalogo.CargoTecnico ? LugarNaBancada   // no escritório, o lugar dele é a bancada da TI
             : E.Cargo == Catalogo.CargoSysadmin ? (new Vector2(4.6f, 1.3f), "ne")
             : E.Cargo <= Catalogo.CargoDevOps ? (new Vector2(1.7f, 7.4f), "nw")
             : (new Vector2(2.4f, 9.6f), "nw");   // na frente do NOC, fora das fileiras
 
         /// <summary>Velocidade de quem anda, em casas por segundo (casas menores nas salas grandes).</summary>
-        float Velocidade => E.Cargo <= Catalogo.CargoTecnico ? 0.7f : 0.85f;
+        float Velocidade => E.Cargo == Catalogo.CargoFreelancer ? 0.7f : 0.85f;
 
         /// <summary>Quantos pixels a pessoa anda num ciclo inteiro da caminhada (dois passos).</summary>
         const float PassadaEmPixels = 40;
@@ -755,6 +758,7 @@ namespace IdleDataCenter.Gerente
         void Rota(Trabalhador p, Vector2 destino)
         {
             p.caminho.Clear();
+            if (areaAtual == null && E.Cargo == Catalogo.CargoTecnico) { RotaNoEscritorio(p, destino); return; }
             if (areaAtual == null && E.Cargo >= Catalogo.CargoAnalista)
             {
                 // salas grandes: troca de corredor pelo corredor ao lado das fileiras
@@ -764,7 +768,7 @@ namespace IdleDataCenter.Gerente
             else
             {
                 // salas pequenas: pela passagem da frente
-                float frente = E.Cargo <= Catalogo.CargoTecnico ? 2.9f : areaAtual != null ? 2.6f : 2.7f;
+                float frente = E.Cargo == Catalogo.CargoFreelancer ? 2.9f : areaAtual != null ? 2.6f : 2.7f;
                 if (Mathf.Abs(p.pos.x - destino.x) > 0.05f) { p.caminho.Add(new Vector2(p.pos.x, frente)); p.caminho.Add(new Vector2(destino.x, frente)); }
             }
             p.caminho.Add(destino);
@@ -819,6 +823,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>O técnico: conserta o que quebrou; senão trabalha na mesa e de vez em quando vai olhar um equipamento.</summary>
         void PensarTecnico(Trabalhador p)
         {
+            if (!tecnicoConsertando && AtenderNoLugar(p)) return;
             if (tecnicoConsertando)
             {
                 // indo para outro conserto (ou ainda não foi): refaz o caminho
@@ -1014,7 +1019,9 @@ namespace IdleDataCenter.Gerente
         {
             switch (id)
             {
-                case Catalogo.Servidor: case Catalogo.Ssd: case Catalogo.Ventoinha: case Catalogo.PastaTermica: return pontoDaTorre;
+                case Catalogo.Servidor: case Catalogo.Ssd: case Catalogo.Ventoinha: case Catalogo.PastaTermica: case Catalogo.SiteCliente: case Catalogo.Hospedagem: return pontoDaTorre;
+                case Catalogo.KitFerramentas: case Catalogo.CartaoDeVisita: return pontoDaBancada;
+                case Catalogo.Funcionario: return pontoDoFuncionario;
                 case Catalogo.Rack: case Catalogo.Servidor1U: case Catalogo.CabosOrganizados: case Catalogo.Firmware: return pontoDoRack;
                 case Catalogo.FiltroDeLinha: return pontoDoFiltro + new Vector2Int(0, -6);
                 case Catalogo.Ventilador: return pontoDoVentilador;

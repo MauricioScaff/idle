@@ -222,7 +222,7 @@ namespace IdleDataCenter.Simulacao
                     saida.Add(new LinhaTerminal("", TipoLinha.Sair));
                     return saida;
                 case "whoami":
-                    saida.Add(new LinhaTerminal(UsuarioDoTerminal + " (" + CargoAtual.Nome + ")"));
+                    saida.Add(new LinhaTerminal(UsuarioDoTerminal + " (" + NomeDoCargo + ")"));
                     return saida;
                 case "uptime":
                     saida.Add(new LinhaTerminal("uptime da última hora: " + FormatarUptime(Uptime) + " · " + ContagemServidores + " servidores"));
@@ -266,7 +266,7 @@ namespace IdleDataCenter.Simulacao
                     saida.Add(new LinhaTerminal("Você saiu do vim. Coloque isso no currículo.", TipoLinha.Ok));
                     return saida;
                 case "neofetch":
-                    saida.Add(new LinhaTerminal(UsuarioDoTerminal + "@" + MaquinaDoTerminal + " · " + CargoAtual.Nome + " · " + CargoAtual.Lugar, TipoLinha.Info));
+                    saida.Add(new LinhaTerminal(UsuarioDoTerminal + "@" + MaquinaDoTerminal + " · " + NomeDoCargo + " · " + CargoAtual.Lugar, TipoLinha.Info));
                     saida.Add(new LinhaTerminal("Servidores: " + ContagemServidores + " · Uptime: " + FormatarUptime(Uptime) + " · Automações: " + AutomacoesAtivas, TipoLinha.Info));
                     return saida;
             }

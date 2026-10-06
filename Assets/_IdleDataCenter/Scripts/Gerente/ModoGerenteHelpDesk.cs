@@ -54,7 +54,7 @@ namespace IdleDataCenter.Gerente
                 // a equipe trabalhando nele: barrinha embaixo
                 if (c == equipe) ui.Ret(new Rect(linha.x + 4, linha.yMax - 3, (linha.width - 4) * Mathf.Clamp01((float)E.ProgressoDaEquipe), 2), IsoGui.Verde);
                 if (sobre) dicaDoPainel = "Atender: paga " + Dinheiro(E.BonusDe(c.prioridade)) + (c == equipe ? " (a equipe já está nele)" : "");
-                if (Livre && GUI.Button(linha, GUIContent.none, GUIStyle.none)) { AtenderChamado(new Vector2(linha.center.x, linha.y), i); Sons.Moeda(); }
+                if (Livre && GUI.Button(linha, GUIContent.none, GUIStyle.none)) { salaIso.IrAtender(i); AtenderChamado(new Vector2(linha.center.x, linha.y), i); Sons.Moeda(); }
             }
             if (dicaDoPainel != null)
             {

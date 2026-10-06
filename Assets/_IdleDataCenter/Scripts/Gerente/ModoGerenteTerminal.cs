@@ -28,6 +28,7 @@ namespace IdleDataCenter.Gerente
         readonly List<string> historicoDoTerminal = new List<string>();
         readonly HashSet<string> problemasNoLog = new HashSet<string>();
         readonly System.Random sorteioDoLog = new System.Random();
+        bool atenderDeTeste;
 
         void IniciarTerminal()
         {
@@ -38,6 +39,7 @@ namespace IdleDataCenter.Gerente
             // teste: -terminal abre; -terminal=<comando> abre e digita o comando 4 s depois (dá tempo do sintoma aparecer)
             foreach (var arg in Environment.GetCommandLineArgs())
             {
+                if (arg == "-atender") atenderDeTeste = true;   // teste: atende o primeiro chamado 3 s depois (o técnico vai até lá)
                 if (!arg.StartsWith("-terminal")) continue;
                 AbrirTerminal();
                 if (arg.StartsWith("-terminal=")) comandoDeTeste = arg.Substring(10).Replace('_', ' ');   // _ no lugar dos espaços
@@ -59,6 +61,7 @@ namespace IdleDataCenter.Gerente
         {
             float agora = Time.unscaledTime;
             if (comandoDeTeste != null && agora > 4) { entrada = comandoDeTeste; comandoDeTeste = null; Enviar(); }
+            if (atenderDeTeste && agora > 3 && E.Chamados.Count > 0) { atenderDeTeste = false; salaIso.IrAtender(0); AtenderChamado(new Vector2(W / 2, H / 2), 0); }
             if (agora >= proximaChecagemDoTerminal)
             {
                 proximaChecagemDoTerminal = agora + 0.25f;

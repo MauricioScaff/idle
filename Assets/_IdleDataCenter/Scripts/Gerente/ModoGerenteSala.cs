@@ -287,6 +287,7 @@ namespace IdleDataCenter.Gerente
                 if (E.DatacenterSemEnergia == dc) { faixa.Religar(); Flutuar("Energia de volta", pos, IsoGui.Verde); return; }
             }
             else if (tipo == "chamado") { AtenderChamado(pos); return; }
+            else if (tipo.StartsWith("chamado:")) { int i = int.Parse(tipo.Substring(8)); salaIso.IrAtender(i); AtenderChamado(pos, i); return; }
             else if (tipo == "porta:dados") { vistaEscolhida = SalaIso.Vista.Dados; Sons.Tique(); Notificar("Dados e backup: storage, fitas e o DR. A porta ou o VOLTAR leva de volta para a sala."); return; }
             else if (tipo == "porta:rede") { vistaEscolhida = SalaIso.Vista.Rede; Sons.Tique(); Notificar("Rede e segurança: links, segurança e o SOC. A porta ou o VOLTAR leva de volta para a sala."); return; }
             else if (tipo == "porta:sala") { vistaEscolhida = SalaIso.Vista.Sala; Sons.Tique(); return; }
@@ -313,7 +314,7 @@ namespace IdleDataCenter.Gerente
 
             // cargo e medidores
             ui.Caixa(new Rect(1090, 20, 330, 104));
-            string cargo = E.CargoAtual.Nome;
+            string cargo = E.NomeDoCargo;
             ui.Texto(cargo, 1110, 34, Ouro, ui.Largura(cargo, 3) <= 290 ? 3 : 2);
             // uptime da última hora; com três noves ou mais vira SLA e paga bônus
             var sla = E.Sla;

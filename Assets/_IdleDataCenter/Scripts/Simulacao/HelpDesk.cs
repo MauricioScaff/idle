@@ -143,7 +143,8 @@ namespace IdleDataCenter.Simulacao
             if (Estado.proximoChamado <= 0)
             {
                 Estado.proximoChamado = (Catalogo.IntervaloChamadoMin + sorteio.NextDouble() * (Catalogo.IntervaloChamadoMax - Catalogo.IntervaloChamadoMin))
-                                        * (1 - Nivel(Catalogo.CartaoDeVisita) * Catalogo.MaisPcsPorCartao);
+                                        * (1 - Nivel(Catalogo.CartaoDeVisita) * Catalogo.MaisPcsPorCartao)
+                                        * (1 - Nivel(Catalogo.Funcionario) * Catalogo.MaisChamadosPorFuncionario);
                 AbrirChamado();
             }
         }

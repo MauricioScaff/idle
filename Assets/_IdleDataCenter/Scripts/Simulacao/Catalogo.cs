@@ -110,6 +110,10 @@ namespace IdleDataCenter.Simulacao
         public const string Gpu = "gpu";
         // Freelancer: sites dos clientes na torre velha e a bancada de consertos
         public const string SiteCliente = "site", Hospedagem = "hospedagem", KitFerramentas = "kit", CartaoDeVisita = "cartao";
+        // Técnico: o escritório da empresa cresce (mais gente, mais chamados)
+        public const string Funcionario = "funcionario";
+        public const int FuncionariosNoComeco = 2, MesasNoEscritorio = 4;
+        public const double MaisChamadosPorFuncionario = 0.15;   // cada contratado: chamados chegam 15% mais rápido
         // melhorias simples (multiplicam a renda de um gerador, ou dão energia/frio)
         public const string FiltroDeLinha = "filtro", Ventilador = "ventilador", PastaTermica = "pasta";
         public const string CabosOrganizados = "cabos", Firmware = "firmware", PisoElevado = "piso";
@@ -360,6 +364,7 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = HdExterno, Nome = "HD externo", Efeito = "Backup: disco queimado perde metade, +2% renda", Cargo = Catalogo.CargoTecnico, NivelMaximo = 1, CustoBase = 9000, FatorCusto = 1 },
             new MelhoriaDef { Id = Antivirus, Nome = "Antivírus", Efeito = "Segurança: bloqueia metade dos ataques", Cargo = Catalogo.CargoTecnico, NivelMaximo = 1, CustoBase = 4800, FatorCusto = 1 },
             new MelhoriaDef { Id = Estagiario, Nome = "Estagiário", Efeito = "Conserto em 15s", Cargo = Catalogo.CargoTecnico, NivelMaximo = 1, CustoBase = 15000, FatorCusto = 1 },
+            new MelhoriaDef { Id = Funcionario, Nome = "Contratar funcionário", Efeito = "+1 pessoa no escritório: mais chamados", Cargo = Catalogo.CargoTecnico, NivelMaximo = MesasNoEscritorio - FuncionariosNoComeco, CustoBase = 12000, FatorCusto = 2.5 },
 
             // Sysadmin: a salinha com o primeiro rack.
             new MelhoriaDef { Id = Rack, Nome = "Rack 42U", Efeito = "Vagas para servidores 1U", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 1, CustoBase = 48000, FatorCusto = 1 },

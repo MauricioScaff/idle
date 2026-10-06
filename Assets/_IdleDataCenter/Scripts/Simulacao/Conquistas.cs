@@ -50,7 +50,7 @@ namespace IdleDataCenter.Simulacao
             new ConquistaDef { Id = "zerotrust", Nome = "Confiar em ninguém", Descricao = "Comprar o Zero Trust", Condicao = e => e.Nivel(ZeroTrust) > 0 },
             new ConquistaDef { Id = "contrato", Nome = "Assinado e entregue", Descricao = "Atender um pedido de cliente", Condicao = e => e.Estado.pedidosAtendidos > 0 || e.Estado.contratosCumpridos > 0 },
             new ConquistaDef { Id = "gigante", Nome = "Cresceu com a gente", Descricao = "Um cliente chegou a Gigante", Condicao = e => e.Clientes.Exists(c => c.porte >= PorteMaximo) },
-            new ConquistaDef { Id = "ipo", Nome = "Toca o sino", Descricao = "Abrir o capital", Condicao = e => e.IpoFeito },
+            new ConquistaDef { Id = "ipo", Nome = "Toca o sino", Descricao = "Abrir o capital e virar CEO", Condicao = e => e.IpoFeito },
             new ConquistaDef { Id = "terminal", Nome = "Linha de comando", Descricao = "Resolver " + ComandosParaConquista + " problemas no terminal", Condicao = e => e.Estado.comandosCertos >= ComandosParaConquista },
             new ConquistaDef { Id = "terminal100", Nome = "Quem precisa de mouse?", Descricao = "Resolver " + ComandosParaConquista2 + " problemas no terminal", Condicao = e => e.Estado.comandosCertos >= ComandosParaConquista2 },
             new ConquistaDef { Id = ConquistaExit, Nome = "Exit", Descricao = "Vender uma empresa" },

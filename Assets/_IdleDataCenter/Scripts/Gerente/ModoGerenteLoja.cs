@@ -55,7 +55,7 @@ namespace IdleDataCenter.Gerente
                 case "Seguranca": return Catalogo.LinhaDeSeguranca;
                 case "Rede": return new[] { Catalogo.Link, Catalogo.Link10G };
                 case "NOC": return new[] { Catalogo.Observabilidade };
-                case "Equipe": return new[] { Catalogo.Estagiario, Catalogo.HelpDesk, Catalogo.ServiceDesk };
+                case "Equipe": return new[] { Catalogo.Funcionario, Catalogo.Estagiario, Catalogo.HelpDesk, Catalogo.ServiceDesk };
                 case "Campus": return new[] { Catalogo.Datacenter, Catalogo.Fibra, Catalogo.Cdn, Catalogo.Gerador };
                 case "Mundo": return new[] { Catalogo.Regiao, Catalogo.CaboSubmarino, Catalogo.Renovavel, Catalogo.Gpu };
                 default:
@@ -243,7 +243,7 @@ namespace IdleDataCenter.Gerente
         void Carreira(Rect modal)
         {
             var metas = E.CargoAtual.MetasParaPromocao;
-            ui.Texto("Cargo atual: " + E.CargoAtual.Nome, modal.x + 29, modal.y + 109, IsoGui.Cyan, 3);
+            ui.Texto("Cargo atual: " + E.NomeDoCargo, modal.x + 29, modal.y + 109, IsoGui.Cyan, 3);
             if (E.IpoFeito)
             {
                 ui.Texto("A empresa está na bolsa. Você chegou ao topo da carreira.", modal.x + 29, modal.y + 150, IsoGui.Cor("ffd65c"), 2);

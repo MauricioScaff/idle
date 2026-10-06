@@ -98,7 +98,7 @@ namespace IdleDataCenter.Testes
         public void LojaMostraSoAsMelhoriasDoCargo()
         {
             var e = Nova();
-            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.HdExterno, Catalogo.Antivirus, Catalogo.Estagiario },
+            CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.HdExterno, Catalogo.Antivirus, Catalogo.Estagiario, Catalogo.Funcionario },
                 System.Linq.Enumerable.Select(e.MelhoriasDoCargo(), m => m.Id));
             e.Estado.cargo = Catalogo.CargoSysadmin;
             Assert.AreEqual(9, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()), "o analista de help desk entra no Sysadmin");
@@ -710,11 +710,13 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.Regiao, 3);
             e.Estado.totalGanho = 3600000000000;
             for (int i = 0; i < 15; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
+            Assert.AreEqual("CTO", e.NomeDoCargo);
             Assert.IsTrue(e.PodeFazerIpo);
             bool festa = false;
             e.Ipo += () => festa = true;
             Assert.IsTrue(e.FazerIpo());
             Assert.IsTrue(festa && e.IpoFeito);
+            Assert.AreEqual("CEO", e.NomeDoCargo, "o IPO promove o CTO a CEO");
             Assert.IsFalse(e.PodeFazerIpo, "só uma vez");
         }
 
@@ -898,6 +900,31 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.Promover());
             Assert.AreEqual(Catalogo.CargoTecnico, e.Cargo);
             Assert.AreEqual(R + 5 * Catalogo.ReceitaSite, e.ReceitaPorSegundo, 1e-9, "os sites vêm junto para a empresa");
+        }
+
+        // ---------- Escritório do Técnico ----------
+
+        [Test]
+        public void EscritorioComecaComDoisEContrataAteEncherAsMesas()
+        {
+            Assert.AreEqual(0, Freelancer().Funcionarios, "o freelancer trabalha sozinho");
+            var e = Nova();
+            Assert.AreEqual(Catalogo.FuncionariosNoComeco, e.Funcionarios);
+            DefinirNivel(e, Catalogo.Funcionario, Catalogo.MesasNoEscritorio - Catalogo.FuncionariosNoComeco);
+            Assert.AreEqual(Catalogo.MesasNoEscritorio, e.Funcionarios);
+            Assert.IsTrue(e.NoMaximo(Catalogo.Funcionario), "não cabe mais ninguém nas mesas");
+        }
+
+        [Test]
+        public void MaisGenteNoEscritorioTrazMaisChamados()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Funcionario, 2);
+            e.Estado.proximoChamado = 0.5;
+            e.Avancar(1);
+            Assert.IsTrue(e.TemChamado);
+            double normal = Catalogo.IntervaloChamadoMin + 0.9999 * (Catalogo.IntervaloChamadoMax - Catalogo.IntervaloChamadoMin);
+            Assert.AreEqual(normal * (1 - 2 * Catalogo.MaisChamadosPorFuncionario), e.Estado.proximoChamado, 1e-6);
         }
 
         // ---------- Automações ----------

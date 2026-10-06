@@ -53,7 +53,7 @@ namespace IdleDataCenter.Gerente
                 festaTexto = junto ? "+" + (conquistasJuntas * Catalogo.BonusPorConquista * 100).ToString("0.#") + "% de renda, para sempre. Veja na Carreira." : c.Descricao + ". +0,5% de renda, para sempre.";
                 if (!junto) Sons.Promocao();
             };
-            E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A empresa está na bolsa"; festaTexto = "De técnico de TI num armário a CTO de uma nuvem global."; };
+            E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "CEO!"; festaCargo = "IPO feito: a empresa está na bolsa"; festaTexto = "De freelancer no quarto a CEO de uma nuvem global."; };
             E.Vendeu += c => { vistaEscolhida = SalaIso.Vista.Mundo; festaDesde = Time.unscaledTime; festaTitulo = "Vendida!"; festaCargo = "+" + c + " certificações"; festaTexto = "Uma empresa nova começa no armário, com os bônus."; };
             E.ChamadoApareceu += c => { if (c.prioridade <= 2) { Notificar("Chamado P" + c.prioridade + ": " + c.texto + "! Atenda no painel do help desk, à esquerda.", 6); if (c.prioridade == 1) Sons.Alerta(); } };
             E.EventoComecou += AoComecarEvento;

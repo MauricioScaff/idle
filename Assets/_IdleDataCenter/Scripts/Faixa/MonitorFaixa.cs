@@ -172,7 +172,7 @@ namespace IdleDataCenter
             if (metas.Length == 0)
             {
                 ui.Texto(E.IpoFeito ? "Empresa na bolsa" : "Carreira", x + 12, 82, IsoGui.Muted, 1);
-                ui.Texto(E.CargoAtual.Nome, x + 12, 94, Ouro, 2);
+                ui.Texto(E.NomeDoCargo, x + 12, 94, Ouro, 2);
                 return;
             }
             int feitas = 0;
@@ -185,7 +185,7 @@ namespace IdleDataCenter
             if (proxima == null)
             {
                 ui.Texto("Metas cumpridas", x + 12, 82, IsoGui.Muted, 1);
-                ui.Texto(E.IpoFeito ? "Empresa na bolsa" : E.CargoAtual.Nome, x + 12, 94, Ouro, 2);
+                ui.Texto(E.NomeDoCargo, x + 12, 94, Ouro, 2);
                 return;
             }
             ui.Texto(E.TemProximoCargo ? "Meta para " + Catalogo.Cargos[E.Cargo + 1].Nome : "Meta para o IPO", x + 12, 82, IsoGui.Muted, 1);

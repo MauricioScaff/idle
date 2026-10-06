@@ -215,7 +215,7 @@ namespace IdleDataCenter
             // Cargo e progresso das metas
             var metas = economia.CargoAtual.MetasParaPromocao;
             int feitas = metas.Count(m => economia.Cumprida(m));
-            T(economia.CargoAtual.Nome, Largura - 158, 4, "#fdf6e3", false);
+            T(economia.NomeDoCargo, Largura - 158, 4, "#fdf6e3", false);
             Barra(Largura - 158, 11, 100, 3, metas.Length == 0 ? 1f : feitas / (float)metas.Length, economia.PodePromover ? "#ffd65c" : "#5aa9ff");
             if (metas.Length > 0) T($"{feitas}/{metas.Length} metas", Largura - 54, 10, "#7d82ad", false);
 

@@ -66,10 +66,14 @@ namespace IdleDataCenter.Simulacao
         public double Dinheiro => Estado.dinheiro;
         public int Cargo => Estado.cargo;
         public CargoDef CargoAtual => Catalogo.Cargos[Estado.cargo];
+        /// <summary>O nome do cargo na tela: depois do IPO, o CTO vira CEO (o topo da carreira, sem fase nova).</summary>
+        public string NomeDoCargo => Estado.ipoFeito ? "CEO" : CargoAtual.Nome;
 
         public int Torres => 1 + Nivel(Catalogo.Servidor);
         /// <summary>Sites de clientes que o freelancer hospeda na torre velha (seguem rendendo depois da contratação).</summary>
         public int Sites => Nivel(Catalogo.SiteCliente);
+        /// <summary>Gente trabalhando no escritório (só existe do Técnico em diante: o freelancer trabalha sozinho).</summary>
+        public int Funcionarios => Estado.cargo >= Catalogo.CargoTecnico ? Catalogo.FuncionariosNoComeco + Nivel(Catalogo.Funcionario) : 0;
         public int ServidoresRack => Nivel(Catalogo.Servidor1U);
         public int TotalServidores => Torres + ServidoresRack;
         public bool EhTorre(int servidor) => servidor < Torres;
