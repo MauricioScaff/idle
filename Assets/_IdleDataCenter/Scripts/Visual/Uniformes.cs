@@ -1,3 +1,4 @@
+using IdleDataCenter.Simulacao;
 using UnityEngine;
 
 namespace IdleDataCenter
@@ -19,12 +20,12 @@ namespace IdleDataCenter
         public static Texture2D TexturaDoCargo(string arquivo, string prefixo, int cargo)
         {
             var t = ArteGerada.Textura(arquivo);
-            if (prefixo != "tecnico" || cargo == 0) return t;
+            if (prefixo != "tecnico" || cargo == Catalogo.CargoTecnico) return t;
             // sprites da arte nova (Iso/): só o tronco muda, porque a calça jeans também é azul
             bool novo = arquivo.StartsWith("Iso/");
             float cabeca = novo ? 0.30f : 0.36f, pernas = novo ? 0.45f : 0f;
-            float matiz = cargo == 1 ? MatizSysadmin : cargo == 2 ? MatizAnalista : cargo == 3 ? MatizDevOps : cargo == 4 ? MatizSre : cargo == 5 ? MatizArquiteto : MatizCto;
-            float brilho = cargo == 1 ? 1f : cargo == 2 ? BrilhoAnalista : cargo == 3 ? BrilhoDevOps : cargo == 4 ? BrilhoSre : cargo == 5 ? BrilhoArquiteto : BrilhoCto;
+            float matiz = cargo == Catalogo.CargoSysadmin ? MatizSysadmin : cargo == Catalogo.CargoAnalista ? MatizAnalista : cargo == Catalogo.CargoDevOps ? MatizDevOps : cargo == Catalogo.CargoSre ? MatizSre : cargo == Catalogo.CargoArquiteto ? MatizArquiteto : MatizCto;
+            float brilho = cargo == Catalogo.CargoSysadmin ? 1f : cargo == Catalogo.CargoAnalista ? BrilhoAnalista : cargo == Catalogo.CargoDevOps ? BrilhoDevOps : cargo == Catalogo.CargoSre ? BrilhoSre : cargo == Catalogo.CargoArquiteto ? BrilhoArquiteto : BrilhoCto;
             return ArteGerada.TrocarCorDaRoupa(t, matiz, brilho: brilho, cabeca: cabeca, pernas: pernas);
         }
     }

@@ -98,17 +98,17 @@ namespace IdleDataCenter.Gerente
                 "kernel: [UFW BLOCK] IN=eth0 SRC=185.220.101." + sorteioDoLog.Next(2, 250) + " DPT=22",
                 "smartd: Device /dev/sda, SMART Usage Attribute: 194 Temperature " + Mathf.RoundToInt((float)E.Temperatura + 8) + " C",
             };
-            if (E.Cargo >= 3)
+            if (E.Cargo >= Catalogo.CargoDevOps)
             {
                 opcoes.Add("dockerd: container api-" + n.ToString("x") + " health_status: healthy");
                 opcoes.Add("gitlab-runner: job #" + n + " succeeded (deploy)");
             }
-            if (E.Cargo >= 4)
+            if (E.Cargo >= Catalogo.CargoSre)
             {
                 opcoes.Add("kubelet: Started container web (pod web-" + n.ToString("x") + ")");
                 opcoes.Add("prometheus: alert HighLatency resolved");
             }
-            if (E.Cargo >= 5) opcoes.Add("bgpd: neighbor 200.160.0." + sorteioDoLog.Next(1, 250) + " Up");
+            if (E.Cargo >= Catalogo.CargoArquiteto) opcoes.Add("bgpd: neighbor 200.160.0." + sorteioDoLog.Next(1, 250) + " Up");
             return opcoes[sorteioDoLog.Next(opcoes.Count)];
         }
 

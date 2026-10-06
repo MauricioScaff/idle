@@ -25,7 +25,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Portas das áreas na sala de racks e no data center (as mesmas que o montador desenhou no fundo).</summary>
         void PortasDasAreas()
         {
-            bool dc = E.Cargo >= 4;
+            bool dc = E.Cargo >= Catalogo.CargoSre;
             int altura = dc ? 100 : 98;
             Porta('E', dc ? 3.2f : 3.0f, dc ? 4.7f : 4.3f, altura, "porta:rede", "REDE", ProblemaNaRede ? "Rede e segurança: problema lá dentro!" : "Rede e segurança: entrar", ProblemaNaRede);
             Porta('D', dc ? 2.5f : 2.0f, dc ? 4.0f : 3.3f, altura, "porta:dados", "DADOS", ProblemaNosDados ? "Dados e backup: disco queimou lá dentro!" : "Dados e backup: entrar", ProblemaNosDados);

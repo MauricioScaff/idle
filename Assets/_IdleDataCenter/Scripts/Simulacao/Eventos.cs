@@ -22,21 +22,21 @@ namespace IdleDataCenter.Simulacao
 
         public static readonly IReadOnlyList<EventoDef> Eventos = new[]
         {
-            new EventoDef { Id = EventoCliente, Nome = "Cliente grande", CargoMinimo = 1, Duracao = 20 },
-            new EventoDef { Id = EventoAuditoria, Nome = "Auditoria", CargoMinimo = 2, Duracao = 60 },
-            new EventoDef { Id = EventoInternet, Nome = "Internet caiu", CargoMaximo = 2, Duracao = 60 },
-            new EventoDef { Id = EventoBlackFriday, Nome = "Viralizou", CargoMinimo = 3, Duracao = 120 },   // (o pico "Black Friday" é do SRE)
+            new EventoDef { Id = EventoCliente, Nome = "Cliente grande", CargoMinimo = CargoSysadmin, Duracao = 20 },
+            new EventoDef { Id = EventoAuditoria, Nome = "Auditoria", CargoMinimo = CargoAnalista, Duracao = 60 },
+            new EventoDef { Id = EventoInternet, Nome = "Internet caiu", CargoMaximo = CargoAnalista, Duracao = 60 },
+            new EventoDef { Id = EventoBlackFriday, Nome = "Viralizou", CargoMinimo = CargoDevOps, Duracao = 120 },   // (o pico "Black Friday" é do SRE)
             new EventoDef { Id = EventoCafeAcabou, Nome = "O café acabou", Duracao = 180 },
             new EventoDef { Id = AtaquePhishing, Nome = "Phishing", Duracao = 1, Ataque = true },
-            new EventoDef { Id = AtaqueMalware, Nome = "Malware", CargoMaximo = 3, Duracao = 90, Ataque = true },
-            new EventoDef { Id = AtaqueRansomware, Nome = "Ransomware", CargoMinimo = 2, Duracao = 180, Ataque = true },
-            new EventoDef { Id = AtaqueDdos, Nome = "DDoS", CargoMinimo = 4, Duracao = 90, Ataque = true },
-            new EventoDef { Id = EventoSsl, Nome = "SSL expirou", CargoMinimo = 1, Duracao = 120 },
-            new EventoDef { Id = EventoDns, Nome = "É sempre o DNS", CargoMinimo = 1, Duracao = 90 },
-            new EventoDef { Id = EventoFaxineira, Nome = "Rack desligado", CargoMinimo = 1, CargoMaximo = 3, Duracao = 90 },
-            new EventoDef { Id = EventoRato, Nome = "Rato no cabo", CargoMaximo = 2, Duracao = 1 },
-            new EventoDef { Id = EventoDeploySexta, Nome = "Deploy na sexta", CargoMinimo = 3, Duracao = 20 },
-            new EventoDef { Id = EventoReuniao, Nome = "Reunião", CargoMinimo = 3, Duracao = 120 },
+            new EventoDef { Id = AtaqueMalware, Nome = "Malware", CargoMaximo = CargoDevOps, Duracao = 90, Ataque = true },
+            new EventoDef { Id = AtaqueRansomware, Nome = "Ransomware", CargoMinimo = CargoAnalista, Duracao = 180, Ataque = true },
+            new EventoDef { Id = AtaqueDdos, Nome = "DDoS", CargoMinimo = CargoSre, Duracao = 90, Ataque = true },
+            new EventoDef { Id = EventoSsl, Nome = "SSL expirou", CargoMinimo = CargoSysadmin, Duracao = 120 },
+            new EventoDef { Id = EventoDns, Nome = "É sempre o DNS", CargoMinimo = CargoSysadmin, Duracao = 90 },
+            new EventoDef { Id = EventoFaxineira, Nome = "Rack desligado", CargoMinimo = CargoSysadmin, CargoMaximo = CargoDevOps, Duracao = 90 },
+            new EventoDef { Id = EventoRato, Nome = "Rato no cabo", CargoMaximo = CargoAnalista, Duracao = 1 },
+            new EventoDef { Id = EventoDeploySexta, Nome = "Deploy na sexta", CargoMinimo = CargoDevOps, Duracao = 20 },
+            new EventoDef { Id = EventoReuniao, Nome = "Reunião", CargoMinimo = CargoDevOps, Duracao = 120 },
         };
 
         public static EventoDef BuscarEvento(string id)

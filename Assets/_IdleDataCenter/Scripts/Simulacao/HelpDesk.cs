@@ -132,7 +132,7 @@ namespace IdleDataCenter.Simulacao
         int SortearPrioridade()
         {
             double r = sorteio.NextDouble();
-            double[] pesos = Estado.cargo == 0 ? new[] { 0, 0.15, 0.45, 0.40 } : Estado.cargo == 1 ? new[] { 0.05, 0.20, 0.40, 0.35 } : new[] { 0.12, 0.23, 0.35, 0.30 };
+            double[] pesos = Estado.cargo == Catalogo.CargoTecnico ? new[] { 0, 0.15, 0.45, 0.40 } : Estado.cargo == Catalogo.CargoSysadmin ? new[] { 0.05, 0.20, 0.40, 0.35 } : new[] { 0.12, 0.23, 0.35, 0.30 };
             for (int p = 0; p < 4; p++) { if (r < pesos[p]) return p + 1; r -= pesos[p]; }
             return 4;
         }

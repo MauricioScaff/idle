@@ -117,8 +117,8 @@ namespace IdleDataCenter.Gerente
             ParedesEPisoArte();
             switch (E.Cargo)
             {
-                case 0: Armario(); break;
-                case 1: Salinha(); break;
+                case Catalogo.CargoTecnico: Armario(); break;
+                case Catalogo.CargoSysadmin: Salinha(); break;
                 default: SalaGrande(); break;
             }
             PersonagensArte();
@@ -158,7 +158,7 @@ namespace IdleDataCenter.Gerente
             for (int gy = 0; gy < aD; gy += 2)
                 for (int gx = 0; gx < aW; gx += 2)
                 {
-                    bool tecnico = E.Cargo >= 2 && gx >= 4;   // o lado da esquerda (escritório, lounge, NOC) fica em madeira
+                    bool tecnico = E.Cargo >= Catalogo.CargoAnalista && gx >= 4;   // o lado da esquerda (escritório, lounge, NOC) fica em madeira
                     var s = Carregar(tecnico ? "piso_elevado" : (gx + gy) / 2 % 2 == 0 ? "piso_a" : "piso_b");
                     var p = AP(gx, gy);
                     tela.Imagem(s.px, s.w, s.h, p.x - s.w / 2, p.y - 1);
@@ -407,7 +407,7 @@ namespace IdleDataCenter.Gerente
                 gx = c.FimX + 0.06f;
             }
             if (E.TemBackup) { var f = Colocar("fita", gx + 0.1f, Encosto); gx = f.FimX + 0.1f; }
-            if (cargo >= 3 && gx + 1 < aW) NaParedeArte("tv_dashboard", gx + 0.9f, 0.02f, 70);
+            if (cargo >= Catalogo.CargoDevOps && gx + 1 < aW) NaParedeArte("tv_dashboard", gx + 0.9f, 0.02f, 70);
 
             // parede da esquerda: racks 1U, no-breaks, links de fibra na parede
             Racks1U(FilaEmY("rack_1u", Encosto, 1.0f, 3.0f, 2));
@@ -416,28 +416,28 @@ namespace IdleDataCenter.Gerente
             for (int i = 0; i < Mathf.Min(2, E.Nivel(Catalogo.Link)); i++) NaParedeArte("link_fibra", 0.02f, fimNoBreaks + 0.4f + i * 0.9f, 60);
 
             // a frente da esquerda muda com o cargo: laboratório (Analista), lounge (DevOps), NOC (SRE)
-            if (cargo == 2)
+            if (cargo == Catalogo.CargoAnalista)
             {
                 Colocar("extintor", Encosto, aD - 0.9f);
                 Colocar("quadro_branco", 1.1f, aD - 1.6f);
                 Colocar("estante", 2.3f, aD - 1.5f);
                 NovaPlacaArte("Automacao", "Laboratório", 1.7f, aD - 1.6f, 110, IsoGui.Roxo);
             }
-            else if (cargo == 3) Lounge();
+            else if (cargo == Catalogo.CargoDevOps) Lounge();
             else Noc();
 
             // piso técnico: uma fileira por tipo de equipamento, com corredores entre elas
             var rc = Carregar("rack_cheio");
             float gy = PrimeiraFileira;
-            string principal = cargo == 2 ? "rack_cheio" : cargo == 3 ? "containers" : "k8s";
+            string principal = cargo == Catalogo.CargoAnalista ? "rack_cheio" : cargo == Catalogo.CargoDevOps ? "containers" : "k8s";
             Vector2? marcador = null;
 
             // racks cheios (no Analista ocupam duas fileiras)
-            var lugaresRacks = Fileira("rack_cheio", ref gy, cargo == 2 ? 2 : 1);
+            var lugaresRacks = Fileira("rack_cheio", ref gy, cargo == Catalogo.CargoAnalista ? 2 : 1);
             for (int i = 0; i < Mathf.Min(lugaresRacks.Count, E.RacksCheios); i++) Colocar("rack_cheio", lugaresRacks[i].x, lugaresRacks[i].y, "equipamento");
             if (principal == "rack_cheio" && E.RacksCheios < lugaresRacks.Count) marcador = lugaresRacks[E.RacksCheios];
 
-            if (cargo >= 3)
+            if (cargo >= Catalogo.CargoDevOps)
             {
                 // virtualização: hypervisors, o servidor de CI e o switch 10G
                 var lugares = Fileira("hypervisor", ref gy, 1);
@@ -456,7 +456,7 @@ namespace IdleDataCenter.Gerente
                 }
                 if (principal == "containers" && E.HostsContainers < hosts.Count) marcador = hosts[E.HostsContainers];
             }
-            if (cargo >= 4)
+            if (cargo >= Catalogo.CargoSre)
             {
                 // o cluster: nós Kubernetes (laranja num pico sem escala) e o balanceador na ponta
                 var nos = Fileira("k8s", ref gy, 1);
@@ -529,8 +529,8 @@ namespace IdleDataCenter.Gerente
         {
             // corredor onde as pessoas andam: na frente do canto do técnico
             int cargo = E.Cargo;
-            float gy = cargo == 0 ? 2.3f : cargo == 1 ? 3.0f : 2.4f;
-            float gxFim = cargo == 0 ? 3.3f : cargo == 1 ? 4.6f : 3.6f;   // da sala de racks em diante, só no lado do escritório
+            float gy = cargo == Catalogo.CargoTecnico ? 2.3f : cargo == Catalogo.CargoSysadmin ? 3.0f : 2.4f;
+            float gxFim = cargo == Catalogo.CargoTecnico ? 3.3f : cargo == Catalogo.CargoSysadmin ? 4.6f : 3.6f;   // da sala de racks em diante, só no lado do escritório
             float gxAndando = PosicaoAndando(1.2f, gxFim, 0f, 0.55f, out bool voltando);
             // técnico: conserta o que travou (ajoelhado ao lado), comemora logo depois de uma compra, senão passeia
             if (tecnicoConsertando) PessoaArte(Pessoa("tecnico_conserta", "tecnico"), lugarDoTecnico.x, lugarDoTecnico.y, false);
@@ -545,7 +545,7 @@ namespace IdleDataCenter.Gerente
             }
             // da sala de racks em diante, engenheiros de campo nos corredores entre as fileiras (um por cargo)
             float profundidade = Carregar("rack_cheio").CasasY;
-            for (int i = 0; i < Mathf.Min(cargo - 1, 3); i++)
+            for (int i = 0; i < Mathf.Min(cargo - Catalogo.CargoSysadmin, 3); i++)
             {
                 float corredor = PrimeiraFileira + profundidade + 0.6f + i * (profundidade + Corredor);
                 if (corredor > aD - 0.5f) break;
@@ -553,7 +553,7 @@ namespace IdleDataCenter.Gerente
                 PessoaArte(Passo("engenheiro", "engenheiro", 0.6f + i), gx, corredor, volta);
             }
             // no SRE, o robô de limpeza passeia pelo corredor da frente
-            if (cargo >= 4)
+            if (cargo >= Catalogo.CargoSre)
             {
                 float gx = PosicaoAndando(InicioDasFileiras, aW - 0.6f, 0.2f, 0.25f, out _);
                 Colocar("robo", gx, aD - 0.6f);

@@ -15,7 +15,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>Vista escolhida; se ainda não existe no cargo, cai para a próxima mais de perto.</summary>
         SalaIso.Vista vistaEscolhida = SalaIso.Vista.Mundo;
         SalaIso.Vista VistaAtual =>
-            (vistaEscolhida == SalaIso.Vista.Dados || vistaEscolhida == SalaIso.Vista.Rede) && E.Cargo >= 2 ? vistaEscolhida
+            (vistaEscolhida == SalaIso.Vista.Dados || vistaEscolhida == SalaIso.Vista.Rede) && E.Cargo >= Catalogo.CargoAnalista ? vistaEscolhida
             : vistaEscolhida == SalaIso.Vista.Mundo && E.NoMundo ? SalaIso.Vista.Mundo
             : vistaEscolhida != SalaIso.Vista.Sala && E.NoCampus ? SalaIso.Vista.Campus : SalaIso.Vista.Sala;
         bool MostrandoCampus => VistaAtual == SalaIso.Vista.Campus;
@@ -42,11 +42,11 @@ namespace IdleDataCenter.Gerente
         {
             switch (E.Cargo)
             {
-                case 0: return Catalogo.Servidor;
-                case 1: return E.TemRack ? Catalogo.Servidor1U : Catalogo.Rack;
-                case 2: return Catalogo.RackCheio;
-                case 3: return Catalogo.Containers;
-                case 4: return Catalogo.NoKubernetes;
+                case Catalogo.CargoTecnico: return Catalogo.Servidor;
+                case Catalogo.CargoSysadmin: return E.TemRack ? Catalogo.Servidor1U : Catalogo.Rack;
+                case Catalogo.CargoAnalista: return Catalogo.RackCheio;
+                case Catalogo.CargoDevOps: return Catalogo.Containers;
+                case Catalogo.CargoSre: return Catalogo.NoKubernetes;
                 default: return VistaAtual == SalaIso.Vista.Mundo ? Catalogo.Regiao : MostrandoCampus ? Catalogo.Datacenter : Catalogo.NoKubernetes;
             }
         }

@@ -43,7 +43,7 @@ namespace IdleDataCenter.Simulacao
     {
         // --- Clientes (Sysadmin em diante) ---
         public const int CargoDosClientes = 1;
-        public static int CapacidadeDeClientes(int cargo) => 2 + cargo;
+        public static int CapacidadeDeClientes(int cargo) => 2 + cargo - Catalogo.CargoTecnico;
         public const double PrimeiraProposta = 300, IntervaloPropostaMin = 300, IntervaloPropostaMax = 540;
         public const double TempoParaAceitar = 90;
         /// <summary>Os SLAs que um cliente pode pedir (o mais alto que o uptime de agora entrega, às vezes um abaixo).</summary>

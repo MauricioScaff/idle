@@ -82,18 +82,18 @@ namespace IdleDataCenter.Simulacao
         public bool TemBackup => NivelBackup > 0;
         /// <summary>Quanto da perda de um disco queimado o backup evita: metade por nível; com a linha toda, tudo.</summary>
         public double ProtecaoBackup => NivelBackup >= Catalogo.LinhaDeBackup.Length ? 1 : 1 - Math.Pow(0.5, NivelBackup);
-        public bool NaSalaDeRacks => Estado.cargo >= 2;
+        public bool NaSalaDeRacks => Estado.cargo >= Catalogo.CargoAnalista;
         public bool DiscoQueimado => Estado.discoQueimado;
         public double SegundosDiscoQueimado => Estado.discoSegundos;
         public int NivelHypervisor => Nivel(Catalogo.Hypervisor);
         public int HostsContainers => Nivel(Catalogo.Containers);
         public bool TemCi => Nivel(Catalogo.ServidorCi) > 0;
-        public bool NaSalaVirtualizada => Estado.cargo >= 3;
+        public bool NaSalaVirtualizada => Estado.cargo >= Catalogo.CargoDevOps;
         public bool DeployQuebrado => Estado.deployQuebrado;
         public double SegundosDeployQuebrado => Estado.deploySegundos;
         public int NosKubernetes => Nivel(Catalogo.NoKubernetes);
         public bool TemBalanceador => Nivel(Catalogo.Balanceador) > 0;
-        public bool NoDataCenter => Estado.cargo >= 4;
+        public bool NoDataCenter => Estado.cargo >= Catalogo.CargoSre;
         public bool EmPico => !string.IsNullOrEmpty(Estado.picoNome);
         public string NomeDoPico => Estado.picoNome;
         public bool PicoFoiEscalado => Estado.picoEscalado;
@@ -102,7 +102,7 @@ namespace IdleDataCenter.Simulacao
         public double SegundosAteProximoPico => Estado.proximoPico;
         public int RegioesExtras => Nivel(Catalogo.Regiao);
         public int TotalRegioes => 1 + RegioesExtras;
-        public bool NoMundo => Estado.cargo >= 6;
+        public bool NoMundo => Estado.cargo >= Catalogo.CargoCto;
         public int RegioesLigadas => Math.Min(Nivel(Catalogo.CaboSubmarino), RegioesExtras);
         public int RegiaoEmPane => Estado.paneRegiao;
         public bool TemPaneRegional => Estado.paneRegiao > 0;
@@ -117,7 +117,7 @@ namespace IdleDataCenter.Simulacao
 
         public int DatacentersExtras => Nivel(Catalogo.Datacenter);
         public int TotalDatacenters => 1 + DatacentersExtras;
-        public bool NoCampus => Estado.cargo >= 5;
+        public bool NoCampus => Estado.cargo >= Catalogo.CargoArquiteto;
         /// <summary>Datacenters extras ligados por fibra ao DC-01 (cada link vale +20%).</summary>
         public int DatacentersInterligados => Math.Min(Nivel(Catalogo.Fibra), DatacentersExtras);
         /// <summary>Qual DC está sem energia (1..3), ou 0 se nenhum.</summary>

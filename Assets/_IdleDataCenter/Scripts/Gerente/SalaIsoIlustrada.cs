@@ -204,7 +204,7 @@ namespace IdleDataCenter.Gerente
         void DesenharIlustrada()
         {
             areaAtual = null;
-            DesenharCena(() => { if (E.Cargo == 0) ArmarioIlustrado(); else if (E.Cargo == 1) SalinhaIlustrada(); else SalaGrandeIlustrada(); });
+            DesenharCena(() => { if (E.Cargo == Catalogo.CargoTecnico) ArmarioIlustrado(); else if (E.Cargo == Catalogo.CargoSysadmin) SalinhaIlustrada(); else SalaGrandeIlustrada(); });
         }
 
         /// <summary>Uma das áreas atrás das portas (só existem da sala de racks em diante).</summary>
@@ -439,8 +439,8 @@ namespace IdleDataCenter.Gerente
         /// Trechos livres do pé da parede da direita em cada sala grande (sem portas): equipamentos da parede, em ordem.
         /// Fileiras: profundidade (gy) de cada fileira de racks no piso técnico, do fundo para a frente.
         /// </summary>
-        (float de, float ate)[] TrechosDaParede => E.Cargo >= 4 ? new[] { ((float)IP(0.4f, 0).x, (float)IP(2.3f, 0).x), ((float)IP(4.4f, 0).x, (float)IP(11.7f, 0).x) } : new[] { ((float)IP(4.2f, 0).x, (float)IP(9.9f, 0).x) };   // depois da porta DADOS (antes, 3,7: o rack cobria o batente)
-        float[] Fileiras => E.Cargo >= 4 ? new[] { 2.8f, 5.0f, 7.2f, 9.4f } : new[] { 2.8f, 5.0f, 7.2f };
+        (float de, float ate)[] TrechosDaParede => E.Cargo >= Catalogo.CargoSre ? new[] { ((float)IP(0.4f, 0).x, (float)IP(2.3f, 0).x), ((float)IP(4.4f, 0).x, (float)IP(11.7f, 0).x) } : new[] { ((float)IP(4.2f, 0).x, (float)IP(9.9f, 0).x) };   // depois da porta DADOS (antes, 3,7: o rack cobria o batente)
+        float[] Fileiras => E.Cargo >= Catalogo.CargoSre ? new[] { 2.8f, 5.0f, 7.2f, 9.4f } : new[] { 2.8f, 5.0f, 7.2f };
         const float InicioDaFileira = 2.8f;
 
         void SalaGrandeIlustrada()
@@ -512,8 +512,8 @@ namespace IdleDataCenter.Gerente
             int f = 0;
             List<Vector2Int> Fileira() => f < fileiras.Length ? LugaresNaFileira(fileiras[f++]) : new List<Vector2Int>();
             var lugaresRacks = Fileira();
-            if (cargo == 2) while (f < fileiras.Length) lugaresRacks.AddRange(Fileira());
-            string principal = cargo == 2 ? Catalogo.RackCheio : cargo == 3 ? Catalogo.Containers : Catalogo.NoKubernetes;
+            if (cargo == Catalogo.CargoAnalista) while (f < fileiras.Length) lugaresRacks.AddRange(Fileira());
+            string principal = cargo == Catalogo.CargoAnalista ? Catalogo.RackCheio : cargo == Catalogo.CargoDevOps ? Catalogo.Containers : Catalogo.NoKubernetes;
 
             // portas das áreas: dados e backup (direita) e rede e segurança (esquerda)
             PortasDasAreas();
@@ -523,7 +523,7 @@ namespace IdleDataCenter.Gerente
             if (principal == Catalogo.RackCheio) MarcarProxima(lugaresRacks, E.RacksCheios);
             if (lugaresRacks.Count > 0) pontoDoRackCheio = lugaresRacks[Mathf.Clamp(E.RacksCheios - 1, 0, lugaresRacks.Count - 1)];
 
-            if (cargo >= 3)
+            if (cargo >= Catalogo.CargoDevOps)
             {
                 // virtualização: hypervisors (roxo) e o servidor de CI (amarelo)
                 var lugares = Fileira();
@@ -542,7 +542,7 @@ namespace IdleDataCenter.Gerente
                 if (principal == Catalogo.Containers) MarcarProxima(hosts, E.HostsContainers);
                 if (hosts.Count > 0) pontoDosContainers = hosts[Mathf.Clamp(E.HostsContainers - 1, 0, hosts.Count - 1)];
             }
-            if (cargo >= 4)
+            if (cargo >= Catalogo.CargoSre)
             {
                 // o cluster: nós Kubernetes (ciano; laranja num pico sem escala) e o balanceador na ponta
                 var nos = Fileira();
@@ -555,7 +555,7 @@ namespace IdleDataCenter.Gerente
             }
 
             // canto do escritório (Analista) ou do NOC (SRE em diante), que já vem na ilustração
-            if (cargo >= 4)
+            if (cargo >= Catalogo.CargoSre)
             {
                 Alvos.Add(new Alvo { Area = new RectInt(44, 251, 116, 116), Tipo = "noc", Prof = -20, Nome = "NOC" });
                 pontoDoChamado = new Vector2Int(94, 235);
@@ -696,13 +696,13 @@ namespace IdleDataCenter.Gerente
 
         /// <summary>Mesa de trabalho do técnico em cada sala (em casas) e para onde ele olha nela.</summary>
         (Vector2 lugar, string olhar) Mesa =>
-            E.Cargo == 0 ? (new Vector2(2.0f, 1.55f), "ne")     // ao lado da cadeira, virado para o monitor
-            : E.Cargo == 1 ? (new Vector2(4.6f, 1.3f), "ne")
-            : E.Cargo <= 3 ? (new Vector2(1.7f, 7.4f), "nw")
+            E.Cargo == Catalogo.CargoTecnico ? (new Vector2(2.0f, 1.55f), "ne")     // ao lado da cadeira, virado para o monitor
+            : E.Cargo == Catalogo.CargoSysadmin ? (new Vector2(4.6f, 1.3f), "ne")
+            : E.Cargo <= Catalogo.CargoDevOps ? (new Vector2(1.7f, 7.4f), "nw")
             : (new Vector2(2.4f, 9.6f), "nw");   // na frente do NOC, fora das fileiras
 
         /// <summary>Velocidade de quem anda, em casas por segundo (casas menores nas salas grandes).</summary>
-        float Velocidade => E.Cargo == 0 ? 0.7f : 0.85f;
+        float Velocidade => E.Cargo == Catalogo.CargoTecnico ? 0.7f : 0.85f;
 
         /// <summary>Quantos pixels a pessoa anda num ciclo inteiro da caminhada (dois passos).</summary>
         const float PassadaEmPixels = 40;
@@ -754,7 +754,7 @@ namespace IdleDataCenter.Gerente
         void Rota(Trabalhador p, Vector2 destino)
         {
             p.caminho.Clear();
-            if (areaAtual == null && E.Cargo >= 2)
+            if (areaAtual == null && E.Cargo >= Catalogo.CargoAnalista)
             {
                 // salas grandes: troca de corredor pelo corredor ao lado das fileiras
                 float lateral = InicioDaFileira - 0.6f;
@@ -763,7 +763,7 @@ namespace IdleDataCenter.Gerente
             else
             {
                 // salas pequenas: pela passagem da frente
-                float frente = E.Cargo == 0 ? 2.9f : areaAtual != null ? 2.6f : 2.7f;
+                float frente = E.Cargo == Catalogo.CargoTecnico ? 2.9f : areaAtual != null ? 2.6f : 2.7f;
                 if (Mathf.Abs(p.pos.x - destino.x) > 0.05f) { p.caminho.Add(new Vector2(p.pos.x, frente)); p.caminho.Add(new Vector2(destino.x, frente)); }
             }
             p.caminho.Add(destino);
@@ -782,8 +782,8 @@ namespace IdleDataCenter.Gerente
             {
                 quemTem.Add("tecnico");
                 if (E.TemEstagiario) quemTem.Add("estagiario");
-                for (int i = 0; i < (E.Cargo >= 2 ? Mathf.Min(E.Cargo - 1, 3) : 0); i++) quemTem.Add("engenheiro" + i);
-                if (E.Cargo >= 4) quemTem.Add("robo");   // o robô de manutenção do SRE roda pelo data center
+                for (int i = 0; i < (E.Cargo >= Catalogo.CargoAnalista ? Mathf.Min(E.Cargo - Catalogo.CargoSysadmin, 3) : 0); i++) quemTem.Add("engenheiro" + i);
+                if (E.Cargo >= Catalogo.CargoSre) quemTem.Add("robo");   // o robô de manutenção do SRE roda pelo data center
             }
             foreach (var chave in new List<string>(pessoas.Keys)) if (!quemTem.Contains(chave)) pessoas.Remove(chave);
 
@@ -931,7 +931,7 @@ namespace IdleDataCenter.Gerente
             if (p.quem == "robo" && andando) pulo = Mathf.Abs(Mathf.Sin(t * 14f + p.fase * 6)) * 1.5f;   // as rodas no piso perfurado
             if (s == null) return;
             if (p.camisa.HasValue) s = Recolorido(s, p.camisa.Value);
-            PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, areaAtual == null && E.Cargo >= 2, PontoQuebrado(p.pos.x, p.pos.y));
+            PessoaIlustrada(s, p.quem, IP(p.pos.x, p.pos.y), pulo, areaAtual == null && E.Cargo >= Catalogo.CargoAnalista, PontoQuebrado(p.pos.x, p.pos.y));
         }
 
         /// <summary>Cor da camisa de cada engenheiro de campo (o técnico com outra camisa).</summary>

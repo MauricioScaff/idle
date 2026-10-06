@@ -25,12 +25,12 @@ namespace IdleDataCenter.Gerente
         {
             switch (id)
             {
-                case "Compute": case "Equipe": case "Storage": case "Seguranca": return 0;   // Storage: a linha de backup começa no HD externo
-                case "Energia": case "Refrigeracao": return 1;
-                case "Rede": case "Automacao": return 2;
-                case "NOC": return 3;
-                case "Campus": return 5;
-                case "Mundo": return 6;
+                case "Compute": case "Equipe": case "Storage": case "Seguranca": return Catalogo.CargoTecnico;   // Storage: a linha de backup começa no HD externo
+                case "Energia": case "Refrigeracao": return Catalogo.CargoSysadmin;
+                case "Rede": case "Automacao": return Catalogo.CargoAnalista;
+                case "NOC": return Catalogo.CargoDevOps;
+                case "Campus": return Catalogo.CargoArquiteto;
+                case "Mundo": return Catalogo.CargoCto;
                 default: return -1;
             }
         }
@@ -221,12 +221,12 @@ namespace IdleDataCenter.Gerente
 
         (Color32 a, Color32 b, Color32 linha, Color32 parede, Color32 parede2, Color32 friso) Paleta()
         {
-            switch (Mathf.Clamp(E.Cargo, 0, 4))
+            switch (Mathf.Clamp(E.Cargo, Catalogo.CargoTecnico, Catalogo.CargoSre))
             {
-                case 0: return (IsoDesenho.C("82595c"), IsoDesenho.C("6b4a4f"), IsoDesenho.C("573c41"), IsoDesenho.C("33376a"), IsoDesenho.C("2d3057"), IsoDesenho.C("1f2140"));
-                case 1: return (IsoDesenho.C("8a90a8"), IsoDesenho.C("7c8198"), IsoDesenho.C("5f6479"), IsoDesenho.C("414a7c"), IsoDesenho.C("3b4270"), IsoDesenho.C("1f2140"));
-                case 2: return (IsoDesenho.C("a3acc0"), IsoDesenho.C("949db3"), IsoDesenho.C("6c7389"), IsoDesenho.C("4a5680"), IsoDesenho.C("46517a"), IsoDesenho.C("56638f"));
-                case 3: return (IsoDesenho.C("3e4668"), IsoDesenho.C("373e5e"), IsoDesenho.C("2a3050"), IsoDesenho.C("232a4f"), IsoDesenho.C("1f2648"), IsoDesenho.C("2e7d8f"));
+                case Catalogo.CargoTecnico: return (IsoDesenho.C("82595c"), IsoDesenho.C("6b4a4f"), IsoDesenho.C("573c41"), IsoDesenho.C("33376a"), IsoDesenho.C("2d3057"), IsoDesenho.C("1f2140"));
+                case Catalogo.CargoSysadmin: return (IsoDesenho.C("8a90a8"), IsoDesenho.C("7c8198"), IsoDesenho.C("5f6479"), IsoDesenho.C("414a7c"), IsoDesenho.C("3b4270"), IsoDesenho.C("1f2140"));
+                case Catalogo.CargoAnalista: return (IsoDesenho.C("a3acc0"), IsoDesenho.C("949db3"), IsoDesenho.C("6c7389"), IsoDesenho.C("4a5680"), IsoDesenho.C("46517a"), IsoDesenho.C("56638f"));
+                case Catalogo.CargoDevOps: return (IsoDesenho.C("3e4668"), IsoDesenho.C("373e5e"), IsoDesenho.C("2a3050"), IsoDesenho.C("232a4f"), IsoDesenho.C("1f2648"), IsoDesenho.C("2e7d8f"));
                 default: return (IsoDesenho.C("343b5a"), IsoDesenho.C("2e3451"), IsoDesenho.C("232842"), IsoDesenho.C("1c2240"), IsoDesenho.C("181d38"), IsoDesenho.C("ffa53c"));
             }
         }
@@ -237,7 +237,7 @@ namespace IdleDataCenter.Gerente
             for (int gx = 0; gx < W; gx++)
             for (int gy = 0; gy < D; gy++)
             {
-                bool perfurada = E.Cargo == 2 && (gx + gy * 2) % 5 == 0;   // piso técnico: algumas placas com furos
+                bool perfurada = E.Cargo == Catalogo.CargoAnalista && (gx + gy * 2) % 5 == 0;   // piso técnico: algumas placas com furos
                 d.Piso(gx, gy, 1, 1, (gx + gy) % 2 == 0 ? p.a : p.b);
                 if (perfurada)
                     for (int i = 1; i < 4; i++)
@@ -402,7 +402,7 @@ namespace IdleDataCenter.Gerente
             }
 
             // --- NOC (DevOps em diante) e telão ---
-            if (E.Cargo >= 3)
+            if (E.Cargo >= Catalogo.CargoDevOps)
             {
                 NovaPlaca("NOC", "NOC", 5.5f, 7.4f, 34, IsoGui.Cyan);
                 Adicionar(4f, 7f, 3f, 0.8f, () => Noc(4f, 7f));
@@ -421,15 +421,15 @@ namespace IdleDataCenter.Gerente
             Vector2? lugar = null;
             switch (E.Cargo)
             {
-                case 0: if (E.Torres < 3) lugar = new Vector2(2f + E.Torres, 0.2f); break;
-                case 1: lugar = new Vector2(5.1f, 0.1f); break;
-                case 2: if (E.RacksCheios < 4) lugar = new Vector2(4f + E.RacksCheios, 3f); break;
-                case 3: if (E.HostsContainers < 4) lugar = new Vector2(4f + E.HostsContainers, 5.2f); break;
+                case Catalogo.CargoTecnico: if (E.Torres < 3) lugar = new Vector2(2f + E.Torres, 0.2f); break;
+                case Catalogo.CargoSysadmin: lugar = new Vector2(5.1f, 0.1f); break;
+                case Catalogo.CargoAnalista: if (E.RacksCheios < 4) lugar = new Vector2(4f + E.RacksCheios, 3f); break;
+                case Catalogo.CargoDevOps: if (E.HostsContainers < 4) lugar = new Vector2(4f + E.HostsContainers, 5.2f); break;
                 default: if (E.NosKubernetes < 6) lugar = new Vector2(9f + E.NosKubernetes, 8.6f); break;
             }
             if (lugar == null) return;
             var l = lugar.Value;
-            bool ocupado = E.Cargo == 1 && E.TemRack;   // no Sysadmin o marcador fica no rack (servidores 1U entram nele)
+            bool ocupado = E.Cargo == Catalogo.CargoSysadmin && E.TemRack;   // no Sysadmin o marcador fica no rack (servidores 1U entram nele)
             if (!ocupado)
                 fila.Add((l.x + l.y + 1.6f, () =>
                 {
@@ -523,10 +523,10 @@ namespace IdleDataCenter.Gerente
         void Personagens()
         {
             // técnico e estagiário passeiam no corredor da frente das torres; engenheiros extras chegam com a carreira
-            float corredor = E.Cargo >= 2 ? 4.3f : Mathf.Min(D - 1.2f, 3.2f);
+            float corredor = E.Cargo >= Catalogo.CargoAnalista ? 4.3f : Mathf.Min(D - 1.2f, 3.2f);
             Andando(tecnico, 1.4f, W - 1.3f, 1.55f, 0f, 0.55f);
             if (E.TemEstagiario) Andando(estagiario, 1.4f, W - 1.8f, corredor, 0.37f, 0.5f);
-            int extras = Mathf.Clamp(E.Cargo - 1, 0, 3);
+            int extras = Mathf.Clamp(E.Cargo - Catalogo.CargoSysadmin, 0, 3);
             for (int i = 0; i < extras; i++) Andando(engenheiro, 1.6f, W - 2f, i % 2 == 0 ? D - 1.3f : corredor + 0.1f, 0.6f + i * 0.21f, 0.4f + i * 0.07f);
 
             if (E.TemAutomacao(Catalogo.Watchdog))

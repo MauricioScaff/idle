@@ -114,7 +114,7 @@ namespace IdleDataCenter.Gerente
         void AvancarDicas()
         {
             if (E.TutorialConcluido) return;
-            if (E.Cargo > 0) { E.AvancarTutorial(Catalogo.PassosTutorial); return; }
+            if (E.Cargo > Catalogo.CargoTecnico) { E.AvancarTutorial(Catalogo.PassosTutorial); return; }
             switch (E.PassoTutorial)
             {
                 case 0: if (E.Estado.jaClicouNoServidor) E.AvancarTutorial(1); break;

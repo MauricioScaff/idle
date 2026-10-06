@@ -144,7 +144,7 @@ namespace IdleDataCenter.Gerente
             if (E.HostsContainers == 0)
             {
                 Abrir("Compute");
-                Notificar(E.Cargo < 3 ? "Deploys chegam no cargo Engenheiro DevOps." : "Instale um host de containers para fazer deploys.");
+                Notificar(E.Cargo < Catalogo.CargoDevOps ? "Deploys chegam no cargo Engenheiro DevOps." : "Instale um host de containers para fazer deploys.");
                 return;
             }
             if (Time.realtimeSinceStartupAsDouble - ultimoDeploy < 1) return;

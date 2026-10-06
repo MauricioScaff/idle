@@ -99,7 +99,7 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             CollectionAssert.AreEquivalent(new[] { Catalogo.Ssd, Catalogo.Ventoinha, Catalogo.Servidor, Catalogo.FiltroDeLinha, Catalogo.Ventilador, Catalogo.PastaTermica, Catalogo.HdExterno, Catalogo.Antivirus, Catalogo.Estagiario },
                 System.Linq.Enumerable.Select(e.MelhoriasDoCargo(), m => m.Id));
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             Assert.AreEqual(9, System.Linq.Enumerable.Count(e.MelhoriasDoCargo()), "o analista de help desk entra no Sysadmin");
         }
 
@@ -107,7 +107,7 @@ namespace IdleDataCenter.Testes
         public void Servidor1UPrecisaDoRack()
         {
             var e = Nova(1_000_000);
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             Assert.IsFalse(e.Comprar(Catalogo.Servidor1U));
             Assert.IsTrue(e.Comprar(Catalogo.Rack));
             Assert.IsTrue(e.Comprar(Catalogo.Servidor1U));
@@ -244,7 +244,7 @@ namespace IdleDataCenter.Testes
         public void SysadminViraAnalistaComORackCheio()
         {
             var e = Nova();
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             DefinirNivel(e, Catalogo.Rack, 1);
             DefinirNivel(e, Catalogo.Servidor1U, 4);
             e.Estado.totalGanho = 7200000;
@@ -262,9 +262,9 @@ namespace IdleDataCenter.Testes
         public void SalaDeRacksTrazEnergiaERefrigeracao()
         {
             var e = Nova();
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             double kw = e.CapacidadeKw;
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             Assert.AreEqual(kw + Catalogo.CapacidadeSalaDeRacksKw, e.CapacidadeKw, 1e-9);
             double esperada = System.Math.Max(Catalogo.TemperaturaMinima,
                 Catalogo.TemperaturaAmbiente + e.ConsumoKw * Catalogo.GrausPorKw * Catalogo.FatorCalorSalaDeRacks - Catalogo.GrausArDePrecisao);
@@ -275,7 +275,7 @@ namespace IdleDataCenter.Testes
         public void RackCheioRendeEContaOitoServidores()
         {
             var e = Nova();
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.RackCheio, 1);
             Assert.AreEqual(1 + Catalogo.ServidoresPorRackCheio, e.ContagemServidores);
             Assert.AreEqual(1, e.TotalServidores, "rack cheio não entra na lista de servidores que travam");
@@ -286,7 +286,7 @@ namespace IdleDataCenter.Testes
         public void LinkSaturadoReduzAReceitaELinkDeFibraResolve()
         {
             var e = Nova();
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.RackCheio, 1);   // 10 + 160 = 170 Mbps, cabe nos 200
             Assert.IsFalse(e.LinkSaturado);
             e.Estado.melhorias.Find(m => m.id == Catalogo.RackCheio).nivel = 2; // 330 Mbps
@@ -301,7 +301,7 @@ namespace IdleDataCenter.Testes
         public void StorageAumentaAReceitaEDiscoQueimadoTiraOBonus()
         {
             var e = Nova();
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.Storage, 2);
             Assert.AreEqual(1.5 * R, e.ReceitaPorSegundo, 1e-9);
             e.QueimarDisco();
@@ -313,7 +313,7 @@ namespace IdleDataCenter.Testes
         public void DiscoSemBackupCustaReembolso()
         {
             var e = Nova(1000);
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.Storage, 1);
             e.QueimarDisco();
             double perda = e.TrocarDisco(porTecnico: false);
@@ -327,7 +327,7 @@ namespace IdleDataCenter.Testes
         public void ComALinhaDeBackupInteiraOTecnicoRestauraSemPerder()
         {
             var e = Nova(1000);
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.Storage, 1);
             foreach (var id in Catalogo.LinhaDeBackup) DefinirNivel(e, id, 1);
             bool restaurou = false;
@@ -378,7 +378,7 @@ namespace IdleDataCenter.Testes
         static Economia NoDevOps(double dinheiro = 0, double sorteio = 0.9999)
         {
             var e = Nova(dinheiro, sorteio);
-            e.Estado.cargo = 3;
+            e.Estado.cargo = Catalogo.CargoDevOps;
             return e;
         }
 
@@ -386,7 +386,7 @@ namespace IdleDataCenter.Testes
         public void AnalistaViraDevOpsComBackupEAutomacoes()
         {
             var e = Nova();
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             e.Estado.totalGanho = 180000000;
             e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.CronFaturamento });
             Assert.IsFalse(e.PodePromover, "falta restaurar um backup");
@@ -461,9 +461,9 @@ namespace IdleDataCenter.Testes
         public void AutomacoesDoDevOpsEsperamOCargo()
         {
             var e = Nova(1e8);
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             Assert.IsFalse(e.PodeEscrever(Catalogo.InfraComoCodigo));
-            e.Estado.cargo = 3;
+            e.Estado.cargo = Catalogo.CargoDevOps;
             Assert.IsTrue(e.PodeEscrever(Catalogo.InfraComoCodigo));
         }
 
@@ -472,7 +472,7 @@ namespace IdleDataCenter.Testes
         static Economia NoSre(double dinheiro = 0, int nos = 1)
         {
             var e = Nova(dinheiro);
-            e.Estado.cargo = 4;
+            e.Estado.cargo = Catalogo.CargoSre;
             DefinirNivel(e, Catalogo.NoKubernetes, nos);
             DefinirNivel(e, Catalogo.Link10G, 1);   // banda de sobra: o teste é sobre o cluster
             return e;
@@ -507,10 +507,10 @@ namespace IdleDataCenter.Testes
         public void PicosSoComeçamNoSre()
         {
             var e = NoSre();
-            e.Estado.cargo = 3;
+            e.Estado.cargo = Catalogo.CargoDevOps;
             e.Avancar(Catalogo.PrimeiroPico + 10);
             Assert.IsFalse(e.EmPico);
-            e.Estado.cargo = 4;
+            e.Estado.cargo = Catalogo.CargoSre;
             string nome = null;
             e.PicoComecou += n => nome = n;
             for (int i = 0; i <= Catalogo.PrimeiroPico; i++) e.Avancar(1);
@@ -587,7 +587,7 @@ namespace IdleDataCenter.Testes
         static Economia NoCampus(double dinheiro = 0, double sorteio = 0.9999)
         {
             var e = Nova(dinheiro, sorteio);
-            e.Estado.cargo = 5;
+            e.Estado.cargo = Catalogo.CargoArquiteto;
             return e;
         }
 
@@ -657,7 +657,7 @@ namespace IdleDataCenter.Testes
         static Economia NoMundo(double dinheiro = 0)
         {
             var e = Nova(dinheiro);
-            e.Estado.cargo = 6;
+            e.Estado.cargo = Catalogo.CargoCto;
             return e;
         }
 
@@ -723,11 +723,11 @@ namespace IdleDataCenter.Testes
         public void SoDaParaVenderAPartirDoSre()
         {
             var e = Nova();
-            e.Estado.cargo = 3;
+            e.Estado.cargo = Catalogo.CargoDevOps;
             e.Estado.totalGanho = 1e9;
             Assert.IsFalse(e.PodeVender);
             Assert.AreEqual(0, e.CertificacoesDaVenda);
-            e.Estado.cargo = 4;
+            e.Estado.cargo = Catalogo.CargoSre;
             Assert.AreEqual(31, e.CertificacoesDaVenda, "raiz de 1000 milhões");
         }
 
@@ -820,9 +820,9 @@ namespace IdleDataCenter.Testes
         public void AutomacoesLiberamNoAnalista()
         {
             var e = Nova(1e7);
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             Assert.IsFalse(e.PodeEscrever(Catalogo.Watchdog));
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             Assert.IsTrue(e.PodeEscrever(Catalogo.Watchdog));
             Assert.IsFalse(e.PodeEscrever(Catalogo.HotSpare), "troca de disco precisa de storage");
         }
@@ -831,7 +831,7 @@ namespace IdleDataCenter.Testes
         public void AutomacaoLevaTempoParaEscreverEUmaPorVez()
         {
             var e = Nova(1e7);
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             string pronta = null;
             e.AutomacaoPronta += id => pronta = id;
             Assert.IsTrue(e.EscreverAutomacao(Catalogo.Watchdog));
@@ -851,7 +851,7 @@ namespace IdleDataCenter.Testes
         public void HotSpareTrocaODiscoSozinho()
         {
             var e = Nova();
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.Storage, 1);
             e.Estado.automacoes.Add(Catalogo.HotSpare);
             e.QueimarDisco();
@@ -875,7 +875,7 @@ namespace IdleDataCenter.Testes
         public void AutomacaoContinuaSendoEscritaOffline()
         {
             var e = Nova(1e7);
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             e.EscreverAutomacao(Catalogo.Plantao);
             e.Estado.ultimoSalvamentoUnix = 1000;
             e.AplicarOffline(1000 + 3600);
@@ -1035,7 +1035,7 @@ namespace IdleDataCenter.Testes
         public void EventoDeHumorViraConquista()
         {
             var e = Nova();
-            e.Estado.cargo = 3;
+            e.Estado.cargo = Catalogo.CargoDevOps;
             e.ComecarEvento(Catalogo.EventoDns);
             Assert.IsTrue(e.TemConquista(Catalogo.ConquistaDns));
         }
@@ -1045,7 +1045,7 @@ namespace IdleDataCenter.Testes
         static Economia ComClientes(double uptime)
         {
             var e = Nova(1000);
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             e.Estado.proximoEvento = 1e9;
             e.Estado.proximoChamado = 1e9;
             e.Estado.proximaProposta = 1e9;
@@ -1238,7 +1238,7 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual(16, Economia.FatorMarcos(100));
 
             var e = Nova();
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.RackCheio, 9);
             // sem os fatores de energia, calor e banda (10 racks estouram a sala)
             double Placa() => e.ReceitaDosRacksCheios / (e.FatorGeral * e.FatorVirtualizacao);
@@ -1265,7 +1265,7 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.PastaTermica, 2);
             Assert.AreEqual(Catalogo.ReceitaBaseServidor * 1.6, e.ReceitaTorre, 1e-9);
 
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             DefinirNivel(e, Catalogo.CabosOrganizados, 1);
             DefinirNivel(e, Catalogo.Firmware, 1);
             Assert.AreEqual(Catalogo.ReceitaServidor1U * (1 + 0.25 + 0.4), e.Receita1U, 1e-9);
@@ -1307,7 +1307,7 @@ namespace IdleDataCenter.Testes
         public void ArCondicionadoNaoDeixaASalaAbaixoDoMinimo()
         {
             var e = Nova();
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.ArCondicionado, 20);
             DefinirNivel(e, Catalogo.Ventilador, 12);
             Assert.AreEqual(Catalogo.TemperaturaMinima, e.Temperatura, 1e-9);
@@ -1327,7 +1327,7 @@ namespace IdleDataCenter.Testes
         public void ClienteGrandeAceitoDobraARendaEMultaSeAlgoTravar()
         {
             var e = Nova(1000);
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             e.ComecarEvento(Catalogo.EventoCliente);
             Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9, "na oferta ainda não dobra");
             Assert.IsTrue(e.AgirNoEvento());
@@ -1343,7 +1343,7 @@ namespace IdleDataCenter.Testes
         public void ClienteGrandeIgnoradoVaiEmboraSemCustar()
         {
             var e = Nova(1000);
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             e.ComecarEvento(Catalogo.EventoCliente);
             e.Avancar(Catalogo.Eventos[0].Duracao + 1);
             Assert.IsFalse(e.TemEvento);
@@ -1354,7 +1354,7 @@ namespace IdleDataCenter.Testes
         public void AuditoriaDaBonusComTudoFuncionandoEMultaComIncidente()
         {
             var e = Nova(1000);
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             e.Avancar(0);   // as conquistas do cargo entram antes de medir a receita
             double resultado = 0;
             e.EventoTerminou += (def, valor) => resultado = valor;
@@ -1384,7 +1384,7 @@ namespace IdleDataCenter.Testes
         public void DoisLinksDeFibraEvitamAQuedaDaInternet()
         {
             var e = Nova();
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             DefinirNivel(e, Catalogo.Link, Catalogo.LinksQueEvitamAQuedaDaInternet);
             e.ComecarEvento(Catalogo.EventoInternet);
             Assert.IsFalse(e.TemEvento);
@@ -1450,7 +1450,7 @@ namespace IdleDataCenter.Testes
         public void RansomwareComFitaRestauraESemBackupCobraResgate()
         {
             var e = Nova(1000000);
-            e.Estado.cargo = 2;
+            e.Estado.cargo = Catalogo.CargoAnalista;
             e.ComecarEvento(Catalogo.AtaqueRansomware);
             Assert.AreEqual(Catalogo.FatorRansomware * R, e.ReceitaPorSegundo, 1e-9);
             double antes = e.Dinheiro;
@@ -1470,7 +1470,7 @@ namespace IdleDataCenter.Testes
         public void DdosBloquearIpsSeguraQuaseTudo()
         {
             var e = Nova();
-            e.Estado.cargo = 4;
+            e.Estado.cargo = Catalogo.CargoSre;
             e.ComecarEvento(Catalogo.AtaqueDdos);
             Assert.AreEqual(Catalogo.FatorDdos, e.FatorEvento, 1e-9);
             e.AgirNoEvento();
@@ -1519,7 +1519,7 @@ namespace IdleDataCenter.Testes
         public void SslExpiradoCortaARendaAteRenovar()
         {
             var e = Nova();
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             e.ComecarEvento(Catalogo.EventoSsl);
             Assert.AreEqual(Catalogo.FatorSslExpirado, e.FatorEvento, 1e-9);
             Assert.IsTrue(e.AgirNoEvento(), "renovar");
@@ -1530,7 +1530,7 @@ namespace IdleDataCenter.Testes
         public void DeployNaSextaAsVezesPagaAsVezesQuebra()
         {
             var sorte = Nova(1000);
-            sorte.Estado.cargo = 3;
+            sorte.Estado.cargo = Catalogo.CargoDevOps;
             DefinirNivel(sorte, Catalogo.Containers, 1);
             double ganho = 0;
             sorte.EventoTerminou += (def, valor) => ganho = valor;
@@ -1540,7 +1540,7 @@ namespace IdleDataCenter.Testes
             Assert.IsFalse(sorte.DeployQuebrado);
 
             var azar = Nova(1000, sorteio: 0);
-            azar.Estado.cargo = 3;
+            azar.Estado.cargo = Catalogo.CargoDevOps;
             DefinirNivel(azar, Catalogo.Containers, 1);
             azar.ComecarEvento(Catalogo.EventoDeploySexta);
             azar.AgirNoEvento();
@@ -1664,7 +1664,7 @@ namespace IdleDataCenter.Testes
         public void EventoDeTiResolvidoNoTerminal()
         {
             var e = Nova();
-            e.Estado.cargo = 1;
+            e.Estado.cargo = Catalogo.CargoSysadmin;
             e.ComecarEvento(Catalogo.EventoDns);
             Assert.AreEqual(Catalogo.EventoDns, e.Estado.evento);
             Assert.AreEqual(TipoLinha.Ok, e.Executar("systemctl restart named")[0].Tipo);
