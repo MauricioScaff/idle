@@ -58,7 +58,7 @@ namespace IdleDataCenter
             economia.ClienteCresceu += c => Avisar(c.nome + " virou " + Catalogo.PortesDoSite[c.porte] + "!", 3f, VerdeClaro);
             economia.ClienteSaiu += c => { Avisar(c.nome + " foi embora", 4f, Vermelho); Sons.Alerta(); };
             economia.PedidoFeito += c => Avisar(c.nome + " fez um pedido (abra o gerente)", 4f, Amarelo);
-            economia.Conquistou += c => Avisar("Conquista: " + c.Nome + " (+1%)", 3f, Amarelo);
+            economia.Conquistou += c => Avisar("Conquista: " + c.Nome + " (+0,5%)", 3f, Amarelo);
             economia.AtaqueBloqueado += (def, quem) => Avisar(quem + " bloqueou " + def.Nome, 3f, VerdeClaro);
             economia.HardwareEnvelheceu += garantia => Avisar(garantia ? "Garantia venceu: refresh!" : "Hardware no fim da vida", 4f, Laranja);
             economia.ChamadoEncerrado += (c, bonus, equipe) => { if (bonus <= 0 && c.prioridade <= 2) Avisar("O P" + c.prioridade + " foi embora", 1.5f, Laranja); };

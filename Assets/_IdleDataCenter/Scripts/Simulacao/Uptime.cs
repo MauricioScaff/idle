@@ -10,9 +10,9 @@ namespace IdleDataCenter.Simulacao
         /// <summary>Os "noves" que pagam a mais: (uptime mínimo, nome do SLA, bônus de receita).</summary>
         public static readonly (double minimo, string nome, double bonus)[] NiveisDeSla =
         {
-            (0.99999, "cinco noves", 0.20),
-            (0.9999, "quatro noves", 0.10),
-            (0.999, "três noves", 0.05),
+            (0.99999, "cinco noves", 0.10),
+            (0.9999, "quatro noves", 0.05),
+            (0.999, "três noves", 0.025),
         };
     }
 

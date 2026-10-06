@@ -8,7 +8,7 @@ namespace IdleDataCenter.Simulacao
         public const double FimDaGarantia = 3600, FimDaVida = 7200;
         public const double FalhasForaDaGarantia = 2, FalhasNoFimDaVida = 3;
         /// <summary>O refresh troca o parque todo por hardware novo: custa alguns minutos de receita (mínimo R$ 500).</summary>
-        public const double SegundosDoRefresh = 120, RefreshMinimo = 500;
+        public const double SegundosDoRefresh = 120, RefreshMinimo = 3000;
     }
 
     /// <summary>

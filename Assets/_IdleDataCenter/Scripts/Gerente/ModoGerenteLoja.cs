@@ -75,7 +75,7 @@ namespace IdleDataCenter.Gerente
             "Melhorias", "Tudo o que dá para comprar, de todos os setores",
             "Carreira", "Metas para a próxima promoção",
             "Prestigio", "Certificações: bônus que passam de uma empresa para a outra",
-            "Conquistas", "Cada uma dá +1% de renda, para sempre",
+            "Conquistas", "Cada uma dá +0,5% de renda, para sempre",
             "Vender", "A empresa é vendida e uma nova começa",
             "Campus", "Prédios novos, fibra entre eles, CDN e geradores",
             "Mundo", "Regiões, cabos submarinos, energia verde e nuvem de IA",

@@ -56,14 +56,14 @@ namespace IdleDataCenter.Simulacao
         public static readonly string[] PortesDoSite = { "", "Página", "Loja virtual", "E-commerce", "Plataforma", "Gigante" };
         public const int PorteMaximo = 5;
         /// <summary>Renda a mais por cliente, pelo porte (com a satisfação cheia; pela metade com ela zerada).</summary>
-        public static readonly double[] BonusPorPorte = { 0, 0.03, 0.06, 0.10, 0.15, 0.22 };
+        public static readonly double[] BonusPorPorte = { 0, 0.015, 0.03, 0.05, 0.075, 0.11 };
         /// <summary>Minutos com o cliente satisfeito para subir do porte p para o p+1.</summary>
         public static readonly double[] MinutosParaCrescer = { 0, 8, 15, 30, 60 };
 
         // pedidos: de vez em quando um cliente pede algo com prazo
         public const double PrimeiroPedidoMin = 240, IntervaloPedidoMin = 420, IntervaloPedidoMax = 780;
         public const double PrazoDoPedido = 480;
-        public const double SegundosDoPremioDoPedido = 60, SatisfacaoDoPedido = 20, CrescimentoDoPedido = 0.4, SatisfacaoDoPedidoPerdido = 25;
+        public const double SegundosDoPremioDoPedido = 30, SatisfacaoDoPedido = 20, CrescimentoDoPedido = 0.4, SatisfacaoDoPedidoPerdido = 25;
         public const string PedidoServidores = "servidores", PedidoBackup = "backup", PedidoSeguranca = "seguranca",
                             PedidoEnergia = "energia", PedidoFrio = "frio", PedidoUptime = "uptime";
         public const double FolgaDeEnergiaDoPedido = 1.25;

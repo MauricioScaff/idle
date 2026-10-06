@@ -21,7 +21,7 @@ namespace IdleDataCenter.Simulacao
         public const int ChamadosNaFila = 5;
         /// <summary>Prazo e pagamento (segundos de receita) por prioridade, de P1 a P4.</summary>
         public static readonly double[] PrazoDoChamado = { 30, 60, 120, 300 };
-        public static readonly double[] BonusDoChamadoEmSegundos = { 60, 30, 12, 6 };
+        public static readonly double[] BonusDoChamadoEmSegundos = { 30, 15, 6, 3 };
         /// <summary>Chamado fechado pela equipe paga só uma parte (o resto é o salário dela).</summary>
         public const double FracaoDaEquipe = 0.5;
         /// <summary>P1 que estoura o prazo: o serviço ficou fora esse tanto (conta no uptime).</summary>

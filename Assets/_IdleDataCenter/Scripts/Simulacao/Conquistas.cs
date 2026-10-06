@@ -12,8 +12,8 @@ namespace IdleDataCenter.Simulacao
 
     public static partial class Catalogo
     {
-        /// <summary>Cada conquista dá +1% de renda para sempre (passa de uma empresa para a outra).</summary>
-        public const double BonusPorConquista = 0.01;
+        /// <summary>Cada conquista dá +0,5% de renda para sempre (passa de uma empresa para a outra).</summary>
+        public const double BonusPorConquista = 0.005;
         public const int CafesParaConquista = 10, ChamadosParaConquista = 100, IncidentesParaConquista = 500, AutomacoesParaConquista = 5;
 
         public const string ConquistaDns = "dns", ConquistaFaxineira = "faxineira", ConquistaRato = "rato", ConquistaReuniao = "reuniao",
@@ -64,7 +64,7 @@ namespace IdleDataCenter.Simulacao
     }
 
     /// <summary>
-    /// Conquistas: marcos com humor de TI. Cada uma dá +1% de renda para sempre; ficam no prestígio, então valem para as
+    /// Conquistas: marcos com humor de TI. Cada uma dá +0,5% de renda para sempre; ficam no prestígio, então valem para as
     /// próximas empresas também.
     /// </summary>
     public partial class Economia

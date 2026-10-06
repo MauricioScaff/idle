@@ -28,9 +28,9 @@ namespace IdleDataCenter.Simulacao
     public static partial class Catalogo
     {
         // --- Terminal: resolver digitando dá bônus (e combo para acertos seguidos) ---
-        public const double SegundosDeBonusDoTerminal = 15;
+        public const double SegundosDeBonusDoTerminal = 8;
         public const double BonusPorCombo = 0.5;        // cada acerto seguido soma +50% no próximo, até ComboMaximo
-        public const int ComboMaximo = 4;
+        public const int ComboMaximo = 2;
         public const int ComandosParaConquista = 10, ComandosParaConquista2 = 100;
         public static readonly string[] HostsDasRegioes = { "sa-east", "us-east", "eu-west", "ap-south" };
         public static readonly string[] UsuariosDosCargos = { "tecnico", "sysadmin", "analista", "devops", "sre", "arquiteto", "cto" };

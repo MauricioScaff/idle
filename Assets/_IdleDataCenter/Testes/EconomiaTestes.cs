@@ -14,6 +14,9 @@ namespace IdleDataCenter.Testes
             public override double NextDouble() => valor;
         }
 
+        /// <summary>Renda de uma torre sem melhorias (as contas dos testes partem dela).</summary>
+        const double R = Catalogo.ReceitaBaseServidor;
+
         static Economia Nova(double dinheiro = 0, double sorteio = 0.9999) =>
             new Economia(new EstadoJogo { dinheiro = dinheiro }, new SorteioFixo(sorteio));
 
@@ -27,7 +30,7 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova();
             Assert.AreEqual(1, e.TotalServidores);
-            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -35,7 +38,7 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova();
             e.Avancar(10);
-            Assert.AreEqual(10, e.Dinheiro, 1e-9);
+            Assert.AreEqual(10 * R, e.Dinheiro, 1e-9);
         }
 
         [Test]
@@ -49,10 +52,10 @@ namespace IdleDataCenter.Testes
         [Test]
         public void SsdDobraAReceitaEDescontaOCusto()
         {
-            var e = Nova(150);
+            var e = Nova(Catalogo.Buscar(Catalogo.Ssd).CustoBase + 50);
             Assert.IsTrue(e.Comprar(Catalogo.Ssd));
             Assert.AreEqual(50, e.Dinheiro, 1e-9);
-            Assert.AreEqual(2, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(2 * R, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -67,9 +70,9 @@ namespace IdleDataCenter.Testes
         public void CustoDaVentoinhaCresceAcadaNivel()
         {
             var e = Nova(1_000_000);
-            Assert.AreEqual(250, e.Custo(Catalogo.Ventoinha), 1e-9);
+            Assert.AreEqual(Catalogo.Buscar(Catalogo.Ventoinha).CustoBase, e.Custo(Catalogo.Ventoinha), 1e-9);
             e.Comprar(Catalogo.Ventoinha);
-            Assert.AreEqual(550, e.Custo(Catalogo.Ventoinha), 1e-9);
+            Assert.AreEqual(Math.Round(Catalogo.Buscar(Catalogo.Ventoinha).CustoBase * 2.2), e.Custo(Catalogo.Ventoinha), 1e-9);
         }
 
         [Test]
@@ -79,14 +82,14 @@ namespace IdleDataCenter.Testes
             e.Comprar(Catalogo.Ssd);        // 2 por torre
             e.Comprar(Catalogo.Ventoinha);  // 3 por torre
             e.Comprar(Catalogo.Servidor);   // 2 torres
-            Assert.AreEqual(6, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(6 * R, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
         public void CliqueRendeBaseMaisDobroDaReceita()
         {
             var e = Nova();
-            Assert.AreEqual(4, e.Clicar(0), 1e-9);
+            Assert.AreEqual(Catalogo.ValorCliqueBase + Catalogo.ValorCliqueReceita * R, e.Clicar(0), 1e-9);
             Assert.IsTrue(e.Estado.jaClicouNoServidor);
         }
 
@@ -109,7 +112,7 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.Comprar(Catalogo.Rack));
             Assert.IsTrue(e.Comprar(Catalogo.Servidor1U));
             Assert.AreEqual(2, e.TotalServidores);
-            Assert.AreEqual(1 + 9, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R + Catalogo.ReceitaServidor1U, e.ReceitaPorSegundo, 1e-9);
         }
 
         // ---------- Energia e temperatura ----------
@@ -124,7 +127,7 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.ArCondicionado, 3); // sem calor, para isolar a energia
             Assert.IsTrue(e.Sobrecarga);
             Assert.AreEqual(1.5 / 2.0, e.FatorEnergia, 1e-9);
-            Assert.AreEqual((3 * 1 + 2 * 9) * 1.5 / 2.0, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual((3 * R + 2 * Catalogo.ReceitaServidor1U) * 1.5 / 2.0, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -224,7 +227,7 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             Assert.IsFalse(e.PodePromover);
             DefinirNivel(e, Catalogo.Servidor, 2);
-            e.Estado.totalGanho = 20000;
+            e.Estado.totalGanho = 120000;
             Assert.IsFalse(e.PodePromover, "faltam os incidentes");
             e.Estado.incidentesResolvidos = 8;
             Assert.IsTrue(e.PodePromover);
@@ -244,7 +247,7 @@ namespace IdleDataCenter.Testes
             e.Estado.cargo = 1;
             DefinirNivel(e, Catalogo.Rack, 1);
             DefinirNivel(e, Catalogo.Servidor1U, 4);
-            e.Estado.totalGanho = 1200000;
+            e.Estado.totalGanho = 7200000;
             e.Estado.incidentesResolvidos = 60;
             Assert.IsFalse(e.PodePromover, "falta um 1U para encher o rack");
             e.Estado.melhorias.Find(m => m.id == Catalogo.Servidor1U).nivel = 5;
@@ -276,7 +279,7 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.RackCheio, 1);
             Assert.AreEqual(1 + Catalogo.ServidoresPorRackCheio, e.ContagemServidores);
             Assert.AreEqual(1, e.TotalServidores, "rack cheio não entra na lista de servidores que travam");
-            Assert.AreEqual(1 + Catalogo.ReceitaRackCheio, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R + Catalogo.ReceitaRackCheio, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -300,10 +303,10 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             e.Estado.cargo = 2;
             DefinirNivel(e, Catalogo.Storage, 2);
-            Assert.AreEqual(1.5, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(1.5 * R, e.ReceitaPorSegundo, 1e-9);
             e.QueimarDisco();
             Assert.IsTrue(e.DiscoQueimado);
-            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -314,7 +317,7 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.Storage, 1);
             e.QueimarDisco();
             double perda = e.TrocarDisco(porTecnico: false);
-            Assert.AreEqual(Catalogo.SegundosPerdidosSemBackup * 1.25, perda, 1e-9);
+            Assert.AreEqual(Catalogo.SegundosPerdidosSemBackup * 1.25 * R, perda, 1e-9);
             Assert.AreEqual(1000 - perda, e.Dinheiro, 1e-9);
             Assert.AreEqual(0, e.Estado.backupsRestaurados);
             Assert.AreEqual(1, e.Estado.incidentesResolvidos);
@@ -367,7 +370,7 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             DefinirNivel(e, Catalogo.HdExterno, 1);
             DefinirNivel(e, Catalogo.Nas, 1);
-            Assert.AreEqual(1 + 2 * Catalogo.BonusPorBackup, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R * (1 + 2 * Catalogo.BonusPorBackup), e.ReceitaPorSegundo, 1e-9);
         }
 
         // ---------- Engenheiro DevOps ----------
@@ -384,7 +387,7 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova();
             e.Estado.cargo = 2;
-            e.Estado.totalGanho = 30000000;
+            e.Estado.totalGanho = 180000000;
             e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.CronFaturamento });
             Assert.IsFalse(e.PodePromover, "falta restaurar um backup");
             e.Estado.backupsRestaurados = 1;
@@ -398,9 +401,9 @@ namespace IdleDataCenter.Testes
         {
             var e = NoDevOps();
             DefinirNivel(e, Catalogo.Hypervisor, 2);
-            Assert.AreEqual(1.8, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(1.8 * R, e.ReceitaPorSegundo, 1e-9);
             DefinirNivel(e, Catalogo.Containers, 1);
-            Assert.AreEqual(1.8 + Catalogo.ReceitaHostContainers, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(1.8 * R + Catalogo.ReceitaHostContainers, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -409,12 +412,12 @@ namespace IdleDataCenter.Testes
             var e = NoDevOps();
             DefinirNivel(e, Catalogo.Containers, 1);
             DefinirNivel(e, Catalogo.ServidorCi, 1);
-            Assert.AreEqual(1 + 375, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R + Catalogo.ReceitaHostContainers * 1.5, e.ReceitaPorSegundo, 1e-9);
             e.QuebrarDeploy();
             Assert.IsTrue(e.DeployQuebrado);
-            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9);
             e.FazerRollback(porTecnico: false);
-            Assert.AreEqual(1 + 375, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R + Catalogo.ReceitaHostContainers * 1.5, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -480,7 +483,7 @@ namespace IdleDataCenter.Testes
         {
             var e = NoDevOps();
             DefinirNivel(e, Catalogo.Containers, 4);
-            e.Estado.totalGanho = 1000000000;
+            e.Estado.totalGanho = 6000000000;
             e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.Monitoramento, Catalogo.CronFaturamento, Catalogo.Plantao, Catalogo.Pipeline });
             Assert.IsFalse(e.PodePromover, "faltam automações");
             e.Estado.automacoes.Add(Catalogo.RollbackAutomatico);
@@ -493,11 +496,11 @@ namespace IdleDataCenter.Testes
         public void NosKubernetesRendemComBalanceadorEObservabilidade()
         {
             var e = NoSre(nos: 2);
-            Assert.AreEqual(1 + 800, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R + 2 * Catalogo.ReceitaNoKubernetes, e.ReceitaPorSegundo, 1e-9);
             DefinirNivel(e, Catalogo.Balanceador, 1);
-            Assert.AreEqual(1 + 1000, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R + 2 * Catalogo.ReceitaNoKubernetes * 1.25, e.ReceitaPorSegundo, 1e-9);
             DefinirNivel(e, Catalogo.Observabilidade, 2);
-            Assert.AreEqual((1 + 1000) * 1.3, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual((R + 2 * Catalogo.ReceitaNoKubernetes * 1.25) * 1.3, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -542,7 +545,7 @@ namespace IdleDataCenter.Testes
             var e = NoSre();
             e.ComecarPico();
             Assert.IsTrue(e.Escalar());
-            Assert.AreEqual(1 + 400 * Catalogo.MultiplicadorPicoEscalado, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R + Catalogo.ReceitaNoKubernetes * Catalogo.MultiplicadorPicoEscalado, e.ReceitaPorSegundo, 1e-9);
             for (int i = 0; i <= Catalogo.DuracaoPico; i++) e.Avancar(1);
             Assert.AreEqual(1, e.Estado.picosSobrevividos);
             Assert.AreEqual(1, e.Progresso(new MetaDef { Tipo = TipoMeta.PicosSobrevividos }), 1e-9);
@@ -593,7 +596,7 @@ namespace IdleDataCenter.Testes
         {
             var e = NoSre();
             e.Estado.picosSobrevividos = 5;
-            e.Estado.totalGanho = 4000000000;
+            e.Estado.totalGanho = 24000000000;
             e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.Monitoramento, Catalogo.CronFaturamento, Catalogo.Plantao,
                                                  Catalogo.Pipeline, Catalogo.RollbackAutomatico, Catalogo.InfraComoCodigo, Catalogo.Autoscaling });
             Assert.IsFalse(e.PodePromover, "faltam automações");
@@ -608,11 +611,11 @@ namespace IdleDataCenter.Testes
         {
             var e = NoCampus();
             DefinirNivel(e, Catalogo.Datacenter, 1);
-            Assert.AreEqual(1 + Catalogo.ReceitaDatacenter, e.ReceitaPorSegundo, 1e-6);
+            Assert.AreEqual(R + Catalogo.ReceitaDatacenter, e.ReceitaPorSegundo, 1e-6);
             DefinirNivel(e, Catalogo.Fibra, 1);
-            Assert.AreEqual((1 + Catalogo.ReceitaDatacenter) * 1.2, e.ReceitaPorSegundo, 1e-6);
+            Assert.AreEqual((R + Catalogo.ReceitaDatacenter) * 1.2, e.ReceitaPorSegundo, 1e-6);
             DefinirNivel(e, Catalogo.Cdn, 1);
-            Assert.AreEqual((1 + Catalogo.ReceitaDatacenter) * 1.2 * 1.3, e.ReceitaPorSegundo, 1e-6);
+            Assert.AreEqual((R + Catalogo.ReceitaDatacenter) * 1.2 * 1.3, e.ReceitaPorSegundo, 1e-6);
         }
 
         [Test]
@@ -631,7 +634,7 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.Datacenter, 2);
             e.DerrubarEnergia(2);
             Assert.IsTrue(e.TemQuedaDeEnergia);
-            Assert.AreEqual(1 + Catalogo.ReceitaDatacenter, e.ReceitaPorSegundo, 1e-6, "um dos dois DCs parado");
+            Assert.AreEqual(R + Catalogo.ReceitaDatacenter, e.ReceitaPorSegundo, 1e-6, "um dos dois DCs parado");
             e.Avancar(Catalogo.TempoGerador);
             Assert.IsTrue(e.TemQuedaDeEnergia, "sem gerador o técnico leva 30 s");
             DefinirNivel(e, Catalogo.Gerador, 1);
@@ -663,7 +666,7 @@ namespace IdleDataCenter.Testes
         {
             var e = NoCampus();
             DefinirNivel(e, Catalogo.Datacenter, 3);
-            e.Estado.totalGanho = 40000000000;
+            e.Estado.totalGanho = 240000000000;
             for (int i = 0; i < 12; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
             Assert.IsTrue(e.Promover());
             Assert.AreEqual("CTO", e.CargoAtual.Nome);
@@ -676,13 +679,13 @@ namespace IdleDataCenter.Testes
         {
             var e = NoMundo();
             DefinirNivel(e, Catalogo.Regiao, 1);
-            Assert.AreEqual(1 + Catalogo.ReceitaRegiao, e.ReceitaPorSegundo, 1e-6);
+            Assert.AreEqual(R + Catalogo.ReceitaRegiao, e.ReceitaPorSegundo, 1e-6);
             DefinirNivel(e, Catalogo.CaboSubmarino, 1);
-            Assert.AreEqual(1 + Catalogo.ReceitaRegiao * 1.25, e.ReceitaPorSegundo, 1e-6);
+            Assert.AreEqual(R + Catalogo.ReceitaRegiao * 1.25, e.ReceitaPorSegundo, 1e-6);
             DefinirNivel(e, Catalogo.Gpu, 1);
-            Assert.AreEqual(1 + Catalogo.ReceitaRegiao * 1.25 + Catalogo.ReceitaGpu, e.ReceitaPorSegundo, 1e-6);
+            Assert.AreEqual(R + Catalogo.ReceitaRegiao * 1.25 + Catalogo.ReceitaGpu, e.ReceitaPorSegundo, 1e-6);
             DefinirNivel(e, Catalogo.Renovavel, 2);
-            Assert.AreEqual((1 + Catalogo.ReceitaRegiao * 1.25 + Catalogo.ReceitaGpu) * 1.3, e.ReceitaPorSegundo, 1e-6);
+            Assert.AreEqual((R + Catalogo.ReceitaRegiao * 1.25 + Catalogo.ReceitaGpu) * 1.3, e.ReceitaPorSegundo, 1e-6);
         }
 
         [Test]
@@ -692,7 +695,7 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.Regiao, 2);
             e.DerrubarRegiao(1);
             Assert.IsTrue(e.TemPaneRegional);
-            Assert.AreEqual(1 + Catalogo.ReceitaRegiao, e.ReceitaPorSegundo, 1e-6);
+            Assert.AreEqual(R + Catalogo.ReceitaRegiao, e.ReceitaPorSegundo, 1e-6);
             e.Estado.automacoes.Add(Catalogo.Multirregiao);
             e.Avancar(Catalogo.TempoFailoverMultirregiao);
             Assert.IsFalse(e.TemPaneRegional);
@@ -704,7 +707,7 @@ namespace IdleDataCenter.Testes
             var e = NoMundo();
             Assert.IsFalse(e.PodeFazerIpo);
             DefinirNivel(e, Catalogo.Regiao, 3);
-            e.Estado.totalGanho = 600000000000;
+            e.Estado.totalGanho = 3600000000000;
             for (int i = 0; i < 15; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
             Assert.IsTrue(e.PodeFazerIpo);
             bool festa = false;
@@ -767,7 +770,7 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.ComprarCertificacao(Catalogo.UptimeWizard));   // custa 6
             Assert.AreEqual(0, e.Prestigio.certificacoes);
             Assert.IsFalse(e.ComprarCertificacao(Catalogo.UptimeWizard));
-            Assert.AreEqual(1.2, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(1.2 * R, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -802,7 +805,7 @@ namespace IdleDataCenter.Testes
                                 + "\"melhorias\":[{\"id\":\"ssd\",\"nivel\":1}],\"travamentos\":[],\"ultimoSalvamentoUnix\":1000,\"jaClicouNoServidor\":true}";
             var estado = UnityEngine.JsonUtility.FromJson<EstadoJogo>(antigo);
             var e = new Economia(estado, new SorteioFixo(0.9999));
-            Assert.AreEqual(2, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(2 * R, e.ReceitaPorSegundo, 1e-9);
             Assert.IsFalse(e.TemQuedaDeEnergia);
             Assert.IsFalse(e.TemPaneRegional);
             Assert.IsNotNull(e.Prestigio);
@@ -865,7 +868,7 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual(0.75, e.TaxaOffline, 1e-9);
             e.Estado.automacoes.Add(Catalogo.Plantao);
             Assert.AreEqual(1.0, e.TaxaOffline, 1e-9);
-            Assert.AreEqual(24 * 3600, e.CalcularGanhoOffline(48 * 3600), 1e-9);
+            Assert.AreEqual(24 * 3600 * R, e.CalcularGanhoOffline(48 * 3600), 1e-9);
         }
 
         [Test]
@@ -887,11 +890,11 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova();
             Assert.IsTrue(e.TomarCafe());
-            Assert.AreEqual(2, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(2 * R, e.ReceitaPorSegundo, 1e-9);
             Assert.IsFalse(e.TomarCafe(), "ainda recarregando");
             e.Avancar(Catalogo.DuracaoCafe);
             Assert.IsFalse(e.CafeAtivo);
-            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9);
             e.Avancar(Catalogo.RecargaCafe - Catalogo.DuracaoCafe);
             Assert.IsTrue(e.PodeTomarCafe);
         }
@@ -911,7 +914,7 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual(antes + 25, e.Dinheiro, 1e-9);
             Assert.IsFalse(e.TemChamado);
             e.AbrirChamado(1);
-            Assert.AreEqual(Catalogo.BonusDoChamadoEmSegundos[0], e.AtenderChamado(), 1e-9, "P1 paga 1 min de receita");
+            Assert.AreEqual(Catalogo.BonusDoChamadoEmSegundos[0] * R, e.AtenderChamado(), 1e-9, "P1 paga 1 min de receita");
         }
 
         [Test]
@@ -1000,7 +1003,7 @@ namespace IdleDataCenter.Testes
             e.AbrirChamado();
             e.Estado.ultimoSalvamentoUnix = 1000;
             double ganho = e.AplicarOffline(1000 + 3600);
-            Assert.AreEqual(1800, ganho, 1e-9, "offline sem o café");
+            Assert.AreEqual(1800 * R, ganho, 1e-9, "offline sem o café");
             Assert.IsFalse(e.TemChamado);
         }
 
@@ -1200,8 +1203,8 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova();
             Assert.AreEqual(0, e.CalcularGanhoOffline(30), 1e-9, "menos de 1 minuto não conta");
-            Assert.AreEqual(1800, e.CalcularGanhoOffline(3600), 1e-9);
-            Assert.AreEqual(12 * 3600 * 0.5, e.CalcularGanhoOffline(48 * 3600), 1e-9);
+            Assert.AreEqual(1800 * R, e.CalcularGanhoOffline(3600), 1e-9);
+            Assert.AreEqual(12 * 3600 * 0.5 * R, e.CalcularGanhoOffline(48 * 3600), 1e-9);
         }
 
         [Test]
@@ -1218,7 +1221,7 @@ namespace IdleDataCenter.Testes
             e.Estado.ultimoSalvamentoUnix = 1000;
             double ganho = e.AplicarOffline(1000 + 3600);
             Assert.IsFalse(e.Travado(0));
-            Assert.AreEqual(1800, ganho, 1e-9);
+            Assert.AreEqual(1800 * R, ganho, 1e-9);
             Assert.AreEqual(1, e.ConsertadosFora);
             Assert.AreEqual(3600, e.SegundosFora, 1e-9);
             Assert.IsFalse(e.PassouDoLimite);
@@ -1326,14 +1329,14 @@ namespace IdleDataCenter.Testes
             var e = Nova(1000);
             e.Estado.cargo = 1;
             e.ComecarEvento(Catalogo.EventoCliente);
-            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9, "na oferta ainda não dobra");
+            Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9, "na oferta ainda não dobra");
             Assert.IsTrue(e.AgirNoEvento());
-            Assert.AreEqual(2, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(2 * R, e.ReceitaPorSegundo, 1e-9);
             double multa = 0;
             e.EventoTerminou += (def, valor) => multa = valor;
             e.Travar(0);
             Assert.IsFalse(e.TemEvento, "o cliente cancela");
-            Assert.AreEqual(-Catalogo.SegundosDeMultaDoCliente, multa, 1e-9);
+            Assert.AreEqual(-Catalogo.SegundosDeMultaDoCliente * R, multa, 1e-9);
         }
 
         [Test]
@@ -1357,7 +1360,7 @@ namespace IdleDataCenter.Testes
             e.EventoTerminou += (def, valor) => resultado = valor;
             e.ComecarEvento(Catalogo.EventoAuditoria);
             e.Avancar(61);
-            Assert.AreEqual(Catalogo.SegundosDeBonusDaAuditoria * e.FatorConquistas, resultado, 1e-9);
+            Assert.AreEqual(Catalogo.SegundosDeBonusDaAuditoria * R * e.FatorConquistas, resultado, 1e-9);
 
             DefinirNivel(e, Catalogo.Servidor, 1);   // duas torres: com uma travada ainda há receita para a multa
             e.ComecarEvento(Catalogo.EventoAuditoria);
@@ -1372,9 +1375,9 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova();
             e.ComecarEvento(Catalogo.EventoInternet);
-            Assert.AreEqual(Catalogo.FatorInternetCaida, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(Catalogo.FatorInternetCaida * R, e.ReceitaPorSegundo, 1e-9);
             e.AgirNoEvento();
-            Assert.AreEqual(Catalogo.FatorInternet4G, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(Catalogo.FatorInternet4G * R, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]
@@ -1415,7 +1418,7 @@ namespace IdleDataCenter.Testes
             var e = Nova();
             e.ComecarEvento(Catalogo.AtaqueMalware);
             Assert.IsTrue(e.TemEvento);
-            Assert.AreEqual(Catalogo.FatorMalware, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(Catalogo.FatorMalware * R, e.ReceitaPorSegundo, 1e-9);
             Assert.IsTrue(e.AgirNoEvento(), "limpar");
             Assert.IsFalse(e.TemEvento);
         }
@@ -1449,10 +1452,10 @@ namespace IdleDataCenter.Testes
             var e = Nova(1000000);
             e.Estado.cargo = 2;
             e.ComecarEvento(Catalogo.AtaqueRansomware);
-            Assert.AreEqual(Catalogo.FatorRansomware, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(Catalogo.FatorRansomware * R, e.ReceitaPorSegundo, 1e-9);
             double antes = e.Dinheiro;
             Assert.IsTrue(e.AgirNoEvento(), "pagar o resgate");
-            Assert.AreEqual(antes - Catalogo.SegundosDoResgate, e.Dinheiro, 1e-6);
+            Assert.AreEqual(antes - Catalogo.SegundosDoResgate * R, e.Dinheiro, 1e-6);
 
             DefinirNivel(e, Catalogo.HdExterno, 1); DefinirNivel(e, Catalogo.Nas, 1); DefinirNivel(e, Catalogo.Backup, 1);
             e.ComecarEvento(Catalogo.AtaqueRansomware);
@@ -1494,12 +1497,12 @@ namespace IdleDataCenter.Testes
         {
             var e = Nova();
             e.Estado.uptime = 0.9995;
-            Assert.AreEqual(1.05, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R * 1.025, e.ReceitaPorSegundo, 1e-9);
             e.Estado.uptime = 0.99995;
-            Assert.AreEqual(1.10, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R * 1.05, e.ReceitaPorSegundo, 1e-9);
             e.Estado.uptime = 0.995;
             Assert.IsNull(e.Sla);
-            Assert.AreEqual(1, e.ReceitaPorSegundo, 1e-9);
+            Assert.AreEqual(R, e.ReceitaPorSegundo, 1e-9);
         }
 
         [Test]

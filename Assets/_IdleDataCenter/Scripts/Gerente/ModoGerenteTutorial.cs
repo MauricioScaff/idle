@@ -44,7 +44,7 @@ namespace IdleDataCenter.Gerente
                 festaDesde = Time.unscaledTime;
                 festaTitulo = junto ? "Conquistas!" : "Conquista!";
                 festaCargo = junto ? conquistasJuntas + " de uma vez" : c.Nome;
-                festaTexto = junto ? "+" + conquistasJuntas + "% de renda, para sempre. Veja na Carreira." : c.Descricao + ". +1% de renda, para sempre.";
+                festaTexto = junto ? "+" + (conquistasJuntas * Catalogo.BonusPorConquista * 100).ToString("0.#") + "% de renda, para sempre. Veja na Carreira." : c.Descricao + ". +0,5% de renda, para sempre.";
                 if (!junto) Sons.Promocao();
             };
             E.Ipo += () => { festaDesde = Time.unscaledTime; festaTitulo = "IPO!"; festaCargo = "A empresa está na bolsa"; festaTexto = "De técnico de TI num armário a CTO de uma nuvem global."; };

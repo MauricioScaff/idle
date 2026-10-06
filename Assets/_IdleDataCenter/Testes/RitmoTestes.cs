@@ -13,7 +13,7 @@ namespace IdleDataCenter.Testes
     /// </summary>
     public class RitmoTestes
     {
-        [Test]
+        [Test, Timeout(600000)]   // simula umas 100 horas de jogo
         public void JogadorOciosoEvoluiNoRitmoPlanejado()
         {
             var e = new Economia(new EstadoJogo(), new Random(42));
@@ -52,18 +52,18 @@ namespace IdleDataCenter.Testes
                                   $"energia {e.ConsumoKw:0.0}/{e.CapacidadeKw:0.0} kW; banda {e.TrafegoMbps:0}/{e.BandaMbps:0} Mbps; " +
                                   $"uptime final {Economia.FormatarUptime(e.Uptime)}, melhor {Economia.FormatarUptime(melhorUptime)}, com SLA {H(segundosComSla)}");
 
-            // Documento de design: Técnico de 30 a 60 min; Sysadmin de 3 a 5 h; Analista de 1 a 2 dias; DevOps de 3 a 5 dias; SRE 1 semana.
-            // Ocioso e sem cliques o jogador é o mais lento possível; com cliques e offline tudo anda mais rápido.
-            Assert.That(promocoes[1], Is.InRange(10 * 60, 90 * 60), "promoção a Sysadmin fora do ritmo");
-            Assert.That(promocoes[2], Is.InRange(2 * 3600, 6 * 3600), "promoção a Analista fora do ritmo");
-            Assert.That(promocoes[3], Is.InRange(promocoes[2] + 2 * 3600, promocoes[2] + 8 * 3600), "promoção a DevOps fora do ritmo");
-            Assert.That(promocoes[4], Is.InRange(promocoes[3] + 3 * 3600, promocoes[3] + 12 * 3600), "promoção a SRE fora do ritmo");
+            // Ritmo de 2026-10-05 (pedido do usuário: 3x mais lento que antes, com preços reais): Sysadmin ~2h30, Analista ~12 h,
+            // IPO ~100 h. Ocioso e sem cliques o jogador é o mais lento possível; com cliques e offline tudo anda mais rápido.
+            Assert.That(promocoes[1], Is.InRange(30 * 60, 270 * 60), "promoção a Sysadmin fora do ritmo");
+            Assert.That(promocoes[2], Is.InRange(6 * 3600, 18 * 3600), "promoção a Analista fora do ritmo");
+            Assert.That(promocoes[3], Is.InRange(promocoes[2] + 6 * 3600, promocoes[2] + 24 * 3600), "promoção a DevOps fora do ritmo");
+            Assert.That(promocoes[4], Is.InRange(promocoes[3] + 9 * 3600, promocoes[3] + 36 * 3600), "promoção a SRE fora do ritmo");
             // com geradores sem teto sempre há o que comprar; "completo" aqui é só o que tem limite (melhorias e automações)
             Assert.That(completo[4], Is.GreaterThan(promocoes[4] + 1800), "SRE acaba rápido demais");
-            Assert.That(promocoes[5], Is.InRange(promocoes[4] + 3 * 3600, promocoes[4] + 14 * 3600), "promoção a Arquiteto fora do ritmo");
+            Assert.That(promocoes[5], Is.InRange(promocoes[4] + 9 * 3600, promocoes[4] + 42 * 3600), "promoção a Arquiteto fora do ritmo");
             Assert.That(completo[5], Is.GreaterThan(promocoes[5] + 1800), "Arquiteto acaba rápido demais");
-            Assert.That(promocoes[6], Is.InRange(promocoes[5] + 3 * 3600, promocoes[5] + 16 * 3600), "promoção a CTO fora do ritmo");
-            Assert.That(ipo, Is.GreaterThan(promocoes[6] + 4 * 3600), "IPO rápido demais");
+            Assert.That(promocoes[6], Is.InRange(promocoes[5] + 9 * 3600, promocoes[5] + 48 * 3600), "promoção a CTO fora do ritmo");
+            Assert.That(ipo, Is.GreaterThan(promocoes[6] + 12 * 3600), "IPO rápido demais");
         }
     }
 }

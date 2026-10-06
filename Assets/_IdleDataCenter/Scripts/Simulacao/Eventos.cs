@@ -48,7 +48,7 @@ namespace IdleDataCenter.Simulacao
 
         public const double PrimeiroEvento = 240, IntervaloEventoMin = 300, IntervaloEventoMax = 480;
         public const double DuracaoClienteAceito = 90, MultiplicadorCliente = 2, SegundosDeMultaDoCliente = 30;
-        public const double SegundosDeBonusDaAuditoria = 60, SegundosDeMultaDaAuditoria = 30;
+        public const double SegundosDeBonusDaAuditoria = 30, SegundosDeMultaDaAuditoria = 30;
         public const double FatorInternetCaida = 0.5, FatorInternet4G = 0.8;
         public const int LinksQueEvitamAQuedaDaInternet = 2;   // com dois links de fibra a internet tem redundância
         public const double MultiplicadorBlackFriday = 1.5;
@@ -58,7 +58,7 @@ namespace IdleDataCenter.Simulacao
         public const double SegundosDoResgate = 300;   // o resgate custa 5 minutos de receita (sem o ataque)
         public const int BackupQueRestauraRansomware = 3;   // fita (offline): restaura na hora
         public const double FatorSslExpirado = 0.6, FatorDnsFora = 0.5, FatorRackDesligado = 0.7;
-        public const double ChanceDoDeploySextaQuebrar = 0.5, SegundosDeBonusDoDeploySexta = 60;
+        public const double ChanceDoDeploySextaQuebrar = 0.5, SegundosDeBonusDoDeploySexta = 30;
         public static readonly string[] EventosQueORunbookResolve = { EventoSsl, EventoDns, EventoFaxineira, AtaqueMalware, EventoReuniao };
         public const double SegundosDoRunbookNoEvento = 5;
     }
