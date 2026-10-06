@@ -26,6 +26,12 @@ namespace IdleDataCenter.Ferramentas
                 sala.MostrarObstaculos = System.Array.Exists(System.Environment.GetCommandLineArgs(), a => a == "-obstaculos");   // teste: piso bloqueado e caminhos
                 var nome = Path.Combine(pasta, Path.GetFileNameWithoutExtension(arquivo));
                 Salvar(sala, 1.3f, SalaIso.Vista.Sala, nome + "_sala.png");
+                // teste: -filme desenha a sala em 24 momentos seguidos (as pessoas andando), para ver se alguém passa por cima de algo
+                if (System.Array.Exists(System.Environment.GetCommandLineArgs(), a => a == "-filme"))
+                {
+                    sala.MostrarObstaculos = false;
+                    for (int k = 0; k < 24; k++) Salvar(sala, 2f + k * 2.5f, SalaIso.Vista.Sala, nome + "_q" + k.ToString("00") + ".png");
+                }
                 if (economia.NoCampus) Salvar(sala, 1.3f, SalaIso.Vista.Campus, nome + "_campus.png");
                 if (economia.NoMundo) Salvar(sala, 1.3f, SalaIso.Vista.Mundo, nome + "_mundo.png");
                 if (economia.Cargo >= Catalogo.CargoAnalista)

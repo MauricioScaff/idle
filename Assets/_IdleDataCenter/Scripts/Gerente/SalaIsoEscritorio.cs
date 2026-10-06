@@ -46,11 +46,11 @@ namespace IdleDataCenter.Gerente
             lugaresDeChamado.Add(new LugarDeChamado { tipo = "bancada", grade = new Vector2(1.95f, 3.2f), olhar = "se", balao = l + new Vector2Int(bancada.w / 2, 4) });
 
             // o que ocupa o piso do quarto (em casas): planta, mesa, cadeira, a torre velha e a bancada (até a cadeira: sem corredor atrás dela)
-            Bloquear(0, 0, 0.7f, 0.7f);
-            Bloquear(1.6f, 0, 4, 1.15f);
-            Bloquear(2.25f, 0.8f, 2.95f, 1.45f);
-            Bloquear(0, 2.6f, 0.75f, 3.7f);
-            Bloquear(2.3f, 1.75f, 4, 3.75f);
+            Bloquear(0, 0, 0.7f, 0.7f, 55);          // planta
+            Bloquear(1.6f, 0, 4, 1.15f, 40);          // mesa
+            Bloquear(2.25f, 0.8f, 2.95f, 1.45f, 35);  // cadeira
+            Bloquear(0, 2.6f, 0.75f, 3.7f, 45);       // torre velha
+            Bloquear(2.45f, 2.3f, 3.95f, 3.65f, 32);  // bancada (pelos pés)
         }
 
         // ---------------- Técnico: o escritório ----------------
@@ -62,7 +62,7 @@ namespace IdleDataCenter.Gerente
         static readonly Vector2[] TorresDoEscritorio = { new Vector2(6.75f, 1.8f), new Vector2(6.05f, 1.8f), new Vector2(6.75f, 2.5f), new Vector2(6.05f, 2.5f) };
 
         /// <summary>Onde o técnico trabalha no escritório: na frente da bancada da TI, olhando para ela.</summary>
-        (Vector2 lugar, string olhar) LugarNaBancada => (new Vector2(6.45f, 5.85f), "ne");   // na face da frente (atrás ele ficaria desenhado por cima da bancada)
+        (Vector2 lugar, string olhar) LugarNaBancada => (new Vector2(5.35f, 6.45f), "se");   // na frente da bancada, ao lado da mesinha da planta (atrás dela ou colado na borda ele parecia em cima)
 
         Vector2Int pontoDaBancada, pontoDoFuncionario;
 
@@ -73,14 +73,14 @@ namespace IdleDataCenter.Gerente
 
             // o que ocupa o piso (em casas): planta do fundo, as duas fileiras de mesas, impressora, cafeteira, armarinho de
             // servidor, a bancada da TI e a mesinha da planta da frente (as torres e os funcionários se bloqueiam sozinhos)
-            Bloquear(0, 0, 0.6f, 0.6f);
-            Bloquear(0.4f, 1.1f, 3.4f, 2.6f);
-            Bloquear(0.2f, 4.0f, 3.4f, 5.5f);
-            Bloquear(2.9f, 0, 3.9f, 0.9f);
-            Bloquear(5.3f, 0, 7, 1.1f);
-            Bloquear(6.1f, 2.55f, 7, 3.45f);
-            Bloquear(5.3f, 3.2f, 7, 5.45f);
-            Bloquear(5.2f, 5.75f, 5.9f, 6.35f);
+            Bloquear(0, 0, 0.6f, 0.6f, 50);           // planta do fundo
+            Bloquear(0.4f, 1.1f, 3.4f, 2.6f, 45);     // mesas do fundo (com os monitores)
+            Bloquear(0.2f, 4.0f, 3.4f, 5.5f, 45);     // mesas da frente
+            Bloquear(2.9f, 0, 3.9f, 0.9f, 55);        // impressora no armarinho
+            Bloquear(5.3f, 0, 7, 1.1f, 50);           // balcão da cafeteira
+            Bloquear(6.0f, 2.5f, 7, 3.4f, 50);        // armarinho de servidor
+            Bloquear(5.85f, 3.6f, 7, 5.95f, 30);      // bancada da TI (pelos pés)
+            Bloquear(6.35f, 6.25f, 7, 7, 45);         // mesinha da planta da frente
 
             // a cafeteira é o café; a impressora e a bancada são de onde vêm os chamados
             Alvos.Add(new Alvo { Area = new RectInt(450, 190, 36, 38), Tipo = "cafe", Prof = 1, Nome = "Café: renda em dobro" });
@@ -125,7 +125,7 @@ namespace IdleDataCenter.Gerente
                     tela.Imagem(s.px, s.w, s.h, pe.x - s.w / 2, pe.y - pes - balanco);
                 }));
                 Alvos.Add(new Alvo { Area = new RectInt(pe.x - s.w / 2, pe.y - pes, s.w, pes), Tipo = "equipamento", Px = s.px, Prof = 9, Nome = "Funcionário" });
-                Bloquear(Cadeiras[i].x - 0.22f, Cadeiras[i].y - 0.22f, Cadeiras[i].x + 0.22f, Cadeiras[i].y + 0.22f);
+                Bloquear(Cadeiras[i].x - 0.22f, Cadeiras[i].y - 0.22f, Cadeiras[i].x + 0.22f, Cadeiras[i].y + 0.22f, 50);
                 lugaresDeChamado.Add(new LugarDeChamado { tipo = "pessoa", grade = Cadeiras[i] + new Vector2(0.65f, 0.1f), olhar = "nw", balao = pe + new Vector2Int(0, -pes - 4) });
                 if (i == n - 1) pontoDoFuncionario = pe + new Vector2Int(0, -pes / 2);
             }
@@ -155,7 +155,7 @@ namespace IdleDataCenter.Gerente
                 fila.Add((prof, () => DesenharSprite(s, l.x, l.y, travado ? -1 : semente * 1.7f)));
                 Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = "servidor:" + i, Px = s.px, Prof = prof, Nome = "Servidor torre " + (i + 1) });
                 if (travado) Quebrado(l + new Vector2Int(b.frente.x, 0), l + b.frente, false);
-                Bloquear(lugares[i].x - 0.7f, lugares[i].y - 0.7f, lugares[i].x, lugares[i].y);
+                Bloquear(lugares[i].x - 0.7f, lugares[i].y - 0.7f, lugares[i].x, lugares[i].y, 55);
                 Ronda(l + b.frente, false);
             }
             var ultima = NoPiso(torre, lugares[Mathf.Clamp(E.Torres - 1, 0, lugares.Length - 1)].x, lugares[Mathf.Clamp(E.Torres - 1, 0, lugares.Length - 1)].y);

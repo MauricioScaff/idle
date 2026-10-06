@@ -11,8 +11,14 @@ namespace IdleDataCenter.Gerente
     /// </summary>
     public partial class SalaIso
     {
-        /// <summary>Retângulos do piso ocupados (gx0, gy0, gx1, gy1 em casas), montados a cada desenho.</summary>
-        readonly List<Rect> obstaculos = new List<Rect>();
+        /// <summary>Um móvel: o retângulo do piso que ele ocupa (gx0, gy0, gx1, gy1 em casas) e a altura dele na imagem (pixels).</summary>
+        struct Obstaculo { public Rect piso; public float altura; }
+
+        /// <summary>Os móveis da sala, montados a cada desenho.</summary>
+        readonly List<Obstaculo> obstaculos = new List<Obstaculo>();
+
+        /// <summary>O corpo de uma pessoa na imagem, a partir dos pés (largura e altura em pixels): o que pode encostar num móvel.</summary>
+        const float LarguraDoCorpo = 22, AlturaDoCorpo = 46;
 
         /// <summary>Teste: pinta na imagem as casas bloqueadas (ExportarSalas -obstaculos).</summary>
         public bool MostrarObstaculos { get; set; }
@@ -23,14 +29,63 @@ namespace IdleDataCenter.Gerente
 
         bool UsaCaminhos => obstaculos.Count > 0 && areaAtual == null;
 
-        void Bloquear(float gx0, float gy0, float gx1, float gy1) => obstaculos.Add(Rect.MinMaxRect(gx0, gy0, gx1, gy1));
+        /// <summary>Um móvel no piso (em casas); altura: quantos pixels ele sobe na imagem a partir do chão (0 = rente ao chão).</summary>
+        void Bloquear(float gx0, float gy0, float gx1, float gy1, float altura = 0) =>
+            obstaculos.Add(new Obstaculo { piso = Rect.MinMaxRect(gx0, gy0, gx1, gy1), altura = altura });
 
+        /// <summary>
+        /// A pessoa pode ficar aqui? Não pode estar dentro de um móvel (com folga), nem atrás de um móvel encostando nele na
+        /// imagem: as pessoas são desenhadas por cima da ilustração, então quem está atrás pareceria em cima dele.
+        /// </summary>
         bool Livre(Vector2 g)
         {
             float n = Sala.casas;
             if (g.x < FolgaDaParede || g.y < FolgaDaParede || g.x > n - FolgaDaParede || g.y > n - FolgaDaParede) return false;
             foreach (var o in obstaculos)
-                if (g.x > o.xMin - Folga && g.x < o.xMax + Folga && g.y > o.yMin - Folga && g.y < o.yMax + Folga) return false;
+            {
+                var r = o.piso;
+                if (g.x > r.xMin - Folga && g.x < r.xMax + Folga && g.y > r.yMin - Folga && g.y < r.yMax + Folga) return false;
+                // atrás do móvel (no isométrico: menor nos dois eixos que a frente dele) e encostando nele na imagem
+                if (o.altura <= 0 || g.x >= r.xMax || g.y >= r.yMax) continue;
+                if (CorpoEncosta(PontoQuebrado(g.x, g.y), Contorno(o))) return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// O contorno do móvel na imagem: uma caixa isométrica vista de cima vira um hexágono (o canto do fundo no alto, os
+        /// cantos da esquerda e da direita subindo pela altura, o canto da frente no chão). Em ordem, para o teste de dentro.
+        /// </summary>
+        Vector2[] Contorno(Obstaculo o)
+        {
+            var r = o.piso;
+            var fundo = PontoQuebrado(r.xMin, r.yMin); var direita = PontoQuebrado(r.xMax, r.yMin);
+            var frente = PontoQuebrado(r.xMax, r.yMax); var esquerda = PontoQuebrado(r.xMin, r.yMax);
+            var h = new Vector2(0, o.altura);
+            return new[] { fundo - h, direita - h, direita, frente, esquerda, esquerda - h };
+        }
+
+        /// <summary>Algum ponto do corpo (pés p, largura e altura da pessoa) cai dentro do contorno do móvel?</summary>
+        static bool CorpoEncosta(Vector2 p, Vector2[] contorno)
+        {
+            for (int i = 0; i <= 2; i++)
+                for (int j = 0; j <= 3; j++)
+                    if (Dentro(new Vector2(p.x + (i - 1) * LarguraDoCorpo / 2, p.y - j * AlturaDoCorpo / 3), contorno)) return true;
+            return false;
+        }
+
+        /// <summary>Ponto dentro de um polígono convexo (vértices em ordem, horária ou anti-horária).</summary>
+        static bool Dentro(Vector2 q, Vector2[] poligono)
+        {
+            int sinal = 0;
+            for (int i = 0; i < poligono.Length; i++)
+            {
+                var a = poligono[i]; var b = poligono[(i + 1) % poligono.Length];
+                float cruz = (b.x - a.x) * (q.y - a.y) - (b.y - a.y) * (q.x - a.x);
+                if (Mathf.Abs(cruz) < 1e-4f) continue;
+                int s = cruz > 0 ? 1 : -1;
+                if (sinal == 0) sinal = s; else if (s != sinal) return false;
+            }
             return true;
         }
 
@@ -38,9 +93,12 @@ namespace IdleDataCenter.Gerente
         Vector2 Centro(int i, int j) => new Vector2((i + 0.5f) * PassoDaGrade, (j + 0.5f) * PassoDaGrade);
 
         /// <summary>A casinha livre mais perto de um ponto (o próprio ponto pode estar dentro da folga de um móvel).</summary>
-        Vector2Int MaisPertoLivre(Vector2 g)
+        Vector2Int MaisPertoLivre(Vector2 g, Trabalhador quem = null)
         {
             int n = Celulas;
+            // onde os outros estão ou vão parar: ninguém para em cima de ninguém (0,6 casa de distância)
+            var ocupados = new List<Vector2>();
+            if (quem != null) foreach (var o in pessoas.Values) if (o != quem) ocupados.Add(Destino(o));
             var melhor = new Vector2Int(-1, -1);
             float dist = float.MaxValue;
             for (int i = 0; i < n; i++)
@@ -48,6 +106,9 @@ namespace IdleDataCenter.Gerente
                 {
                     var c = Centro(i, j);
                     if (!Livre(c)) continue;
+                    bool perto = false;
+                    foreach (var o in ocupados) if ((o - c).sqrMagnitude < 0.36f) { perto = true; break; }
+                    if (perto) continue;
                     float d = (c - g).sqrMagnitude;
                     if (d < dist) { dist = d; melhor = new Vector2Int(i, j); }
                 }
@@ -67,7 +128,9 @@ namespace IdleDataCenter.Gerente
         {
             p.caminho.Clear();
             bool destinoLivre = Livre(destino);
-            var fim = MaisPertoLivre(destino);
+            var fim = MaisPertoLivre(destino, p);   // sem parar em cima de outra pessoa
+            bool destinoOcupado = false;
+            foreach (var o in pessoas.Values) if (o != p && (Destino(o) - destino).sqrMagnitude < 0.36f) destinoOcupado = true;
             var inicio = MaisPertoLivre(p.pos);
             if (fim.x < 0 || inicio.x < 0) { p.caminho.Add(destino); return; }
 
@@ -112,7 +175,7 @@ namespace IdleDataCenter.Gerente
             var pontos = new List<Vector2>();
             for (var c = fim; c != inicio; c = veio[c.x, c.y]) pontos.Add(Centro(c.x, c.y));
             pontos.Reverse();
-            if (destinoLivre) { if (pontos.Count > 0) pontos[pontos.Count - 1] = destino; else pontos.Add(destino); }
+            if (destinoLivre && !destinoOcupado) { if (pontos.Count > 0) pontos[pontos.Count - 1] = destino; else pontos.Add(destino); }
             var atual = p.pos;
             int i0 = 0;
             while (i0 < pontos.Count)
@@ -128,8 +191,8 @@ namespace IdleDataCenter.Gerente
         /// <summary>Teste: as casinhas bloqueadas em vermelho translúcido.</summary>
         void DesenharObstaculos()
         {
-            if (!MostrarObstaculos || !UsaCaminhos) return;
-            int n = Celulas;
+            if (!MostrarObstaculos) return;
+            int n = UsaCaminhos ? Celulas : 0;
             var vermelho = new Color32(255, 40, 60, 90);
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < n; j++)
@@ -143,18 +206,24 @@ namespace IdleDataCenter.Gerente
             var destinos = new List<Vector2>();
             foreach (var l in lugaresDeChamado) destinos.Add(l.grade);
             foreach (var r in pontosDeRonda) destinos.Add(r.lugar);
+            if (tecnicoConsertando) destinos.Add(lugarDoConserto);
             foreach (var d in destinos)
             {
                 var teste = new Trabalhador { pos = Mesa.lugar };
-                RotaLivre(teste, d);
+                Rota(teste, d);   // a rota que a sala usa de verdade (A* com obstáculos, ou os corredores)
                 var a = Mesa.lugar;
                 foreach (var b in teste.caminho)
                 {
                     for (float u = 0; u <= 1; u += 0.05f) { var q = IP(Mathf.Lerp(a.x, b.x, u), Mathf.Lerp(a.y, b.y, u)); tela.Ret(q.x, q.y, 1, 1, new Color32(255, 214, 92, 255)); }
                     a = b;
                 }
-                var fim = IP(d.x, d.y);
+                var parada = teste.caminho.Count > 0 ? teste.caminho[teste.caminho.Count - 1] : d;   // onde ela para de verdade
+                if (UsaCaminhos && !Livre(parada)) { var c = MaisPertoLivre(parada); if (c.x >= 0) parada = Centro(c.x, c.y); }
+                var fim = IP(parada.x, parada.y);
                 tela.Ret(fim.x - 1, fim.y - 1, 3, 3, new Color32(80, 255, 140, 255));
+                // o técnico parado ali, para ver se ele fica em cima de algum móvel
+                var boneco = Pose("tecnico", "se", false, 0);
+                if (boneco != null) { int pes = Pes(boneco); tela.Imagem(boneco.px, boneco.w, boneco.h, fim.x - boneco.w / 2, fim.y - pes); }
             }
         }
     }

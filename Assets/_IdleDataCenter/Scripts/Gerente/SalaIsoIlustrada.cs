@@ -683,6 +683,7 @@ namespace IdleDataCenter.Gerente
             public bool naMesa;                    // técnico: está trabalhando na mesa
             public bool consertando;
             public bool atendendo;                 // técnico: indo até um chamado que você clicou
+            public Vector2 alvo;                   // o destino pedido (a parada pode ser ajustada para um lugar livre perto dele)
             public float fase;
             public float andado;                   // pixels andados: escolhe o quadro do passo (o pé não patina)
         }
@@ -760,6 +761,7 @@ namespace IdleDataCenter.Gerente
         void Rota(Trabalhador p, Vector2 destino)
         {
             p.caminho.Clear();
+            p.alvo = destino;
             if (UsaCaminhos) { RotaLivre(p, destino); return; }   // salas com obstáculos declarados: caminho de verdade
             if (areaAtual == null && E.Cargo >= Catalogo.CargoAnalista)
             {
@@ -802,6 +804,7 @@ namespace IdleDataCenter.Gerente
                     p.quem = chave == "estagiario" ? "estagiario" : chave == "robo" ? "robo" : tecnico;
                     if (chave.StartsWith("engenheiro")) p.camisa = CamisasDosEngenheiros[chave[chave.Length - 1] - '0'];
                     // começa no lugar de trabalho (técnico) ou num ponto de ronda
+                    // nas salas com obstáculos, nasce no lugar livre mais perto (o ponto pode estar na folga de um móvel)
                     if (chave == "tecnico") { p.pos = Mesa.lugar; p.olhar = Mesa.olhar; p.naMesa = true; p.paradaAte = t + 8 + (float)sorteioDasPessoas.NextDouble() * 15; }
                     else if (RondaLivre(p) is (Vector2, string) livre)
                     {
@@ -813,6 +816,7 @@ namespace IdleDataCenter.Gerente
                         var meio = areaAtual != null ? new Vector2(Sala.casas / 2f, Sala.casas / 2f) : Mesa.lugar + new Vector2(0.8f, 0.8f);
                         p.pos = meio + new Vector2(pessoas.Count * 1.3f, 0);
                     }
+                    if (UsaCaminhos && !Livre(p.pos)) { var c = MaisPertoLivre(p.pos); if (c.x >= 0) p.pos = Centro(c.x, c.y); }
                     pessoas[chave] = p;
                 }
                 if (chave == "tecnico") PensarTecnico(p); else PensarRonda(p);
@@ -829,8 +833,7 @@ namespace IdleDataCenter.Gerente
             if (tecnicoConsertando)
             {
                 // indo para outro conserto (ou ainda não foi): refaz o caminho
-                var destino = p.caminho.Count > 0 ? p.caminho[p.caminho.Count - 1] : p.pos;
-                if (!p.consertando || (destino - lugarDoConserto).sqrMagnitude > 0.01f)
+                if (!p.consertando || (p.alvo - lugarDoConserto).sqrMagnitude > 0.01f)   // compara com o pedido: a parada pode ter sido ajustada
                 {
                     p.consertando = true; p.naMesa = false;
                     Rota(p, lugarDoConserto); p.olhandoDestino = olharDoConserto;

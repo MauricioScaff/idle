@@ -22,3 +22,6 @@ Thumbs.db
 
 # configuração local de outras ferramentas (não é do jogo)
 .codex/
+
+# zip do jogo para o itch.io (gerado a cada versão)
+itch/*.zip
