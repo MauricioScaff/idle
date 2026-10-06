@@ -356,9 +356,10 @@ namespace IdleDataCenter.Gerente
                 fila.Add((0.5f + i * 0.01f, () => DesenharSprite(nobreak, l.x, l.y, semente)));
                 Ronda(l + BaseDe(nobreak).frente, false);
             }
-            // ar-condicionado no alto da parede da esquerda, sobre as torres (espelhado: virado para a sala)
-            var ar = CarregarPixelLab("ar_condicionado", true);
-            pontoDoAr = IP(0, 4.6f, 92);
+            // ar-condicionado no alto da parede da esquerda, perto do teto e sobre as torres (ar_parede: o sprite cisalhado para
+            // subir 1 px a cada 2, como a parede; Arte/Ferramentas/cisalhar_ar.ps1)
+            var ar = CarregarPixelLab("ar_parede");
+            pontoDoAr = IP(0, 4.6f, 100);
             if (ar != null && E.Nivel(Catalogo.ArCondicionado) > 0)
                 fila.Add((1, () => DesenharSprite(ar, pontoDoAr.x - ar.w / 2, pontoDoAr.y - ar.h / 2)));
 
