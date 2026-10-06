@@ -191,7 +191,7 @@ namespace IdleDataCenter.Gerente
             if (!string.IsNullOrEmpty(janela)) Loja();
             Terminal();
             Confetes();   // por cima da loja: a compra pode ter sido feita nela
-            if (!NaTelaInicial && Livre) BotaoDoMenu();
+            if (!NaTelaInicial && Livre && !terminalAberto) BotaoDoMenu();
             GUI.enabled = true;
             TelaInicial();
             GUI.matrix = anterior;

@@ -102,6 +102,7 @@ namespace IdleDataCenter
                     painel.AbrirAba(arg.Contains("=") ? arg.Substring(arg.IndexOf('=') + 1) : "visao");
                 }
                 if (arg == "-incidente") economia.Travar(0);
+                if (arg == "-ingles") Idiomas.Forcado = true;   // teste: em inglês sem mexer nos ajustes
                 if (arg == "-promover") economia.Promover(); // só se as metas estiverem cumpridas
                 if (arg == "-alternar-painel") InvokeRepeating(nameof(AlternarPainel), 5f, 4f); // abre e fecha sozinho (teste da janela)
                 if (arg == "-alternar-gerente") InvokeRepeating(nameof(AlternarGerente), 5f, 5f);   // entra e sai do modo gerente (teste da janela)
@@ -130,7 +131,12 @@ namespace IdleDataCenter
             // a tela inicial (continuar, novo jogo, configurações) abre junto com o modo gerente; os testes vão direto para o jogo
             string[] deTeste = { "-gerente", "-faixa", "-painel", "-terminal", "-atender", "-promover", "-incidente", "-hora", "-alternar", "-simular" };
             bool emTeste = Array.Exists(args, a => Array.Exists(deTeste, t => a.StartsWith(t)));
-            if (gerente.Aberto && !emTeste) gerente.MostrarTelaInicial(ganhoOffline);
+            if (!emTeste)
+            {
+                bool naFaixa = !gerente.Aberto;   // quem usava a faixa volta para ela no Continuar
+                if (naFaixa) AbrirGerente(lembrar: false);
+                gerente.MostrarTelaInicial(ganhoOffline, naFaixa);
+            }
             if (gerente.Aberto && ganhoOffline > 0)
                 gerente.Avisar("Enquanto você estava fora: +R$ " + Formatar(ganhoOffline) + " (" + (economia.TaxaOffline * 100).ToString("0") + "% da receita)", 12);
         }

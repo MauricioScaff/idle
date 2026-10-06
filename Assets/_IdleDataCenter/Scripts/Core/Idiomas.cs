@@ -24,7 +24,10 @@ namespace IdleDataCenter
         /// <summary>Textos que apareceram em inglês sem tradução (para revisar; só os primeiros).</summary>
         public static readonly HashSet<string> Faltando = new HashSet<string>();
 
-        public static bool Ingles => Ajustes.Idioma == 1;
+        public static bool Ingles => Forcado || Ajustes.Idioma == 1;
+
+        /// <summary>Teste: -ingles abre em inglês sem mudar a preferência do jogador.</summary>
+        public static bool Forcado;
 
         /// <summary>O texto no idioma escolhido.</summary>
         public static string T(string s)

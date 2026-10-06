@@ -19,11 +19,21 @@ namespace IdleDataCenter.Gerente
         public bool NaTelaInicial => menu != TelaDoMenu.Nenhuma;
 
         /// <summary>Abre a tela inicial (ganho: quanto rendeu com o jogo fechado, para mostrar no Continuar).</summary>
-        public void MostrarTelaInicial(double ganho = 0)
+        public void MostrarTelaInicial(double ganho = 0, bool depoisVaiParaAFaixa = false)
         {
             menu = TelaDoMenu.Inicio;
             menuDoInicio = true;
             ganhoAoAbrir = ganho;
+            voltarParaAFaixa = depoisVaiParaAFaixa;
+        }
+
+        bool voltarParaAFaixa;
+
+        /// <summary>Continuar: fecha o menu e, se o jogador usava a faixa, volta para ela.</summary>
+        void Continuar()
+        {
+            FecharMenu();
+            if (voltarParaAFaixa) { voltarParaAFaixa = false; faixa.FecharGerente(); }
         }
 
         void AbrirMenu() { menu = TelaDoMenu.Inicio; menuDoInicio = false; }
@@ -35,7 +45,7 @@ namespace IdleDataCenter.Gerente
         {
             if (!Input.GetKeyDown(KeyCode.Escape) || terminalAberto) return false;
             if (menu == TelaDoMenu.ConfirmarNovo || menu == TelaDoMenu.Configuracoes) { menu = TelaDoMenu.Inicio; return true; }
-            if (menu == TelaDoMenu.Inicio) { FecharMenu(); return true; }
+            if (menu == TelaDoMenu.Inicio) { Continuar(); return true; }
             if (string.IsNullOrEmpty(janela)) { AbrirMenu(); return true; }
             return false;
         }
@@ -75,7 +85,7 @@ namespace IdleDataCenter.Gerente
             float x = W / 2 - L / 2, y = 392;
             bool temJogo = E.Estado.totalGanho > 0 || E.Cargo > Catalogo.CargoFreelancer;
 
-            if (ui.Botao(new Rect(x, y, L, A), menuDoInicio ? "Continuar" : "Voltar ao jogo", IsoGui.Verde, true, 3)) FecharMenu();
+            if (ui.Botao(new Rect(x, y, L, A), menuDoInicio ? "Continuar" : "Voltar ao jogo", IsoGui.Verde, true, 3)) Continuar();
             if (temJogo)
             {
                 string resumo = E.NomeDoCargo + " · " + Dinheiro(E.Dinheiro);
@@ -147,7 +157,7 @@ namespace IdleDataCenter.Gerente
         /// <summary>O botão de menu no canto de cima, à esquerda do dinheiro (três tracinhos).</summary>
         void BotaoDoMenu()
         {
-            var r = new Rect(20, 50, 48, 48);
+            var r = new Rect(222, 828, 48, 48);   // embaixo, ao lado do botão Faixa
             bool sobre = r.Contains(Event.current.mousePosition);
             ui.Caixa(r, sobre ? IsoGui.Cor("23314f") : IsoGui.Painel, IsoGui.Borda);
             for (int i = 0; i < 3; i++) ui.Ret(new Rect(r.x + 13, r.y + 15 + i * 8, 22, 4), sobre ? IsoGui.Branco : IsoGui.Muted);
