@@ -47,6 +47,7 @@ namespace IdleDataCenter.Simulacao
         public double helpDeskTrabalho;        // quanto a equipe já trabalhou no chamado da vez
         public int chamadosAtendidos, chamadosP1;
         public int cafesTomados;
+        public int comandosCertos;             // problemas resolvidos digitando no terminal (ver Terminal.cs)
 
         // Contratos de clientes (ver Contratos.cs): a proposta na mesa (cliente vazio = nenhuma) e os ativos
         public Contrato proposta = new Contrato();

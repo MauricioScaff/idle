@@ -1500,5 +1500,127 @@ namespace IdleDataCenter.Testes
             Assert.AreEqual(0, e.IdadeDosServidores, 1e-9);
             Assert.AreEqual(10000 - custo, e.Dinheiro, 1e-9);
         }
+        // ---------- Terminal ----------
+
+        [Test]
+        public void ServidorTravadoApareceNoTerminalEORebootResolveComBonus()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 2);
+            e.Travar(1);
+            var problemas = e.ProblemasNoTerminal();
+            Assert.AreEqual(1, problemas.Count);
+            StringAssert.Contains("srv02", problemas[0].Log);
+            e.Avancar(0);   // as conquistas de agora já contam na renda
+            double antes = e.Dinheiro;
+            var saida = e.Executar("ssh srv-02 sudo reboot");
+            Assert.AreEqual(TipoLinha.Ok, saida[0].Tipo);
+            Assert.IsFalse(e.Travado(1));
+            Assert.AreEqual(antes + e.ReceitaPorSegundo * Catalogo.SegundosDeBonusDoTerminal, e.Dinheiro, 1e-6);
+            Assert.AreEqual(1, e.Estado.comandosCertos);
+            Assert.AreEqual(1, e.ComboDoTerminal);
+        }
+
+        [Test]
+        public void ComandoErradoNaoResolveEZeraOCombo()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 2);
+            e.Travar(0);
+            e.Travar(2);
+            e.Executar("reboot srv01");
+            Assert.AreEqual(1, e.ComboDoTerminal);
+            var saida = e.Executar("reboot srv09");   // servidor que não travou
+            Assert.AreEqual(TipoLinha.Erro, saida[0].Tipo);
+            Assert.IsTrue(e.Travado(2));
+            Assert.AreEqual(0, e.ComboDoTerminal);
+            Assert.AreEqual(TipoLinha.Erro, e.Executar("rebot srv03")[0].Tipo, "erro de digitação");
+            Assert.IsTrue(e.Travado(2));
+        }
+
+        [Test]
+        public void ComboAumentaOBonusAteOMaximo()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 5);
+            for (int s = 0; s < 3; s++) e.Travar(s);
+            e.Avancar(0);
+            e.Executar("reboot srv01");
+            e.Executar("reboot srv02");
+            Assert.AreEqual(1 + 2 * Catalogo.BonusPorCombo, e.MultiplicadorDoCombo, 1e-9);
+            double antes = e.Dinheiro;
+            e.Executar("reboot srv03");
+            Assert.AreEqual(antes + e.ReceitaPorSegundo * Catalogo.SegundosDeBonusDoTerminal * (1 + 2 * Catalogo.BonusPorCombo), e.Dinheiro, 1e-6);
+        }
+
+        [Test]
+        public void DiscoEDeployTemComandosProprios()
+        {
+            var e = Nova();
+            e.QueimarDisco();
+            Assert.AreEqual("fsck -y /dev/sda", e.ProblemasNoTerminal()[0].Exemplo);
+            e.Executar("fsck /dev/sda");
+            Assert.IsFalse(e.DiscoQueimado);
+
+            DefinirNivel(e, Catalogo.Storage, 1);
+            e.QueimarDisco();
+            Assert.AreEqual(TipoLinha.Erro, e.Executar("fsck /dev/sda")[0].Tipo, "com RAID, fsck não troca disco");
+            e.Executar("mdadm /dev/md0 --add /dev/sdd");
+            Assert.IsFalse(e.DiscoQueimado);
+
+            DefinirNivel(e, Catalogo.Containers, 1);
+            e.QuebrarDeploy();
+            e.Executar("kubectl rollout undo deployment/api");
+            Assert.IsFalse(e.DeployQuebrado);
+        }
+
+        [Test]
+        public void EventoDeTiResolvidoNoTerminal()
+        {
+            var e = Nova();
+            e.Estado.cargo = 1;
+            e.ComecarEvento(Catalogo.EventoDns);
+            Assert.AreEqual(Catalogo.EventoDns, e.Estado.evento);
+            Assert.AreEqual(TipoLinha.Ok, e.Executar("systemctl restart named")[0].Tipo);
+            Assert.IsFalse(e.TemEvento);
+        }
+
+        [Test]
+        public void ComandosDoDiaADiaNaoZeramOCombo()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 2);
+            e.Travar(0);
+            e.Executar("reboot srv01");
+            Assert.AreEqual(TipoLinha.Limpar, e.Executar("clear")[0].Tipo);
+            Assert.AreEqual(TipoLinha.Sair, e.Executar("exit")[0].Tipo);
+            Assert.Greater(e.Executar("help").Count, 0);
+            e.Executar("whoami");
+            Assert.AreEqual(1, e.ComboDoTerminal);
+        }
+
+        [Test]
+        public void TabCompletaOComandoDoProblema()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 2);
+            e.Travar(1);
+            Assert.AreEqual("ssh srv02 sudo reboot", e.Completar("ss"));
+            Assert.AreEqual("fortune", e.Completar("fo"));
+            Assert.AreEqual("xyz", e.Completar("xyz"));
+        }
+
+        [Test]
+        public void DezAcertosNoTerminalDaoConquista()
+        {
+            var e = Nova();
+            DefinirNivel(e, Catalogo.Servidor, 2);
+            for (int i = 0; i < Catalogo.ComandosParaConquista; i++)
+            {
+                e.Travar(0);
+                e.Executar("reboot srv01");
+            }
+            Assert.IsTrue(e.TemConquista("terminal"));
+        }
     }
 }
