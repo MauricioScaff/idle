@@ -35,6 +35,7 @@ namespace IdleDataCenter.Gerente
             ui = new IsoGui();
             salaIso = new SalaIso(E) { MostrarExpansao = false, PessoasSoltas = true };
             IniciarPrimeiraHora();
+            IniciarTerminal();
 
             // avisos na barra de notícias (os sons e o save continuam por conta da faixa)
             E.AutomacaoPronta += id => Notificar("Automação pronta: " + Catalogo.BuscarAutomacao(id).Nome, 8);
@@ -59,9 +60,10 @@ namespace IdleDataCenter.Gerente
         void Update()
         {
             if (!Aberto) return;
-            if (Input.GetKeyDown(KeyCode.Escape) && !string.IsNullOrEmpty(janela)) Abrir("Visao");   // Esc fecha a janela aberta
+            if (Input.GetKeyDown(KeyCode.Escape) && !terminalAberto && !string.IsNullOrEmpty(janela)) Abrir("Visao");   // Esc fecha a janela aberta
             flashCompra = Mathf.Max(0, flashCompra - Time.unscaledDeltaTime);
             AtualizarSala();
+            AtualizarTerminal();
         }
 
         void OnDestroy()
@@ -171,15 +173,18 @@ namespace IdleDataCenter.Gerente
             float escala = Mathf.Min(Screen.width / W, Screen.height / H);
             GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - W * escala) / 2, (Screen.height - H * escala) / 2, 0),
                 Quaternion.identity, new Vector3(escala, escala, 1));
+            EventosDoTerminal();   // antes de tudo: aberto, o terminal fica com o teclado e os cliques dele
             DesenharSala();
             Hud();
             PainelHelpDesk();
             PainelContratos();
             CartaoAtencao();
             Barra();
+            BotaoDoTerminal();
             if (!Tutorial() && Time.unscaledTime < avisoAte) Aviso(aviso);
             Festa();
             if (!string.IsNullOrEmpty(janela)) Loja();
+            Terminal();
             Confetes();   // por cima da loja: a compra pode ter sido feita nela
             GUI.matrix = anterior;
         }
