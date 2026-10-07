@@ -433,6 +433,7 @@ namespace IdleDataCenter.Simulacao
         /// <summary>Avança o tempo com o jogo aberto: rende, conserta, escreve automações e sorteia falhas.</summary>
         public void Avancar(double segundos)
         {
+            Estado.segundosJogados += segundos;   // só com o jogo aberto (o offline entra por AplicarOffline)
             Ganhar(ReceitaPorSegundo * segundos);
 
             // O técnico resolve sozinho, só que devagar
@@ -672,6 +673,7 @@ namespace IdleDataCenter.Simulacao
         {
             if (!PodeFazerIpo) return false;
             Estado.ipoFeito = true;
+            Estado.ipoEm = Estado.segundosJogados;
             Ipo?.Invoke();
             return true;
         }
@@ -850,6 +852,13 @@ namespace IdleDataCenter.Simulacao
         {
             if (Estado.versao >= EstadoJogo.VersaoAtual) return;
             if (Estado.versao < 3) Estado.cargo++;
+            if (Estado.versao < 5)
+            {
+                // o tempo de jogo começa a contar agora: os cargos que já passaram ficam sem data
+                Estado.tempoCompleto = false;
+                Estado.chegouNoCargoEm = new List<double>();
+                for (int c = 0; c <= Estado.cargo; c++) Estado.chegouNoCargoEm.Add(-1);
+            }
             Estado.versao = EstadoJogo.VersaoAtual;
         }
 
@@ -909,6 +918,9 @@ namespace IdleDataCenter.Simulacao
             if (!PodePromover) return false;
             Estado.cargo++;
             ComecarCargo();
+            var em = Estado.chegouNoCargoEm ?? (Estado.chegouNoCargoEm = new List<double>());
+            while (em.Count < Estado.cargo) em.Add(-1);   // os cargos de antes (saves antigos) ficam sem registro
+            if (em.Count == Estado.cargo) em.Add(Estado.segundosJogados); else em[Estado.cargo] = Estado.segundosJogados;
             Promoveu?.Invoke(Estado.cargo);
             return true;
         }

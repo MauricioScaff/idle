@@ -7,7 +7,7 @@ namespace IdleDataCenter.Simulacao
     [Serializable]
     public class EstadoJogo
     {
-        public const int VersaoAtual = 4;   // 3: o Freelancer entrou antes do Técnico; 4: as metas contam só o que foi feito no cargo
+        public const int VersaoAtual = 5;   // 3: o Freelancer entrou antes do Técnico; 4: as metas contam só o que foi feito no cargo; 5: tempo de jogo
 
         public int versao = VersaoAtual;
         public double dinheiro;
@@ -94,6 +94,14 @@ namespace IdleDataCenter.Simulacao
         // Os contadores quando o jogador chegou no cargo atual: as metas de contagem valem a partir daqui (saves antigos
         // ficam com zero, ou seja, contam desde o começo como antes)
         public InicioDoCargo inicioDoCargo = new InicioDoCargo();
+
+        // Para o resumo da tela de final: tempo de jogo aberto, em que segundo dele chegou a cada cargo (índice = cargo;
+        // -1 = sem registro, saves antigos) e o IPO, e se a tela de final já apareceu
+        public double segundosJogados;
+        public List<double> chegouNoCargoEm = new List<double> { 0 };   // o Freelancer começa no segundo zero
+        public bool tempoCompleto = true;   // false: o save é de antes do registro (o tempo de jogo e os cargos não estão inteiros)
+        public double ipoEm = -1;
+        public bool finalVisto;
     }
 
     /// <summary>Os contadores da carreira no momento da última promoção.</summary>

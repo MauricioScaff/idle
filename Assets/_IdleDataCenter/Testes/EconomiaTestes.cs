@@ -320,6 +320,35 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
+        public void ResumoGuardaOTempoDeCadaCargoEDoIpo()
+        {
+            var e = new Economia(new EstadoJogo());   // começa no Freelancer, no segundo zero
+            for (int cargo = 0; cargo < Catalogo.Cargos.Count - 1; cargo++)
+            {
+                e.Avancar(100);
+                foreach (var m in e.CargoAtual.MetasParaPromocao) Cumprir(e, m);
+                Assert.IsTrue(e.Promover());
+            }
+            e.Avancar(100);
+            foreach (var m in e.CargoAtual.MetasParaPromocao) Cumprir(e, m);
+            Assert.IsTrue(e.FazerIpo());
+            var s = e.Estado;
+            Assert.AreEqual(Catalogo.Cargos.Count, s.chegouNoCargoEm.Count);
+            for (int c = 0; c < Catalogo.Cargos.Count; c++) Assert.AreEqual(c * 100, s.chegouNoCargoEm[c], 1e-9, "chegada no cargo " + c);
+            Assert.AreEqual(Catalogo.Cargos.Count * 100, s.ipoEm, 1e-9);
+            Assert.IsTrue(s.tempoCompleto);
+        }
+
+        [Test]
+        public void SaveAntigoFicaSemAsDatasDosCargos()
+        {
+            var e = new Economia(new EstadoJogo { versao = 4, cargo = Catalogo.CargoSre });
+            Assert.IsFalse(e.Estado.tempoCompleto);
+            Assert.AreEqual(Catalogo.CargoSre + 1, e.Estado.chegouNoCargoEm.Count);
+            Assert.IsTrue(e.Estado.chegouNoCargoEm.TrueForAll(t => t < 0));
+        }
+
+        [Test]
         public void MetasDoFreelancerTrazemAContratacao()
         {
             var e = Freelancer();

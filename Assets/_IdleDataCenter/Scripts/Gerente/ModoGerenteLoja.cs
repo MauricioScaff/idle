@@ -259,6 +259,7 @@ namespace IdleDataCenter.Gerente
             {
                 ui.Texto("A empresa está na bolsa. Você chegou ao topo da carreira.", modal.x + 29, modal.y + 150, IsoGui.Cor("ffd65c"), 2);
                 ui.Texto("Em prestígio, venda a empresa e recomece com bônus permanentes.", modal.x + 29, modal.y + 176, IsoGui.Muted, 2);
+                if (ui.Botao(new Rect(modal.x + 29, modal.y + 216, 360, 46), "Ver o resumo da carreira", Ouro, true, 2)) AbrirFinal();
                 return;
             }
             bool ipo = !E.TemProximoCargo;

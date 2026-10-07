@@ -10,10 +10,10 @@ namespace IdleDataCenter.Gerente
     /// </summary>
     public partial class ModoGerente
     {
-        enum TelaDoMenu { Nenhuma, Inicio, ConfirmarNovo, Configuracoes, Dicionario }
+        enum TelaDoMenu { Nenhuma, Inicio, ConfirmarNovo, Configuracoes, Dicionario, Creditos }
         TelaDoMenu menu = TelaDoMenu.Nenhuma;
         /// <summary>A versão no canto da tela inicial (a mesma do itch e da release do GitHub).</summary>
-        const string Versao = "v0.7";
+        const string Versao = "v0.8";
 
         bool menuDoInicio;          // aberta ao abrir o jogo (o botão diz "Continuar"; no meio do jogo, "Voltar ao jogo")
         double ganhoAoAbrir;
@@ -47,7 +47,7 @@ namespace IdleDataCenter.Gerente
         bool EscNoMenu()
         {
             if (!Input.GetKeyDown(KeyCode.Escape) || terminalAberto) return false;
-            if (menu == TelaDoMenu.ConfirmarNovo || menu == TelaDoMenu.Configuracoes || menu == TelaDoMenu.Dicionario) { menu = TelaDoMenu.Inicio; return true; }
+            if (menu == TelaDoMenu.ConfirmarNovo || menu == TelaDoMenu.Configuracoes || menu == TelaDoMenu.Dicionario || menu == TelaDoMenu.Creditos) { menu = TelaDoMenu.Inicio; return true; }
             if (menu == TelaDoMenu.Inicio) { Continuar(); return true; }
             if (string.IsNullOrEmpty(janela)) { AbrirMenu(); return true; }
             return false;
@@ -61,6 +61,7 @@ namespace IdleDataCenter.Gerente
             // no começo do jogo, só a cidade ao fundo; no meio do jogo, a sala aparece escurecida atrás
             ui.Ret(new Rect(-200, -200, W + 400, H + 400), new Color(.02f, .03f, .07f, menuDoInicio ? .35f : .7f));
             if (menu == TelaDoMenu.Dicionario) { Dicionario(); return true; }   // a tela inteira (sem o emblema)
+            if (menu == TelaDoMenu.Creditos) { Creditos(() => menu = TelaDoMenu.Inicio); return true; }
             Emblema(new Vector2(W / 2, 138));
             ui.Texto("IDLE DATA CENTER", W / 2, 282, Ouro, 7, true);
             ui.Texto("De freelancer no quarto a CEO de uma nuvem global", W / 2, 340, IsoGui.Muted, 2, true);
@@ -106,6 +107,8 @@ namespace IdleDataCenter.Gerente
             if (ui.Botao(new Rect(x, y, L, A), "Configurações", IsoGui.Roxo, true, 3)) menu = TelaDoMenu.Configuracoes;
             y += A + 18;
             if (ui.Botao(new Rect(x, y, L, A), "Dicionário", IsoGui.Cor("5899ff"), true, 3)) AbrirDicionario();
+            y += A + 18;
+            if (ui.Botao(new Rect(x, y, L, A), "Créditos", IsoGui.Borda, true, 3)) menu = TelaDoMenu.Creditos;
             y += A + 18;
             if (ui.Botao(new Rect(x, y, L, A), "Sair", IsoGui.Borda, true, 3))
             {

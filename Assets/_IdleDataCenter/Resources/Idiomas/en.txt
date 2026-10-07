@@ -1158,3 +1158,27 @@ Ter 8 clusters de GPU	Have 8 GPU clusters
 Faturar R$ 1 tri	Earn R$ 1T
 As metas contam o que você fizer neste cargo.	Goals count what you do in this role.
 Ter 13 servidores	Have 13 servers
+A empresa abriu o capital. Você é o CEO.	The company went public. You are the CEO.
+A sua carreira	Your career
+Tempo de jogo	Play time
+Tempo de jogo (desde a atualização)	Play time (since the update)
+Faturamento total	Total revenue
+Incidentes resolvidos	Incidents resolved
+Chamados atendidos	Tickets handled
+Backups restaurados	Backups restored
+Picos de tráfego superados	Traffic spikes survived
+Problemas resolvidos no terminal	Problems fixed in the terminal
+Quando chegou a cada cargo	When you reached each role
+CEO (IPO)	CEO (IPO)
+Continuar como CEO	Keep going as CEO
+Vender e recomeçar	Sell and start over
+Créditos	Credits
+Vendendo depois do IPO, as certificações valem o dobro.	Selling after the IPO, certifications are worth double.
+Feito por	Made by
+Arte	Art
+Gerada com o PixelLab	Made with PixelLab
+Fonte	Font
+Silkscreen, de Jason Kottke (SIL Open Font License)	Silkscreen, by Jason Kottke (SIL Open Font License)
+Motor	Engine
+Obrigado por jogar!	Thanks for playing!
+Ver o resumo da carreira	See your career summary

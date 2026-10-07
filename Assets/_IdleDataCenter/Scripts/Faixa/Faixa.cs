@@ -66,7 +66,8 @@ namespace IdleDataCenter
             economia.EnergiaVoltou += (dc, sozinho) => { Avisar("DC-0" + (dc + 1) + " religado", 2f, VerdeClaro); Sons.Conserto(); };
             economia.PaneRegional += r => { Avisar("Pane: " + Catalogo.NomesRegioes[r] + "!", 3f, Vermelho); Sons.Alerta(); };
             economia.RegiaoVoltou += (r, sozinho) => { Avisar(Catalogo.NomesRegioes[r] + " de volta", 2f, VerdeClaro); Sons.Conserto(); };
-            economia.Ipo += () => { Avisar("IPO! Agora você é CEO!", 6f, Amarelo); Sons.Promocao(); Salvamento.Salvar(economia.Estado); };
+            // o IPO abre o modo gerente na tela de final (feito na faixa, ela apareceria só como um aviso)
+            economia.Ipo += () => { Avisar("IPO! Agora você é CEO!", 6f, Amarelo); Sons.Promocao(); Salvamento.Salvar(economia.Estado); AbrirGerente(lembrar: false); };
             economia.Vendeu += AoVender;
             // quem já passou do começo não precisa do tutorial
             if (!economia.TutorialConcluido && (economia.Cargo > Catalogo.CargoFreelancer || economia.Estado.totalGanho > 2000))

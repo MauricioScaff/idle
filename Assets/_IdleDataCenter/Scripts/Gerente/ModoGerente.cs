@@ -47,6 +47,7 @@ namespace IdleDataCenter.Gerente
             E.QuedaDeEnergia += dc => Notificar("Queda de energia no DC-0" + (dc + 1) + "! Clique no prédio apagado para religar.", 8);
             E.PaneRegional += r => Notificar("Pane regional: " + Catalogo.NomesRegioes[r] + " fora do ar! Clique na região para redirecionar o tráfego.", 8);
             E.Promoveu += c => Notificar((c == Catalogo.CargoTecnico ? "Contratado como " : "Promovido a ") + E.CargoAtual.Nome + "! Novos setores liberados.", 10);
+            E.Ipo += AbrirFinal;   // a tela de final
         }
 
         public void Abrir()
@@ -54,6 +55,7 @@ namespace IdleDataCenter.Gerente
             Aberto = true;
             janela = "";
             Notificar(E.NomeDoCargo + " · " + E.CargoAtual.Lugar + ". O botão Faixa deixa o jogo discreto enquanto você trabalha.", 7);
+            if (E.IpoFeito && !E.Estado.finalVisto) AbrirFinal();   // o IPO foi feito na faixa
         }
 
         public void Fechar() => Aberto = false;
@@ -61,7 +63,8 @@ namespace IdleDataCenter.Gerente
         void Update()
         {
             if (!Aberto) return;
-            if (!EscNoMenu() && Input.GetKeyDown(KeyCode.Escape) && !terminalAberto && !string.IsNullOrEmpty(janela)) Abrir("Visao");   // Esc fecha a janela aberta (sem janela: o menu)
+            if (finalAberto && Input.GetKeyDown(KeyCode.Escape)) { if (creditosNoFinal) creditosNoFinal = false; else finalAberto = false; }
+            else if (!EscNoMenu() && Input.GetKeyDown(KeyCode.Escape) && !terminalAberto && !string.IsNullOrEmpty(janela)) Abrir("Visao");   // Esc fecha a janela aberta (sem janela: o menu)
             flashCompra = Mathf.Max(0, flashCompra - Time.unscaledDeltaTime);
             AtualizarSala();
             AtualizarTerminal();
@@ -180,7 +183,7 @@ namespace IdleDataCenter.Gerente
             // tela inicial ao abrir o jogo: só a cidade, o emblema e o menu
             if (NaTelaInicial && menuDoInicio) { TelaInicial(); GUI.matrix = anterior; return; }
             // menu no meio do jogo: a tela do jogo fica atrás, sem receber cliques
-            GUI.enabled = !NaTelaInicial;
+            GUI.enabled = !NaTelaInicial && !finalAberto;
             DesenharSala();
             Hud();
             PainelHelpDesk();
@@ -196,6 +199,7 @@ namespace IdleDataCenter.Gerente
             if (!NaTelaInicial) DicaDoDicionario();
             if (!NaTelaInicial && Livre && !terminalAberto) BotaoDoMenu();
             GUI.enabled = true;
+            if (!NaTelaInicial) TelaFinal();
             TelaInicial();
             GUI.matrix = anterior;
         }
