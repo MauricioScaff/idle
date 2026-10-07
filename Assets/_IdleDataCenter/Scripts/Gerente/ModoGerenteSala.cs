@@ -447,8 +447,13 @@ namespace IdleDataCenter.Gerente
         {
             bool deploy = E.HostsContainers > 0;
             int n = deploy ? 4 : 3;
-            const float largura = 230, altura = 64, espaco = 18;
-            float x = W / 2 - (n * largura + (n - 1) * espaco) / 2, y = 812;
+            const float altura = 64, espaco = 18;
+            // entre o botão de menu (Faixa + ≡ vão até x 270) e o do terminal (começa em W - 210): com o Deploy, os quatro
+            // botões centralizados pegavam o ≡ por baixo do Loja, então ficam um pouco mais estreitos e encostam nesse limite
+            float esquerda = 270 + espaco, direita = W - 210 - espaco;
+            float largura = Mathf.Min(230, (direita - esquerda - (n - 1) * espaco) / n);
+            float total = n * largura + (n - 1) * espaco;
+            float x = Mathf.Clamp(W / 2 - total / 2, esquerda, direita - total), y = 812;
             if (BotaoIcone(new Rect(x, y, largura, altura), "Loja", IsoGui.Cyan, Sacola, 4, EmLoja)) Abrir(ultimaAbaLoja);
             x += largura + espaco;
             bool automacao = E.AutomacoesLiberadas;
@@ -494,6 +499,7 @@ namespace IdleDataCenter.Gerente
             ui.Caixa(r, Color.Lerp(cor, IsoGui.Painel, ativo || sobre ? 0.45f : 0.72f), cor);
             ui.Ret(new Rect(r.x + 2, r.yMax - 6, r.width - 4, 4), new Color(0, 0, 0, .22f));
             float largura = ui.Largura(titulo, escala) + 15 + 12;
+            while (escala > 2 && largura > r.width - 16) { escala--; largura = ui.Largura(titulo, escala) + 15 + 12; }   // letra menor se não couber
             float x = r.center.x - largura / 2;
             Mapa(icone, x, r.center.y - 8, IsoGui.Branco, 3);
             ui.Texto(titulo, x + 27, r.center.y - escala * 2.5f - 1, IsoGui.Branco, escala);
