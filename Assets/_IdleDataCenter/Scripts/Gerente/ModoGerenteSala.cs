@@ -502,7 +502,9 @@ namespace IdleDataCenter.Gerente
             while (escala > 2 && largura > r.width - 16) { escala--; largura = ui.Largura(titulo, escala) + 15 + 12; }   // letra menor se não couber
             float x = r.center.x - largura / 2;
             Mapa(icone, x, r.center.y - 8, IsoGui.Branco, 3);
+            ui.SemSublinhado = true;   // o nome do botão ("Automação", "Deploy") não precisa de dica
             ui.Texto(titulo, x + 27, r.center.y - escala * 2.5f - 1, IsoGui.Branco, escala);
+            ui.SemSublinhado = false;
             bool clicou = GUI.Button(r, GUIContent.none, GUIStyle.none);
             if (clicou) Sons.Tique();
             return clicou;

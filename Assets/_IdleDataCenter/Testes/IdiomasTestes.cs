@@ -38,5 +38,26 @@ namespace IdleDataCenter.Testes
             Ajustes.Idioma = 0;
             Assert.AreEqual("Novo jogo", Idiomas.T("Novo jogo"));
         }
+
+        [Test]
+        public void TodoTermoDoDicionarioTemIngles()
+        {
+            Idiomas.Faltando.Clear();
+            foreach (var t in Glossario.Termos) { Idiomas.T(t.Nome); Idiomas.T(t.OQueE); Idiomas.T(t.NoJogo); }
+            Idiomas.T("No jogo:");
+            Assert.IsEmpty(Idiomas.Faltando, "sem tradução: " + string.Join(" | ", Idiomas.Faltando));
+        }
+
+        [Test]
+        public void DicionarioAchaOsTermosNoTexto()
+        {
+            Ajustes.Idioma = 0;
+            var achados = Glossario.Encontrar("Rack 42U: vagas para servidores 1U, gasta kW");
+            CollectionAssert.AreEqual(new[] { "Rack", "42U", "1U", "kW" }, achados.ConvertAll(a => "Rack 42U: vagas para servidores 1U, gasta kW".Substring(a.inicio, a.comprimento)));
+            Assert.IsEmpty(Glossario.Encontrar("Rackzinho quebrado"), "só palavras inteiras");
+            Assert.AreEqual("Kubernetes (K8s)", Glossario.Encontrar("Nó K8s")[0].termo.Nome);
+            Ajustes.Idioma = 1;
+            Assert.AreEqual("No-break", Glossario.Encontrar("UPS +1.5 kW")[0].termo.Nome, "em inglês, pelas formas em inglês");
+        }
     }
 }

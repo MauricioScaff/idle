@@ -224,6 +224,7 @@ namespace IdleDataCenter.Gerente
             if (Event.current.type == EventType.Repaint)
                 terminalAnim = Mathf.MoveTowards(terminalAnim, terminalAberto ? 1 : 0, Time.unscaledDeltaTime * 5);
             if (terminalAnim <= 0.001f) return;
+            ui.TermosNaTela.Clear();   // o terminal cobre o que está atrás
             float h = AlturaTerminal, y = h * Suavizar(terminalAnim) - h;
             // fundo (passa das bordas da tela de 1440 x 900 em monitores mais largos)
             ui.Ret(new Rect(-W, y - H, W * 3, h + H), new Color(CorDoTerminal.r, CorDoTerminal.g, CorDoTerminal.b, 0.96f));

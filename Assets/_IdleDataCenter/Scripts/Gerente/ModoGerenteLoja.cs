@@ -110,6 +110,7 @@ namespace IdleDataCenter.Gerente
         void Loja()
         {
             ui.Ret(new Rect(0, 0, W, H), new Color(.02f, .04f, .08f, .55f));
+            ui.TermosNaTela.Clear();   // a janela cobre os termos da tela de trás: a dica é só dos dela
             bool automacao = janela == "Automacao", loja = EmLoja;
             if (loja) ultimaAbaLoja = janela;
 

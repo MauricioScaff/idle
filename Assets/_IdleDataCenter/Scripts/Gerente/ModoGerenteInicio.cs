@@ -10,8 +10,11 @@ namespace IdleDataCenter.Gerente
     /// </summary>
     public partial class ModoGerente
     {
-        enum TelaDoMenu { Nenhuma, Inicio, ConfirmarNovo, Configuracoes }
+        enum TelaDoMenu { Nenhuma, Inicio, ConfirmarNovo, Configuracoes, Dicionario }
         TelaDoMenu menu = TelaDoMenu.Nenhuma;
+        /// <summary>A versão no canto da tela inicial (a mesma do itch e da release do GitHub).</summary>
+        const string Versao = "v0.7";
+
         bool menuDoInicio;          // aberta ao abrir o jogo (o botão diz "Continuar"; no meio do jogo, "Voltar ao jogo")
         double ganhoAoAbrir;
         Texture2D emblema;
@@ -44,7 +47,7 @@ namespace IdleDataCenter.Gerente
         bool EscNoMenu()
         {
             if (!Input.GetKeyDown(KeyCode.Escape) || terminalAberto) return false;
-            if (menu == TelaDoMenu.ConfirmarNovo || menu == TelaDoMenu.Configuracoes) { menu = TelaDoMenu.Inicio; return true; }
+            if (menu == TelaDoMenu.ConfirmarNovo || menu == TelaDoMenu.Configuracoes || menu == TelaDoMenu.Dicionario) { menu = TelaDoMenu.Inicio; return true; }
             if (menu == TelaDoMenu.Inicio) { Continuar(); return true; }
             if (string.IsNullOrEmpty(janela)) { AbrirMenu(); return true; }
             return false;
@@ -54,8 +57,10 @@ namespace IdleDataCenter.Gerente
         bool TelaInicial()
         {
             if (menu == TelaDoMenu.Nenhuma) return false;
+            ui.Dicionario = false;   // no menu nada fica sublinhado
             // no começo do jogo, só a cidade ao fundo; no meio do jogo, a sala aparece escurecida atrás
             ui.Ret(new Rect(-200, -200, W + 400, H + 400), new Color(.02f, .03f, .07f, menuDoInicio ? .35f : .7f));
+            if (menu == TelaDoMenu.Dicionario) { Dicionario(); return true; }   // a tela inteira (sem o emblema)
             Emblema(new Vector2(W / 2, 138));
             ui.Texto("IDLE DATA CENTER", W / 2, 282, Ouro, 7, true);
             ui.Texto("De freelancer no quarto a CEO de uma nuvem global", W / 2, 340, IsoGui.Muted, 2, true);
@@ -66,7 +71,7 @@ namespace IdleDataCenter.Gerente
                 case TelaDoMenu.ConfirmarNovo: ConfirmarNovoJogo(); break;
                 case TelaDoMenu.Configuracoes: Configuracoes(); break;
             }
-            ui.Texto("v0.3", W - 24 - ui.Largura("v0.3", 2), H - 24, IsoGui.Borda, 2);
+            ui.Texto(Versao, W - 24 - ui.Largura(Versao, 2), H - 24, IsoGui.Borda, 2);
             return true;
         }
 
@@ -99,6 +104,8 @@ namespace IdleDataCenter.Gerente
             }
             y += A + 18;
             if (ui.Botao(new Rect(x, y, L, A), "Configurações", IsoGui.Roxo, true, 3)) menu = TelaDoMenu.Configuracoes;
+            y += A + 18;
+            if (ui.Botao(new Rect(x, y, L, A), "Dicionário", IsoGui.Cor("5899ff"), true, 3)) AbrirDicionario();
             y += A + 18;
             if (ui.Botao(new Rect(x, y, L, A), "Sair", IsoGui.Borda, true, 3))
             {

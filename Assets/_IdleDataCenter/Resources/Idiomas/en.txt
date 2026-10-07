@@ -1,20 +1,20 @@
 # Idle Data Center: português TAB inglês. Linhas com ~ são modelos ({1}, {2}... variam).
 +0.5/s, a torre aguenta 8	+0.5/s, the tower holds 8
-+0.8 kW	+0.8 kW
++0.8 kW de energia	+0.8 kW of power
 +1 pessoa no escritório: mais chamados	+1 person in the office: more tickets
 +1 torre	+1 tower
-+1.5 kW	+1.5 kW
++1.5 kW de energia	+1.5 kW of power
 +10% de receita por nível	+10% revenue per level
-+144/s, 1.6 kW, 160 Mb	+144/s, 1.6 kW, 160 Mb
-+1500 Mbps	+1500 Mbps
-+18/s, 0.4 kW	+18/s, 0.4 kW
-+30% e -30% de tráfego	+30% and -30% traffic
-+300 Mbps	+300 Mbps
++144/s, gasta 1.6 kW, 160 Mbps	+144/s, uses 1.6 kW, 160 Mbps
++1500 Mbps de internet	+1500 Mbps of internet
++18/s, gasta 0.4 kW	+18/s, uses 0.4 kW
++30% de receita, -30% de tráfego	+30% revenue, -30% traffic
++300 Mbps de internet	+300 Mbps of internet
 +4 h de limite offline por nível	+4 h offline limit per level
-+500/s em apps, 1 kW, 120 Mb	+500/s in apps, 1 kW, 120 Mb
-+800/s, 0.8 kW, 150 Mb	+800/s, 0.8 kW, 150 Mb
--3 graus	-3 degrees
--6 graus	-6 degrees
++500/s em apps, 1 kW, 120 Mbps	+500/s in apps, 1 kW, 120 Mbps
++800/s, gasta 0.8 kW, 150 Mbps	+800/s, uses 0.8 kW, 150 Mbps
+Sala 3 °C mais fria	Room 3 °C cooler
+Sala 6 °C mais fria	Room 6 °C cooler
 10 automações ativas	10 active automations
 10% menos incidentes por nível	10% fewer incidents per level
 12 automações ativas	12 active automations
@@ -111,7 +111,7 @@ IA cuidando da operação: +20%	AI running operations: +20%
 ITIL da Gambiarra	ITIL of Duct Tape
 Imagens enxutas	Slim images
 Infra como código	Infrastructure as code
-K8s +25%, +10 s p/ escalar	K8s +25%, +10 s to scale
+K8s +25%, +10 s para escalar	K8s +25%, +10 s to scale
 Kit de ferramentas	Toolkit
 Kubernetes Whisperer	Kubernetes Whisperer
 Lançamento	Product launch
@@ -983,3 +983,148 @@ Voltar ao jogo	Back to the game
 ~Novo jogo! O anterior ficou guardado em {1}.	New game! The previous one was saved to {1}.
 ~O jogo atual ({1}, {2}) fica guardado numa cópia.	The current game ({1}, {2}) is kept in a copy.
 ~{1} · {2} · +{3} enquanto fora	{1} · {2} · +{3} while away
+No jogo:	In the game:
+Dicionário	Glossary
+Os termos de TI do jogo, explicados para quem não é da área.	The game's IT terms, explained for people outside IT.
+No jogo, os termos sublinhados mostram a explicação ao passar o mouse.	In the game, hover over an underlined term to see what it means.
+~Estes termos aparecem quando você chegar a {1}.	These terms show up when you reach {1}.
+Técnico	Technician
+Analista	Analyst
+Um computador que fica ligado o dia todo servindo sites e programas para outras pessoas.	A computer that stays on all day serving websites and programs to other people.
+É o que gera a renda: mais servidores, mais dinheiro por segundo.	It's what makes money: more servers, more money per second.
+Hospedagem	Hosting
+Guardar o site de alguém num computador que fica sempre ligado, para ele abrir na internet.	Keeping someone's website on a computer that is always on, so it opens on the internet.
+Cada site de cliente na sua torre rende um pouco por segundo.	Each client site on your tower earns a little every second.
+Uma tela de texto onde você dá ordens ao computador digitando comandos, sem mouse.	A text screen where you give the computer orders by typing commands, no mouse.
+Aperte F1: os incidentes que aparecem lá se resolvem com comandos de verdade (o 'help' lista todos).	Press F1: the incidents there are fixed with real commands ('help' lists them all).
+Chamado	Ticket
+Um pedido de ajuda aberto para a TI: 'a impressora travou', 'esqueci a senha'.	A request for help sent to IT: 'the printer jammed', 'I forgot my password'.
+Clique no balão (ou no help desk) para o técnico ir resolver. Cada um tem um prazo.	Click the balloon (or the help desk) and the tech goes to fix it. Each one has a deadline.
+P1 a P4 (prioridade)	P1 to P4 (priority)
+O quanto um chamado é urgente: P1 é tudo parado, P4 pode esperar.	How urgent a ticket is: P1 means everything stopped, P4 can wait.
+P1 e P2 pagam mais e têm menos tempo para resolver.	P1 and P2 pay more and give you less time to fix them.
+O balcão de atendimento da TI: quem recebe os chamados das pessoas.	IT's front desk: the people who take everyone's tickets.
+O painel da esquerda lista os chamados abertos; quem você contrata ajuda a fechar.	The left panel lists open tickets; the people you hire help close them.
+Uptime	Uptime
+Quanto tempo os sites ficaram no ar sem cair. 99,9% quer dizer menos de 9 horas fora por ano.	How long the websites stayed up without going down. 99.9% means less than 9 hours down per year.
+Quanto mais perto de 100%, mais os clientes crescem.	The closer to 100%, the more your clients grow.
+SLA	SLA
+Acordo de nível de serviço: a promessa, por contrato, de deixar o site no ar (por exemplo, 99,9% do tempo).	Service level agreement: a promise, in the contract, to keep the site up (for example, 99.9% of the time).
+Com uptime alto o bastante, você cumpre o SLA e os clientes pagam mais.	With high enough uptime you meet the SLA and clients pay more.
+Um disco sem peças que giram, muitas vezes mais rápido que o HD antigo.	A drive with no spinning parts, many times faster than an old hard drive.
+Deixa as torres mais rápidas: elas rendem o dobro.	Makes the towers faster: they earn twice as much.
+kW (energia)	kW (power)
+Quilowatt: quanta energia os equipamentos puxam da tomada.	Kilowatt: how much power the equipment draws from the outlet.
+Se o consumo passar do que a sala aguenta, ela entra em sobrecarga e rende menos.	If the load goes over what the room can handle, it overloads and earns less.
+Backup	Backup
+Uma cópia dos dados guardada em outro lugar, para quando um disco queimar ou alguém apagar algo.	A copy of the data kept somewhere else, for when a disk dies or someone deletes something.
+Quando um disco queima, o backup diminui quanto você perde.	When a disk dies, backups reduce how much you lose.
+DNS	DNS
+A 'agenda de contatos' da internet: transforma nomes de sites em endereços que os computadores entendem.	The internet's 'contact list': it turns website names into addresses computers understand.
+Quando ele cai, tudo parece quebrado. No terminal, a culpa é sempre do DNS.	When it fails, everything looks broken. In the terminal, it's always DNS.
+Administrador de sistemas: quem instala, atualiza e cuida dos servidores da empresa.	Systems administrator: the person who installs, updates and looks after the company's servers.
+Seu primeiro cargo com uma sala só de servidores.	Your first role with a room just for servers.
+Rack (42U)	Rack (42U)
+Um armário de metal padronizado onde os servidores ficam empilhados. 42U é a altura: cabem 42 servidores finos.	A standard metal cabinet where servers are stacked. 42U is its height: it fits 42 thin servers.
+Abre vagas para os servidores 1U, que rendem bem mais que as torres.	Makes room for 1U servers, which earn much more than towers.
+Um servidor fininho, da altura de uma 'unidade' do rack (uns 4,5 cm), feito para ficar empilhado.	A thin server, one rack 'unit' tall (about 4.5 cm), made to be stacked.
+Cada um rende mais e gasta energia: precisa de rack, no-break e ar-condicionado.	Each one earns more and uses power: it needs a rack, a UPS and air conditioning.
+Uma bateria grande que segura a energia quando a luz pisca ou cai.	A big battery that keeps the power on when the lights flicker or go out.
+Aumenta quanta energia (kW) a sala aguenta ligada.	Raises how much power (kW) the room can keep running.
+Um porteiro da rede: deixa passar o que é permitido e barra o resto.	The network's doorman: lets in what's allowed and stops the rest.
+Bloqueia parte dos ataques, que derrubam a receita por um tempo.	Blocks some of the attacks, which cut your revenue for a while.
+Uma caixinha com vários discos ligada à rede, para guardar arquivos e backups.	A small box with several disks on the network, for storing files and backups.
+Mais um degrau do backup: perde menos quando um disco queima.	One more step of backup: you lose less when a disk dies.
+Firmware	Firmware
+O programa que vem gravado dentro do próprio aparelho. Atualizar corrige falhas.	The program built into the device itself. Updating it fixes bugs.
+Servidores com firmware novo rendem mais.	Servers with new firmware earn more.
+Storage e RAID	Storage and RAID
+Storage: um equipamento só de discos. RAID: juntar vários discos para que, se um queimar, nada se perca.	Storage: a machine that is just disks. RAID: combining several disks so nothing is lost if one dies.
+Aumenta a receita e segura os dados quando um disco queima.	Raises revenue and protects the data when a disk dies.
+Fita de backup	Backup tape
+Fita magnética: um jeito barato e antigo (e ainda muito usado) de guardar backup por anos.	Magnetic tape: a cheap, old (and still widely used) way to keep backups for years.
+Mais um degrau do backup.	One more step of backup.
+Link e Mbps	Link and Mbps
+Link: a conexão da empresa com a internet. Mbps: quantos megabits passam por segundo, a 'grossura do cano'.	Link: the company's connection to the internet. Mbps: how many megabits go through per second, the 'width of the pipe'.
+Se o tráfego passar da banda, o link satura e tudo fica lento.	If traffic goes over the bandwidth, the link saturates and everything slows down.
+Tráfego	Traffic
+Quanta gente está usando os sites ao mesmo tempo, e quantos dados isso faz passar pela rede.	How many people are using the sites at once, and how much data that pushes through the network.
+Cresce com os clientes; precisa caber no link.	Grows with your clients; it has to fit in the link.
+VPN: um túnel seguro para entrar na rede da empresa de fora. MFA: pedir um segundo código além da senha.	VPN: a secure tunnel into the company network from outside. MFA: asking for a second code besides the password.
+Bloqueiam mais ataques.	They block more attacks.
+Incidente	Incident
+Quando algo quebra e afeta os clientes: servidor travado, disco queimado, site fora do ar.	When something breaks and affects clients: a frozen server, a dead disk, a site down.
+Resolva rápido (clicando ou pelo terminal): enquanto dura, a receita cai.	Fix it fast (by clicking or in the terminal): while it lasts, revenue drops.
+Automação (script)	Automation (script)
+Um programinha que faz sozinho uma tarefa repetitiva, para ninguém precisar fazer na mão.	A small program that does a repetitive task by itself, so nobody has to do it by hand.
+O técnico escreve uma por vez; cada uma resolve um tipo de problema para sempre.	The tech writes one at a time; each one solves a kind of problem for good.
+Um 'cão de guarda' que percebe quando um programa travou e reinicia sozinho.	A 'guard dog' that notices when a program froze and restarts it by itself.
+Servidor travado volta sozinho em poucos segundos.	A frozen server comes back by itself in a few seconds.
+Cron	Cron
+O agendador do Linux: roda uma tarefa no horário marcado, todo dia.	Linux's scheduler: it runs a task at a set time, every day.
+O cron de faturamento faz o jogo render mais com ele fechado.	The billing cron makes the game earn more while it's closed.
+DevOps	DevOps
+Um jeito de trabalhar em que quem programa e quem cuida dos servidores trabalham juntos para entregar mais rápido.	A way of working where the people who code and the people who run servers work together to ship faster.
+Chegam os apps: containers, deploys e o NOC.	Apps arrive: containers, deploys and the NOC.
+Hypervisor e VM	Hypervisor and VM
+Hypervisor: o programa que divide um servidor em vários computadores 'de mentira' (VMs), cada um com seu sistema.	Hypervisor: the program that splits one server into several 'pretend' computers (VMs), each with its own system.
+Aproveita melhor as máquinas: servidores rendem mais.	Makes better use of the machines: servers earn more.
+Container	Container
+Um 'pacote' com o programa e tudo de que ele precisa, que roda igual em qualquer servidor.	A 'package' with a program and everything it needs, which runs the same on any server.
+Os hosts de containers rodam os apps, que rendem muito.	Container hosts run the apps, which earn a lot.
+Colocar no ar uma versão nova de um programa.	Putting a new version of a program live.
+O botão Deploy entrega uma versão e rende na hora. Às vezes ela quebra.	The Deploy button ships a version and pays right away. Sometimes it breaks.
+Voltar para a versão anterior quando a nova deu problema.	Going back to the previous version when the new one has a problem.
+Conserta um deploy quebrado.	Fixes a broken deploy.
+CI e pipeline	CI and pipeline
+Uma esteira automática que testa e entrega cada mudança no código.	An automatic conveyor belt that tests and ships every change to the code.
+Menos deploys quebrados e apps rendendo mais.	Fewer broken deploys and apps earning more.
+Cache (Redis)	Cache (Redis)
+Guardar por perto o que é pedido toda hora, para responder mais rápido. Redis é um dos mais usados.	Keeping what's asked for all the time close at hand, to answer faster. Redis is one of the most used.
+Apps mais rápidos, mais receita.	Faster apps, more revenue.
+Centro de operações de rede: a sala com telões onde se vigia se tudo está no ar.	Network operations center: the room with big screens where people watch that everything is up.
+Lista os incidentes e resolve todos de uma vez.	Lists the incidents and fixes them all at once.
+Descrever os servidores em arquivos de texto, para recriar tudo igualzinho com um comando.	Describing servers in text files, so you can rebuild everything exactly the same with one command.
+Melhorias ficam mais baratas.	Upgrades get cheaper.
+Engenharia de confiabilidade: quem garante que os sistemas não caiam, usando código e medições.	Site reliability engineering: making sure systems don't go down, using code and measurements.
+Chegam o data center, o Kubernetes e os picos de tráfego.	The data center, Kubernetes and traffic spikes arrive.
+Kubernetes (K8s)	Kubernetes (K8s)
+Um sistema que liga, desliga e espalha cópias dos programas sozinho, conforme a procura.	A system that starts, stops and spreads copies of programs by itself, depending on demand.
+Os nós do cluster rodam os apps e aguentam os picos.	The cluster nodes run the apps and handle the spikes.
+Colocar mais máquinas (ou mais cópias do programa) para aguentar mais gente ao mesmo tempo.	Adding more machines (or more copies of a program) to handle more people at once.
+Num pico de tráfego, escale a tempo e o pico rende o dobro.	In a traffic spike, scale in time and the spike pays double.
+Distribui os acessos entre vários servidores, para nenhum ficar sobrecarregado.	Spreads requests across several servers, so none of them gets overloaded.
+O cluster rende mais.	The cluster earns more.
+Gráficos, registros (logs) e alertas que mostram o que está acontecendo dentro dos sistemas.	Charts, records (logs) and alerts that show what is happening inside the systems.
+Ajuda a cumprir o SLA.	Helps you meet the SLA.
+DDoS e WAF	DDoS and WAF
+DDoS: um ataque com milhares de acessos falsos ao mesmo tempo para derrubar o site. WAF: um filtro que barra isso.	DDoS: an attack with thousands of fake requests at once to take a site down. WAF: a filter that stops it.
+Bloqueia mais ataques.	Blocks more attacks.
+Quebrar coisas de propósito, com cuidado, para descobrir se o sistema aguenta antes que quebre sozinho.	Breaking things on purpose, carefully, to find out whether the system holds up before it breaks on its own.
+Menos incidentes.	Fewer incidents.
+Runbook	Runbook
+O passo a passo de como resolver um problema que já aconteceu antes.	The step-by-step guide for fixing a problem that has happened before.
+Automático: os consertos acontecem sozinhos.	Automatic: fixes happen by themselves.
+Datacenter (DC)	Data center (DC)
+Um prédio inteiro feito para servidores, com energia, internet e refrigeração reservas.	A whole building made for servers, with backup power, internet and cooling.
+Cada prédio novo no campus soma muita receita.	Each new building on the campus adds a lot of revenue.
+Cópias do site espalhadas pelo mundo, perto de quem acessa, para abrir mais rápido.	Copies of a site spread around the world, close to the people using it, so it loads faster.
+Mais receita e menos tráfego no seu link.	More revenue and less traffic on your link.
+Failover	Failover
+Passar sozinho para um sistema reserva quando o principal cai.	Switching to a backup system by itself when the main one goes down.
+Quedas voltam em segundos.	Outages come back in seconds.
+SOC	SOC
+Centro de operações de segurança: uma equipe vigiando ataques 24 horas por dia.	Security operations center: a team watching for attacks 24 hours a day.
+Bloqueia quase todos os ataques.	Blocks almost every attack.
+Diretor de tecnologia: quem decide os rumos da tecnologia da empresa.	Chief technology officer: the person who sets the company's technology direction.
+O último cargo antes do IPO.	The last role before the IPO.
+Um grupo de datacenters numa parte do mundo, como São Paulo ou Virgínia.	A group of data centers in one part of the world, like São Paulo or Virginia.
+Cada região nova no mapa soma muita receita.	Each new region on the map adds a lot of revenue.
+Processar os dados perto de quem usa (na antena, na loja), em vez de longe, no datacenter.	Processing data close to the people using it (at the cell tower, in the store) instead of far away in a data center.
+Mais receita das regiões.	More revenue from regions.
+GPU	GPU
+Uma placa feita para fazer muitos cálculos ao mesmo tempo. É o que roda as IAs.	A card made to do lots of calculations at once. It's what runs AI.
+A nuvem de IA rende muito.	The AI cloud earns a lot.
+Ninguém é confiável por padrão: todo acesso é conferido, até de quem está dentro da empresa.	Nobody is trusted by default: every access is checked, even from inside the company.
+Quando a empresa passa a vender ações na bolsa de valores.	When the company starts selling shares on the stock exchange.
+O fim da carreira: você vira CEO. Depois, dá para vender a empresa e recomeçar com bônus.	The end of the career: you become CEO. Afterwards you can sell the company and start over with bonuses.

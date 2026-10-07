@@ -164,6 +164,8 @@ namespace IdleDataCenter.Gerente
         void OnGUI()
         {
             if (!Aberto || ui == null) return;
+            if (Event.current.type == EventType.Repaint) ui.TermosNaTela.Clear();   // os termos sublinhados deste quadro
+            ui.Dicionario = true;
             ui.Ret(new Rect(0, 0, Screen.width, Screen.height), IsoGui.Fundo);   // cobre a faixa por trás
             // nos primeiros quadros depois de crescer, o Unity ainda desenha no tamanho antigo (da faixa): só o fundo
             if (Screen.height < 400) return;
@@ -191,6 +193,7 @@ namespace IdleDataCenter.Gerente
             if (!string.IsNullOrEmpty(janela)) Loja();
             Terminal();
             Confetes();   // por cima da loja: a compra pode ter sido feita nela
+            if (!NaTelaInicial) DicaDoDicionario();
             if (!NaTelaInicial && Livre && !terminalAberto) BotaoDoMenu();
             GUI.enabled = true;
             TelaInicial();

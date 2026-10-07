@@ -87,7 +87,61 @@ namespace IdleDataCenter.Gerente
             GUI.Label(new Rect(px + sombra, py + sombra, tam.x + 2, tam.y), conteudo, e);
             e.normal.textColor = c ?? Branco;
             GUI.Label(new Rect(px, py, tam.x + 2, tam.y), conteudo, e);
+            if (Dicionario && !SemSublinhado) SublinharTermos(s, px, py, tamanho, pixel, c ?? Branco, m);
             GUI.matrix = m;
+        }
+
+        // ---------------- Dicionário: termos sublinhados ----------------
+
+        /// <summary>Liga o sublinhado dos termos do dicionário (só no modo gerente; a faixa é pequena demais).</summary>
+        public bool Dicionario;
+        /// <summary>Desliga por um momento (botões: o nome de um botão não precisa de explicação no meio dele).</summary>
+        public bool SemSublinhado;
+        /// <summary>Onde ficou cada termo sublinhado neste quadro, nas coordenadas de quem chama: o mouse em cima mostra a dica.</summary>
+        public readonly List<(Rect area, IdleDataCenter.Glossario.Termo termo)> TermosNaTela = new List<(Rect, IdleDataCenter.Glossario.Termo)>();
+
+        /// <summary>Pontilhado embaixo de cada termo do texto (já desenhado em pixels da tela) e o lugar dele para a dica.</summary>
+        void SublinharTermos(string s, float px, float py, int tamanho, int pixel, Color cor, Matrix4x4 m)
+        {
+            var achados = IdleDataCenter.Glossario.Encontrar(s);
+            if (achados.Count == 0) return;
+            var e = Estilo;
+            var inversa = m.inverse;
+            float y = Mathf.Round(py + tamanho * (TopoDaMaiuscula + 0.7f)) + pixel;   // um pixel da letra abaixo da linha de base
+            GUI.color = new Color(cor.r, cor.g, cor.b, cor.a * 0.75f);
+            foreach (var (inicio, comprimento, termo) in achados)
+            {
+                float x0 = px + e.CalcSize(new GUIContent(s.Substring(0, inicio))).x;
+                float largura = e.CalcSize(new GUIContent(s.Substring(inicio, comprimento))).x;
+                for (float x = x0; x < x0 + largura - pixel; x += pixel * 2) GUI.DrawTexture(new Rect(x, y, pixel, pixel), Texture2D.whiteTexture);
+                Vector3 a = inversa.MultiplyPoint3x4(new Vector3(x0, py, 0)), b = inversa.MultiplyPoint3x4(new Vector3(x0 + largura, y + pixel * 2, 0));
+                TermosNaTela.Add((Rect.MinMaxRect(a.x, a.y, b.x, b.y), termo));
+            }
+            GUI.color = Color.white;
+        }
+
+        /// <summary>
+        /// Texto em várias linhas que cabem na largura, quebrando nos espaços (já no idioma da tela). Retorna a altura usada.
+        /// </summary>
+        public float Paragrafo(string s, float x, float y, float largura, Color cor, int escala = 2, float entreLinhas = 6, bool desenhar = true)
+        {
+            if (string.IsNullOrEmpty(s)) return 0;
+            s = Idiomas.T(s);
+            float altura = escala * 5 + entreLinhas, yy = y;
+            var linha = "";
+            foreach (var palavra in s.Split(' '))
+            {
+                string tentativa = linha.Length == 0 ? palavra : linha + " " + palavra;
+                if (linha.Length > 0 && Largura(tentativa, escala) > largura)
+                {
+                    if (desenhar) Texto(linha, x, yy, cor, escala);
+                    yy += altura;
+                    linha = palavra;
+                }
+                else linha = tentativa;
+            }
+            if (linha.Length > 0) { if (desenhar) Texto(linha, x, yy, cor, escala); yy += altura; }
+            return yy - y;
         }
 
         public bool Botao(Rect r, string titulo, Color accent, bool enabled = true, int escala = 2)
@@ -96,7 +150,10 @@ namespace IdleDataCenter.Gerente
             Caixa(r, enabled ? (hover ? Color.Lerp(accent, Painel, .45f) : Color.Lerp(accent, Painel, .75f)) : Cor("1c2839"),
                 enabled ? accent : Borda);
             Ret(new Rect(r.x + 2, r.yMax - 5, r.width - 4, 3), new Color(0, 0, 0, .22f));
+            bool sem = SemSublinhado;
+            SemSublinhado = true;
             Texto(titulo, r.center.x, r.center.y - escala * 2.5f, enabled ? Branco : Muted, escala, true);
+            SemSublinhado = sem;
             bool old = GUI.enabled;
             GUI.enabled = enabled;
             bool clicked = GUI.Button(r, GUIContent.none, GUIStyle.none);

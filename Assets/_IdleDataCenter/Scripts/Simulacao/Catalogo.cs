@@ -358,8 +358,8 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Ssd, Nome = "SSD", Efeito = "Torres ×2", Cargo = Catalogo.CargoTecnico, NivelMaximo = 1, CustoBase = 600, FatorCusto = 1 },
             new MelhoriaDef { Id = Ventoinha, Nome = "Ventoinha", Efeito = "Torres +50%", Cargo = Catalogo.CargoTecnico, NivelMaximo = 3, CustoBase = 1500, FatorCusto = 2.2 },
             new MelhoriaDef { Id = Servidor, Nome = "Servidor", Efeito = "+1 torre", Cargo = Catalogo.CargoTecnico, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 6000, FatorCusto = 1.4 },
-            new MelhoriaDef { Id = FiltroDeLinha, Nome = "Filtro de linha", Efeito = "+0.8 kW", Cargo = Catalogo.CargoTecnico, NivelMaximo = 12, Alvo = AlvoKw, BonusPorNivel = 0.8, CustoBase = 3600, FatorCusto = 1.8 },
-            new MelhoriaDef { Id = Ventilador, Nome = "Ventilador", Efeito = "-3 graus", Cargo = Catalogo.CargoTecnico, NivelMaximo = 12, Alvo = AlvoGraus, BonusPorNivel = 3, CustoBase = 3000, FatorCusto = 1.8 },
+            new MelhoriaDef { Id = FiltroDeLinha, Nome = "Filtro de linha", Efeito = "+0.8 kW de energia", Cargo = Catalogo.CargoTecnico, NivelMaximo = 12, Alvo = AlvoKw, BonusPorNivel = 0.8, CustoBase = 3600, FatorCusto = 1.8 },
+            new MelhoriaDef { Id = Ventilador, Nome = "Ventilador", Efeito = "Sala 3 °C mais fria", Cargo = Catalogo.CargoTecnico, NivelMaximo = 12, Alvo = AlvoGraus, BonusPorNivel = 3, CustoBase = 3000, FatorCusto = 1.8 },
             new MelhoriaDef { Id = PastaTermica, Nome = "Pasta térmica", Efeito = "Torres +30%", Cargo = Catalogo.CargoTecnico, NivelMaximo = 3, Alvo = AlvoTorres, BonusPorNivel = 0.3, CustoBase = 10800, FatorCusto = 2.5 },
             new MelhoriaDef { Id = HdExterno, Nome = "HD externo", Efeito = "Backup: disco queimado perde metade, +2% renda", Cargo = Catalogo.CargoTecnico, NivelMaximo = 1, CustoBase = 9000, FatorCusto = 1 },
             new MelhoriaDef { Id = Antivirus, Nome = "Antivírus", Efeito = "Segurança: bloqueia metade dos ataques", Cargo = Catalogo.CargoTecnico, NivelMaximo = 1, CustoBase = 4800, FatorCusto = 1 },
@@ -368,9 +368,9 @@ namespace IdleDataCenter.Simulacao
 
             // Sysadmin: a salinha com o primeiro rack.
             new MelhoriaDef { Id = Rack, Nome = "Rack 42U", Efeito = "Vagas para servidores 1U", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 1, CustoBase = 48000, FatorCusto = 1 },
-            new MelhoriaDef { Id = Servidor1U, Nome = "Servidor 1U", Efeito = "+18/s, 0.4 kW", Cargo = Catalogo.CargoSysadmin, Requisito = Rack, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 42000, FatorCusto = 1.3 },
-            new MelhoriaDef { Id = NoBreak, Nome = "No-break", Efeito = "+1.5 kW", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 60, CustoBase = 36000, FatorCusto = 1.35 },
-            new MelhoriaDef { Id = ArCondicionado, Nome = "Ar-cond.", Efeito = "-6 graus", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 60, CustoBase = 30000, FatorCusto = 1.35 },
+            new MelhoriaDef { Id = Servidor1U, Nome = "Servidor 1U", Efeito = "+18/s, gasta 0.4 kW", Cargo = Catalogo.CargoSysadmin, Requisito = Rack, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 42000, FatorCusto = 1.3 },
+            new MelhoriaDef { Id = NoBreak, Nome = "No-break", Efeito = "+1.5 kW de energia", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 60, CustoBase = 36000, FatorCusto = 1.35 },
+            new MelhoriaDef { Id = ArCondicionado, Nome = "Ar-cond.", Efeito = "Sala 6 °C mais fria", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 60, CustoBase = 30000, FatorCusto = 1.35 },
             new MelhoriaDef { Id = CabosOrganizados, Nome = "Cabos organizados", Efeito = "Servidores 1U +25%", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 3, Alvo = Alvo1U, BonusPorNivel = 0.25, CustoBase = 90000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Firmware, Nome = "Firmware novo", Efeito = "Servidores 1U +40%", Cargo = Catalogo.CargoSysadmin, Requisito = Servidor1U, NivelMaximo = 2, Alvo = Alvo1U, BonusPorNivel = 0.4, CustoBase = 240000, FatorCusto = 3 },
             new MelhoriaDef { Id = Nas, Nome = "NAS", Efeito = "Backup: perde só 1/4, +2% renda", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 1, CustoBase = 150000, FatorCusto = 1 },
@@ -378,18 +378,18 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = HelpDesk, Nome = "Analista de help desk", Efeito = "Fecha os chamados P3 e P4 sozinho", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 1, CustoBase = 180000, FatorCusto = 1 },
 
             // Analista: a sala de racks.
-            new MelhoriaDef { Id = RackCheio, Nome = "Rack cheio", Efeito = "+144/s, 1.6 kW, 160 Mb", Cargo = Catalogo.CargoAnalista, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 540000, FatorCusto = 1.3 },
+            new MelhoriaDef { Id = RackCheio, Nome = "Rack cheio", Efeito = "+144/s, gasta 1.6 kW, 160 Mbps", Cargo = Catalogo.CargoAnalista, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 540000, FatorCusto = 1.3 },
             new MelhoriaDef { Id = Storage, Nome = "Storage", Efeito = "RAID: receita +25%", Cargo = Catalogo.CargoAnalista, NivelMaximo = 3, CustoBase = 900000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Backup, Nome = "Backup fita", Efeito = "Backup: perde só 1/8, +2% renda", Cargo = Catalogo.CargoAnalista, NivelMaximo = 1, CustoBase = 600000, FatorCusto = 1 },
             new MelhoriaDef { Id = VpnMfa, Nome = "VPN e MFA", Efeito = "Segurança: bloqueia 7/8 dos ataques", Cargo = Catalogo.CargoAnalista, NivelMaximo = 1, CustoBase = 720000, FatorCusto = 1 },
-            new MelhoriaDef { Id = Link, Nome = "Link fibra", Efeito = "+300 Mbps", Cargo = Catalogo.CargoAnalista, NivelMaximo = 40, CustoBase = 300000, FatorCusto = 1.45 },
+            new MelhoriaDef { Id = Link, Nome = "Link fibra", Efeito = "+300 Mbps de internet", Cargo = Catalogo.CargoAnalista, NivelMaximo = 40, CustoBase = 300000, FatorCusto = 1.45 },
             new MelhoriaDef { Id = PisoElevado, Nome = "Piso elevado", Efeito = "Racks cheios +30%", Cargo = Catalogo.CargoAnalista, Requisito = RackCheio, NivelMaximo = 3, Alvo = AlvoRackCheio, BonusPorNivel = 0.3, CustoBase = 1500000, FatorCusto = 2.5 },
 
             // DevOps: a sala virtualizada.
             new MelhoriaDef { Id = Hypervisor, Nome = "Hypervisor", Efeito = "VMs: servidores +40%", Cargo = Catalogo.CargoDevOps, NivelMaximo = 3, CustoBase = 7200000, FatorCusto = 2.5 },
-            new MelhoriaDef { Id = Containers, Nome = "Containers", Efeito = "+500/s em apps, 1 kW, 120 Mb", Cargo = Catalogo.CargoDevOps, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 4800000, FatorCusto = 1.3 },
+            new MelhoriaDef { Id = Containers, Nome = "Containers", Efeito = "+500/s em apps, 1 kW, 120 Mbps", Cargo = Catalogo.CargoDevOps, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 4800000, FatorCusto = 1.3 },
             new MelhoriaDef { Id = ServidorCi, Nome = "Servidor CI", Efeito = "Deploy contínuo: apps +50%", Cargo = Catalogo.CargoDevOps, Requisito = Containers, NivelMaximo = 1, CustoBase = 9000000, FatorCusto = 1 },
-            new MelhoriaDef { Id = Link10G, Nome = "Link 10G", Efeito = "+1500 Mbps", Cargo = Catalogo.CargoDevOps, NivelMaximo = 30, CustoBase = 4200000, FatorCusto = 1.5 },
+            new MelhoriaDef { Id = Link10G, Nome = "Link 10G", Efeito = "+1500 Mbps de internet", Cargo = Catalogo.CargoDevOps, NivelMaximo = 30, CustoBase = 4200000, FatorCusto = 1.5 },
             new MelhoriaDef { Id = ImagensEnxutas, Nome = "Imagens enxutas", Efeito = "Apps +30%", Cargo = Catalogo.CargoDevOps, Requisito = Containers, NivelMaximo = 3, Alvo = AlvoApps, BonusPorNivel = 0.3, CustoBase = 12000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = CacheRedis, Nome = "Cache Redis", Efeito = "Apps +50%", Cargo = Catalogo.CargoDevOps, Requisito = Containers, NivelMaximo = 1, Alvo = AlvoApps, BonusPorNivel = 0.5, CustoBase = 30000000, FatorCusto = 1 },
             new MelhoriaDef { Id = SalaBackup, Nome = "Sala de backup", Efeito = "Backup separado: perde só 1/16, +2% renda", Cargo = Catalogo.CargoDevOps, NivelMaximo = 1, CustoBase = 18000000, FatorCusto = 1 },
@@ -397,8 +397,8 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = ServiceDesk, Nome = "Service desk 24h", Efeito = "Fecha também os chamados P2", Cargo = Catalogo.CargoDevOps, Requisito = HelpDesk, NivelMaximo = 1, CustoBase = 18000000, FatorCusto = 1 },
 
             // SRE: o data center pequeno e o cluster.
-            new MelhoriaDef { Id = NoKubernetes, Nome = "Nó K8s", Efeito = "+800/s, 0.8 kW, 150 Mb", Cargo = Catalogo.CargoSre, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 24000000, FatorCusto = 1.28 },
-            new MelhoriaDef { Id = Balanceador, Nome = "Balanceador", Efeito = "K8s +25%, +10 s p/ escalar", Cargo = Catalogo.CargoSre, Requisito = NoKubernetes, NivelMaximo = 1, CustoBase = 36000000, FatorCusto = 1 },
+            new MelhoriaDef { Id = NoKubernetes, Nome = "Nó K8s", Efeito = "+800/s, gasta 0.8 kW, 150 Mbps", Cargo = Catalogo.CargoSre, NivelMaximo = MaximoGerador, Gerador = true, CustoBase = 24000000, FatorCusto = 1.28 },
+            new MelhoriaDef { Id = Balanceador, Nome = "Balanceador", Efeito = "K8s +25%, +10 s para escalar", Cargo = Catalogo.CargoSre, Requisito = NoKubernetes, NivelMaximo = 1, CustoBase = 36000000, FatorCusto = 1 },
             new MelhoriaDef { Id = Observabilidade, Nome = "Observab.", Efeito = "Observabilidade: +15% (SLA)", Cargo = Catalogo.CargoSre, NivelMaximo = 3, CustoBase = 30000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = ServiceMesh, Nome = "Service mesh", Efeito = "K8s +30%", Cargo = Catalogo.CargoSre, Requisito = NoKubernetes, NivelMaximo = 3, Alvo = AlvoK8s, BonusPorNivel = 0.3, CustoBase = 60000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Waf, Nome = "WAF anti-DDoS", Efeito = "Segurança: bloqueia 31/32 dos ataques", Cargo = Catalogo.CargoSre, NivelMaximo = 1, CustoBase = 48000000, FatorCusto = 1 },
@@ -406,7 +406,7 @@ namespace IdleDataCenter.Simulacao
             // Arquiteto: o campus.
             new MelhoriaDef { Id = Datacenter, Nome = "Datacenter", Efeito = "Novo prédio: +10 mil/s", Cargo = Catalogo.CargoArquiteto, NivelMaximo = 3, CustoBase = 300000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Fibra, Nome = "Fibra", Efeito = "Liga um DC: receita +20%", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 3, CustoBase = 180000000, FatorCusto = 2.5 },
-            new MelhoriaDef { Id = Cdn, Nome = "CDN", Efeito = "+30% e -30% de tráfego", Cargo = Catalogo.CargoArquiteto, NivelMaximo = 3, CustoBase = 240000000, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = Cdn, Nome = "CDN", Efeito = "+30% de receita, -30% de tráfego", Cargo = Catalogo.CargoArquiteto, NivelMaximo = 3, CustoBase = 240000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = Gerador, Nome = "Gerador", Efeito = "Queda de luz: volta em 5 s", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 1, CustoBase = 120000000, FatorCusto = 1 },
             new MelhoriaDef { Id = ResfriamentoLiquido, Nome = "Resfriamento líquido", Efeito = "Datacenters +30%", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 3, Alvo = AlvoDatacenters, BonusPorNivel = 0.3, CustoBase = 480000000, FatorCusto = 2.5 },
             new MelhoriaDef { Id = ContratoDeEnergia, Nome = "Contrato de energia", Efeito = "Datacenters +50%", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 1, Alvo = AlvoDatacenters, BonusPorNivel = 0.5, CustoBase = 900000000, FatorCusto = 1 },
