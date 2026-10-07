@@ -110,9 +110,21 @@ namespace IdleDataCenter.Gerente
         void Loja()
         {
             ui.Ret(new Rect(0, 0, W, H), new Color(.02f, .04f, .08f, .55f));
-            var modal = new Rect(240, 136, 960, 660);
             bool automacao = janela == "Automacao", loja = EmLoja;
             if (loja) ultimaAbaLoja = janela;
+
+            // abas (a loja por setor, a carreira com o prestígio). Com muitos setores elas não cabiam e a última saía da
+            // janela: a janela alarga até caber (centralizada) e, se nem assim, as abas ficam mais justas
+            var abas = loja ? AbasDaLoja.Where(a => a == "Melhorias" || SalaIso.CargoDoSetor(a) <= E.Cargo).ToArray()
+                     : !automacao && janela != "Vender" && janela != "Clientes" ? AbasDaCarreira : new string[0];
+            float folgaDaAba = 32, entreAbas = 8, textos = abas.Sum(a => ui.Largura(NomeDaAba(a), 2));
+            float largura = Mathf.Clamp(textos + abas.Length * folgaDaAba + Mathf.Max(0, abas.Length - 1) * entreAbas + 56, 960, W - 40);
+            if (abas.Length > 0 && textos + abas.Length * folgaDaAba + (abas.Length - 1) * entreAbas + 56 > largura)
+            {
+                entreAbas = 4;
+                folgaDaAba = Mathf.Max(8, (largura - 56 - textos - (abas.Length - 1) * entreAbas) / abas.Length);
+            }
+            var modal = new Rect(Mathf.Round((W - largura) / 2), 136, largura, 660);
             ui.Caixa(modal, IsoGui.Cor("14243a"), automacao ? IsoGui.Verde : loja ? IsoGui.Cyan : IsoGui.Roxo);
             string titulo = janela == "Clientes" ? "Clientes" : janela == "Vender" ? "Vender a empresa" : automacao ? "Automação" : loja ? "Loja" : "Carreira";
             ui.Texto(titulo, modal.x + 28, modal.y + 22, IsoGui.Branco, 5);
@@ -120,16 +132,13 @@ namespace IdleDataCenter.Gerente
             ui.Texto(saldo, modal.xMax - 76 - ui.Largura(saldo, 4), modal.y + 26, Ouro, 4);
             if (ui.Botao(new Rect(modal.xMax - 58, modal.y + 18, 40, 40), "X", Vermelho)) { Abrir("Visao"); return; }
 
-            // abas (a loja por setor, a carreira com o prestígio)
-            var abas = loja ? AbasDaLoja.Where(a => a == "Melhorias" || SalaIso.CargoDoSetor(a) <= E.Cargo).ToArray()
-                     : !automacao && janela != "Vender" && janela != "Clientes" ? AbasDaCarreira : new string[0];
             float ax = modal.x + 28;
             foreach (var aba in abas)
             {
                 string nome = NomeDaAba(aba);
-                float largura = ui.Largura(nome, 2) + 32;
-                if (ui.Botao(new Rect(ax, modal.y + 76, largura, 38), nome, janela == aba ? IsoGui.Cyan : IsoGui.Borda, true)) Abrir(aba);
-                ax += largura + 8;
+                float larguraDaAba = ui.Largura(nome, 2) + folgaDaAba;
+                if (ui.Botao(new Rect(ax, modal.y + 76, larguraDaAba, 38), nome, janela == aba ? IsoGui.Cyan : IsoGui.Borda, true)) Abrir(aba);
+                ax += larguraDaAba + entreAbas;
             }
             if (abas.Length == 0) ui.Texto(Subtitulo(janela), modal.x + 28, modal.y + 80, IsoGui.Muted, 2);
             var conteudo = new Rect(modal.x, modal.y + 34, modal.width, modal.height - 34);   // o que antes começava logo abaixo do título
@@ -153,7 +162,7 @@ namespace IdleDataCenter.Gerente
                 int indice = pagina * porPagina + k;
                 if (indice >= quantidade) break;
                 int linha = k / 3 + primeiraLinha;
-                var r = new Rect(modal.x + 28 + k % 3 * 306, modal.y + 130 + linha * 222, 294, 210);
+                var r = new Rect(modal.x + Mathf.Round((modal.width - 906) / 2) + k % 3 * 306, modal.y + 130 + linha * 222, 294, 210);   // os cards no meio da janela
                 if (automacao) CardAutomacao(r, automacoes[indice]);
                 else CardMelhoria(r, itens[indice]);
             }

@@ -312,6 +312,9 @@ num campus com vários	on a campus with many
 para a bolsa de valores.	to the stock exchange.
 passam a importar.	start to matter.
 sala virtualizada.	virtualized room.
+Abrir a loja	Open the shop
+Esconder a faixa	Hide the strip
+Sair do jogo	Quit the game
 ~{1} restantes	{1} left
 ~{1} sem luz	{1} without power
 ~+{1} outros	+{1} more

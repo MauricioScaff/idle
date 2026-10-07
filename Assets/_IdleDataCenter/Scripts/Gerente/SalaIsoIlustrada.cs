@@ -27,6 +27,7 @@ namespace IdleDataCenter.Gerente
             public string nome;
             public string equip;     // sufixo dos racks ("_g": 1,25x, uns 2 m perto da pessoa)
             public int escala = 1;   // tamanho dos avisos desenhados na sala (alerta, chamado, faíscas): 2 nas salas grandes
+            public float pessoas = 1;   // tamanho de quem anda pela sala (no escritório, menor: ao lado dos funcionários ele parecia um gigante)
             public Vector2 fundo, esquerda, direita;
             public int casas;
         }
@@ -35,7 +36,7 @@ namespace IdleDataCenter.Gerente
         static readonly Ilustracao[] Ilustracoes =
         {
             new Ilustracao { nome = "armario", equip = "", fundo = new Vector2(200, 146), esquerda = new Vector2(57.5f, 217), direita = new Vector2(341, 218), casas = 4 },      // Freelancer: o quarto em casa
-            new Ilustracao { nome = "escritorio", equip = "", fundo = new Vector2(279.5f, 156), esquerda = new Vector2(55, 272), direita = new Vector2(504, 272), casas = 7 },   // Técnico: o escritório da empresa
+            new Ilustracao { nome = "escritorio", equip = "", pessoas = 0.75f, fundo = new Vector2(279.5f, 156), esquerda = new Vector2(55, 272), direita = new Vector2(504, 272), casas = 7 },   // Técnico: o escritório da empresa
             new Ilustracao { nome = "salinha_hd", equip = "_g", fundo = new Vector2(244, 140), esquerda = new Vector2(20, 252), direita = new Vector2(468, 252), casas = 7 },
             new Ilustracao { nome = "racks_hd", equip = "_g", escala = 2, fundo = new Vector2(338, 152), esquerda = new Vector2(18, 312), direita = new Vector2(658, 312), casas = 10 },
             new Ilustracao { nome = "devops_hd", equip = "_g", escala = 2, fundo = new Vector2(338, 152), esquerda = new Vector2(18, 312), direita = new Vector2(658, 312), casas = 10 },
@@ -615,19 +616,26 @@ namespace IdleDataCenter.Gerente
         {
             var rack = CarregarPixelLab("rack" + Sala.equip);
             var b = BaseDe(rack);
-            var passo = b.frente - b.esquerda;   // a face com os servidores corre ao longo de gx
+            // a face com os servidores corre ao longo de gx: o passo é a largura dela, descendo na inclinação do piso
+            // (pela imagem, um rack um pouco fora do 2:1 deixava a fileira torta em relação ao piso)
+            int passo = b.frente.x - b.esquerda.x;
+            float inclinacao = (Sala.direita.y - Sala.fundo.y) / (Sala.direita.x - Sala.fundo.x);
             var inicio = IP(InicioDaFileira, gy) - b.fundo;
             float largura = (IP(Sala.casas - 0.3f, gy).x - IP(InicioDaFileira, gy).x);
-            int n = Mathf.Max(0, Mathf.FloorToInt(largura / Mathf.Max(1, passo.x)));
+            int n = Mathf.Max(0, Mathf.FloorToInt(largura / Mathf.Max(1, passo)));
             var lugares = new List<Vector2Int>();
-            for (int i = 0; i < n; i++) lugares.Add(inicio + passo * i);
+            for (int i = 0; i < n; i++) lugares.Add(inicio + new Vector2Int(passo * i, Mathf.RoundToInt(passo * i * inclinacao)));
             return lugares;
         }
 
-        /// <summary>Uma máquina numa fileira (profundidade pela linha da tela: quem está mais embaixo fica na frente).</summary>
+        /// <summary>
+        /// Uma máquina numa fileira. Profundidade pelo meio da base (não pelo canto da frente): quem está na frente da face
+        /// dos servidores fica na frente dela, mesmo com os pés acima do canto mais baixo do rack.
+        /// </summary>
         void MaquinaNaFileira(SpriteIso s, Vector2Int l, string clique, string nome, bool quebrado = false)
         {
-            float prof = -5 + (l.y + s.h) * 0.01f + l.x * 0.0001f;
+            var b = BaseDe(s);
+            float prof = -5 + (l.y + (b.esquerda.y + b.direita.y) / 2f) * 0.01f + l.x * 0.0001f;
             fila.Add((prof, () => DesenharRack(s, l, 1, !quebrado)));
             Alvos.Add(new Alvo { Area = new RectInt(l.x, l.y, s.w, s.h), Tipo = clique, Px = s.px, Prof = prof, Nome = nome });
             if (quebrado) Quebrado(l + new Vector2Int(BaseDe(s).frente.x, 0), l + BaseDe(s).frente, false);
@@ -974,6 +982,25 @@ namespace IdleDataCenter.Gerente
             return sprites[chave] = s;
         }
 
+        /// <summary>
+        /// O quadro da pessoa no tamanho das pessoas desta sala (Ilustracao.pessoas): reduzido pelo vizinho mais próximo,
+        /// que guarda as cores e o contorno da arte (pegar o pixel mais escuro de cada bloco escurecia os olhos). Cache por quadro.
+        /// </summary>
+        SpriteIso NaEscalaDaSala(SpriteIso o)
+        {
+            float f = Sala.pessoas;
+            if (o == null || f >= 0.999f) return o;
+            string chave = "pessoa|" + o.GetHashCode() + "|" + f;
+            if (sprites.TryGetValue(chave, out var s)) return s;
+            int w = Mathf.Max(1, Mathf.RoundToInt(o.w * f)), h = Mathf.Max(1, Mathf.RoundToInt(o.h * f));
+            var px = new Color32[w * h];
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                    px[y * w + x] = o.px[Mathf.Min(o.h - 1, Mathf.FloorToInt((y + 0.5f) / f)) * o.w + Mathf.Min(o.w - 1, Mathf.FloorToInt((x + 0.5f) / f))];
+            s = new SpriteIso { px = px, w = w, h = h, frente = Mathf.RoundToInt(o.frente * f) };
+            return sprites[chave] = s;
+        }
+
         /// <summary>A textura de um quadro (uma por sprite, guardada), para desenhar a pessoa fora do canvas.</summary>
         static readonly Dictionary<SpriteIso, Texture2D> texturas = new Dictionary<SpriteIso, Texture2D>();
         static Texture2D TexturaDe(SpriteIso s)
@@ -999,8 +1026,9 @@ namespace IdleDataCenter.Gerente
         /// </summary>
         void PessoaIlustrada(SpriteIso s, string quem, Vector2Int p, float z, bool entreMaquinas = false, Vector2? quebrado = null)
         {
+            s = NaEscalaDaSala(s);
             // os pés pela pose parada: os quadros da caminhada dividem a mesma tela, então a pessoa não pula a cada passo
-            int pes = Pes(CarregarPixelLab(quem + "_se") ?? s);
+            int pes = Pes(NaEscalaDaSala(CarregarPixelLab(quem + "_se")) ?? s);
             int sombra = s.w > 90 ? 9 : s.w > 60 ? 6 : 4;
             if (PessoasSoltas && !entreMaquinas && quebrado.HasValue)
             {

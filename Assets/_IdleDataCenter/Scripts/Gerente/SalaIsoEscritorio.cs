@@ -58,8 +58,11 @@ namespace IdleDataCenter.Gerente
         /// <summary>Onde senta cada funcionário (em casas), na ordem em que são contratados: as duas mesas do fundo primeiro.</summary>
         static readonly Vector2[] Cadeiras = { new Vector2(1.79f, 3.28f), new Vector2(3.57f, 3.31f), new Vector2(1.66f, 6.07f), new Vector2(3.56f, 6.1f) };
 
-        /// <summary>As torres da empresa: no canto da TI, entre a cafeteira e o armarinho de servidor (as da frente cobrem um pouco as de trás).</summary>
-        static readonly Vector2[] TorresDoEscritorio = { new Vector2(6.75f, 1.8f), new Vector2(6.05f, 1.8f), new Vector2(6.75f, 2.5f), new Vector2(6.05f, 2.5f) };
+        /// <summary>
+        /// As torres da empresa: uma fileira na frente do balcão da cafeteira, entre ele e o armarinho de servidor (que fica na
+        /// frente delas e as cobre um pouco). Atrás do armarinho elas sumiam, então a partir da quarta só a placa com o total.
+        /// </summary>
+        static readonly Vector2[] TorresDoEscritorio = { new Vector2(6.75f, 1.8f), new Vector2(6.05f, 1.8f), new Vector2(5.35f, 1.8f) };
 
         /// <summary>Onde o técnico trabalha no escritório: na frente da bancada da TI, olhando para ela.</summary>
         (Vector2 lugar, string olhar) LugarNaBancada => (new Vector2(5.35f, 6.45f), "se");   // na frente da bancada, ao lado da mesinha da planta (atrás dela ou colado na borda ele parecia em cima)
@@ -69,6 +72,8 @@ namespace IdleDataCenter.Gerente
         void EscritorioIlustrado()
         {
             TorresNoPiso(TorresDoEscritorio);
+            // o armarinho de servidor (com a ponta da bancada na frente dele) fica na frente das torres
+            NaFrenteDaIlustracao(new Vector2(366, 270), new Vector2(391, 258), new Vector2(417, 270), new Vector2(417, 312), new Vector2(391, 326), new Vector2(366, 312));
             Funcionarios();
 
             // o que ocupa o piso (em casas): planta do fundo, as duas fileiras de mesas, impressora, cafeteira, armarinho de
@@ -89,7 +94,7 @@ namespace IdleDataCenter.Gerente
             lugaresDeChamado.Add(new LugarDeChamado { tipo = "impressora", grade = new Vector2(3.45f, 1.25f), olhar = "ne", balao = new Vector2Int(374, 150) });
             lugaresDeChamado.Add(new LugarDeChamado { tipo = "bancada", grade = LugarNaBancada.lugar, olhar = LugarNaBancada.olhar, balao = new Vector2Int(322, 282) });
             pontosDeRonda.Add((new Vector2(3.45f, 1.25f), "ne"));    // impressora
-            pontosDeRonda.Add((new Vector2(5.2f, 1.2f), "ne"));     // cafeteira
+            pontosDeRonda.Add((new Vector2(4.95f, 0.75f), "ne"));   // cafeteira (pelo lado: as torres ficam na frente do balcão)
             pontosDeRonda.Add((new Vector2(5.85f, 3.15f), "se"));    // armarinho de servidor
 
             // o que a loja do Técnico põe na sala: ventilador e filtro de linha perto das torres, HD externo na bancada
@@ -129,6 +134,33 @@ namespace IdleDataCenter.Gerente
                 lugaresDeChamado.Add(new LugarDeChamado { tipo = "pessoa", grade = Cadeiras[i] + new Vector2(0.65f, 0.1f), olhar = "nw", balao = pe + new Vector2Int(0, -pes - 4) });
                 if (i == n - 1) pontoDoFuncionario = pe + new Vector2Int(0, -pes / 2);
             }
+        }
+
+        /// <summary>
+        /// Um pedaço da ilustração redesenhado por cima do que fica atrás dele: a ilustração é um fundo só, então sem isso uma
+        /// torre atrás do armarinho aparecia por cima dele. Contorno convexo em pixels da ilustração, em ordem; a profundidade
+        /// é a linha mais baixa (como a das torres no piso).
+        /// </summary>
+        void NaFrenteDaIlustracao(params Vector2[] contorno)
+        {
+            int x0 = int.MaxValue, y0 = int.MaxValue, x1 = int.MinValue, y1 = int.MinValue;
+            foreach (var p in contorno)
+            {
+                x0 = Mathf.Min(x0, Mathf.FloorToInt(p.x)); y0 = Mathf.Min(y0, Mathf.FloorToInt(p.y));
+                x1 = Mathf.Max(x1, Mathf.CeilToInt(p.x)); y1 = Mathf.Max(y1, Mathf.CeilToInt(p.y));
+            }
+            string chave = "frente|" + Sala.nome + "|" + x0 + "," + y0 + "," + x1 + "," + y1;
+            if (!sprites.TryGetValue(chave, out var pedaco))
+            {
+                int w = x1 - x0 + 1, h = y1 - y0 + 1;
+                var px = new Color32[w * h];
+                for (int y = 0; y < h; y++)
+                    for (int x = 0; x < w; x++)
+                        if (Dentro(new Vector2(x0 + x + 0.5f, y0 + y + 0.5f), contorno))
+                            px[y * w + x] = fundoIlustrado.px[(y0 + y) * fundoIlustrado.w + x0 + x];
+                pedaco = sprites[chave] = new SpriteIso { px = px, w = w, h = h };
+            }
+            fila.Add((-5 + y1 * 0.01f, () => tela.Imagem(pedaco.px, pedaco.w, pedaco.h, x0, y0)));
         }
 
         /// <summary>Canto de cima da imagem para o canto da frente da base do objeto ficar no ponto (gx, gy) do piso.</summary>

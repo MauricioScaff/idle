@@ -369,21 +369,37 @@ namespace IdleDataCenter
             }
         }
 
+        /// <summary>Os botões da ponta direita. Com o cursor em cima, uma etiqueta à esquerda diz o que cada um faz.</summary>
         void Icones(float x)
         {
-            Icone(x, 0, Losango, IsoGui.Cyan, faixa.AbrirGerente);
-            Icone(x, 1, Triangulo, IsoGui.Muted, faixa.AbrirLoja);
-            Icone(x, 2, Baixo, IsoGui.Muted, faixa.Ocultar);
-            Icone(x, 3, Xis, IsoGui.Cor("ff7a8a"), Application.Quit);
+            string dica = null;
+            float yDica = 0;
+            void ComDica(int i, string[] mapa, Color cor, Action acao, string texto)
+            {
+                if (Icone(x, i, mapa, cor, acao)) { dica = texto; yDica = 6 + i * 30; }
+            }
+            ComDica(0, Losango, IsoGui.Cyan, faixa.AbrirGerente, "Abrir o modo gerente");
+            ComDica(1, Triangulo, IsoGui.Muted, faixa.AbrirLoja, "Abrir a loja");
+            ComDica(2, Baixo, IsoGui.Muted, faixa.Ocultar, "Esconder a faixa");
+            ComDica(3, Xis, IsoGui.Cor("ff7a8a"), Application.Quit, "Sair do jogo");
+            if (dica == null) return;
+            // por cima do quadro ao lado (desenhada por último), na altura do botão
+            dica = Idiomas.T(dica);
+            float largura = ui.Largura(dica, 2) + 16;
+            var r = new Rect(x - 6 - largura, yDica, largura, 26);
+            ui.Caixa(r, IsoGui.Cor("0d1426"), IsoGui.Cyan);
+            ui.Texto(dica, r.x + 8, r.y + 8, IsoGui.Branco, 2);
         }
 
-        void Icone(float x, int i, string[] mapa, Color cor, Action acao)
+        /// <summary>Um botão de ícone; retorna se o cursor está em cima dele.</summary>
+        bool Icone(float x, int i, string[] mapa, Color cor, Action acao)
         {
             var r = new Rect(x, 6 + i * 30, LarguraIcones, 26);
             bool sobre = r.Contains(cursor);
             ui.Caixa(r, sobre ? Color.Lerp(cor, IsoGui.Painel, 0.6f) : IsoGui.Painel, sobre ? cor : IsoGui.Borda);
             Mapa(mapa, r.x + 8, r.y + 8, sobre ? IsoGui.Branco : cor, 2);
             alvos.Add((r, acao));
+            return sobre;
         }
 
         void Botao(Rect r, string titulo, Color cor, Action acao)
