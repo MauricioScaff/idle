@@ -25,3 +25,5 @@ Thumbs.db
 
 # zip do jogo para o itch.io (gerado a cada versão)
 itch/*.zip
+itch/butler/
+itch/pasta-windows/
