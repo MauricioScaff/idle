@@ -150,9 +150,12 @@ namespace IdleDataCenter.Gerente
                 if (ui.Botao(new Rect(areaSala.x + 12, areaSala.yMax - 52, 200, 40), "< Voltar", IsoGui.Borda, Livre)) vistaEscolhida = SalaIso.Vista.Sala;
             }
 
-            // marcador de construção: compra o equipamento principal do cargo (ou, numa área, o próximo dela)
+            // marcador de construção: compra o equipamento principal do cargo (ou, numa área, o próximo dela). Só aparece
+            // quando dá para comprar (antes ficava o tempo todo na tela); o contorno tracejado no piso continua mostrando o lugar.
+            // Na dica do tutorial que aponta para ele, aparece mesmo sem dinheiro.
             string item = salaIso.ItemDoMarcador ?? ItemPrincipal();
-            if (salaIso.Marcador.HasValue && !E.NoMaximo(item))
+            bool dicaDoMarcador = !E.TutorialConcluido && E.PassoTutorial == 3;
+            if (salaIso.Marcador.HasValue && !E.NoMaximo(item) && (PodeComprarAqui(item) || dicaDoMarcador || flashCompra > 0))
             {
                 var pos = NaTela(salaIso.Marcador.Value);
                 string rotulo = "+ " + NomeLongo(item);
@@ -454,7 +457,9 @@ namespace IdleDataCenter.Gerente
             float largura = Mathf.Min(230, (direita - esquerda - (n - 1) * espaco) / n);
             float total = n * largura + (n - 1) * espaco;
             float x = Mathf.Clamp(W / 2 - total / 2, esquerda, direita - total), y = 812;
-            if (BotaoIcone(new Rect(x, y, largura, altura), "Loja", IsoGui.Cyan, Sacola, 4, EmLoja)) Abrir(ultimaAbaLoja);
+            var rLoja = new Rect(x, y, largura, altura);
+            if (BotaoIcone(rLoja, "Loja", IsoGui.Cyan, Sacola, 4, EmLoja)) Abrir(ultimaAbaLoja);
+            AlertaDeCompra(rLoja);
             x += largura + espaco;
             bool automacao = E.AutomacoesLiberadas;
             var rAuto = new Rect(x, y, largura, altura);
@@ -493,6 +498,22 @@ namespace IdleDataCenter.Gerente
         bool EmLoja => Array.IndexOf(AbasDaLoja, janela) >= 0;
 
         /// <summary>Botão grande com ícone (o IsoGui.Botao só tem texto).</summary>
+        /// <summary>
+        /// "!" piscando no canto do botão da loja quando dá para comprar o que o jogo sugere (a mesma compra do cartão
+        /// "Próxima compra"): assim o alerta não fica aceso o tempo todo por causa de um item barato qualquer.
+        /// </summary>
+        void AlertaDeCompra(Rect botao)
+        {
+            var sugerida = E.MelhoriaSugerida();
+            if (sugerida == null || !PodeComprarAqui(sugerida.Id) || EmLoja) return;
+            float pulo = Mathf.Abs(Mathf.Sin(Time.unscaledTime * 5)) * 4;
+            var r = new Rect(botao.xMax - 22, botao.y - 14 - pulo, 30, 30);
+            ui.Caixa(r, Pisca ? IsoGui.Laranja : Ouro, IsoGui.Cor("1b1a2e"));
+            ui.SemSublinhado = true;
+            ui.Texto("!", r.center.x, r.y + 8, IsoGui.Cor("1b1a2e"), 3, true);
+            ui.SemSublinhado = false;
+        }
+
         bool BotaoIcone(Rect r, string titulo, Color cor, string[] icone, int escala, bool ativo)
         {
             bool sobre = r.Contains(Event.current.mousePosition);

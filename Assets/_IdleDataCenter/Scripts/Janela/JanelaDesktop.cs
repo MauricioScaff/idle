@@ -283,6 +283,19 @@ namespace IdleDataCenter
 #endif
         }
 
+        /// <summary>A janela foi minimizada (botão "_" ou Win+D)? No modo gerente, isso leva o jogo de volta para a faixa.</summary>
+        public bool Minimizada
+        {
+            get
+            {
+#if !UNITY_EDITOR && UNITY_STANDALONE_WIN
+                return Ativa && IsIconic(hwnd);
+#else
+                return false;
+#endif
+            }
+        }
+
         public void DefinirClicavel(bool sim)
         {
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN

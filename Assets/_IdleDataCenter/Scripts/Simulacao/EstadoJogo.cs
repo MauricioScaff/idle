@@ -7,7 +7,7 @@ namespace IdleDataCenter.Simulacao
     [Serializable]
     public class EstadoJogo
     {
-        public const int VersaoAtual = 3;   // 3: o Freelancer entrou antes do Técnico
+        public const int VersaoAtual = 4;   // 3: o Freelancer entrou antes do Técnico; 4: as metas contam só o que foi feito no cargo
 
         public int versao = VersaoAtual;
         public double dinheiro;
@@ -90,6 +90,18 @@ namespace IdleDataCenter.Simulacao
 
         // Tutorial do modo gerente: passo atual (Catalogo.PassosTutorial = concluído)
         public int tutorial;
+
+        // Os contadores quando o jogador chegou no cargo atual: as metas de contagem valem a partir daqui (saves antigos
+        // ficam com zero, ou seja, contam desde o começo como antes)
+        public InicioDoCargo inicioDoCargo = new InicioDoCargo();
+    }
+
+    /// <summary>Os contadores da carreira no momento da última promoção.</summary>
+    [Serializable]
+    public class InicioDoCargo
+    {
+        public double totalGanho;
+        public int incidentes, chamados, backups, picos;
     }
 
     /// <summary>O que o jogador leva de uma empresa para a outra.</summary>

@@ -132,7 +132,7 @@ namespace IdleDataCenter.Gerente
             bool destinoOcupado = false;
             foreach (var o in pessoas.Values) if (o != p && (Destino(o) - destino).sqrMagnitude < 0.36f) destinoOcupado = true;
             var inicio = MaisPertoLivre(p.pos);
-            if (fim.x < 0 || inicio.x < 0) { p.caminho.Add(destino); return; }
+            if (fim.x < 0 || inicio.x < 0) return;   // sem lugar livre: fica onde está (antes ia em linha reta, atravessando os móveis)
 
             int n = Celulas;
             var custo = new float[n, n];
@@ -144,6 +144,7 @@ namespace IdleDataCenter.Gerente
             veio[inicio.x, inicio.y] = inicio;
             float H(Vector2Int c) { int dx = Mathf.Abs(c.x - fim.x), dy = Mathf.Abs(c.y - fim.y); return Mathf.Max(dx, dy) + 0.414f * Mathf.Min(dx, dy); }
             bool achou = false;
+            var maisPerto = inicio;   // se o destino não tem caminho (um vão fechado entre móveis), vai até o mais perto dele
             while (aberta.Count > 0)
             {
                 int melhor = 0;
@@ -153,6 +154,7 @@ namespace IdleDataCenter.Gerente
                 aberta.RemoveAt(melhor);
                 if (fechado[c.x, c.y]) continue;
                 fechado[c.x, c.y] = true;
+                if (H(c) < H(maisPerto)) maisPerto = c;
                 if (c == fim) { achou = true; break; }
                 for (int dx = -1; dx <= 1; dx++)
                     for (int dy = -1; dy <= 1; dy++)
@@ -169,7 +171,8 @@ namespace IdleDataCenter.Gerente
                         aberta.Add(v);
                     }
             }
-            if (!achou) { p.caminho.Add(destino); return; }
+            // sem caminho até o destino: para no ponto alcançável mais perto dele (antes ia em linha reta, por cima dos móveis)
+            if (!achou) { fim = maisPerto; destinoLivre = false; }
 
             // de trás para a frente, e depois só os pontos de virada (o resto é linha reta livre)
             var pontos = new List<Vector2>();

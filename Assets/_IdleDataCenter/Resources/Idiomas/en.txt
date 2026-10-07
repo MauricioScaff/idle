@@ -1128,3 +1128,33 @@ A nuvem de IA rende muito.	The AI cloud earns a lot.
 Ninguém é confiável por padrão: todo acesso é conferido, até de quem está dentro da empresa.	Nobody is trusted by default: every access is checked, even from inside the company.
 Quando a empresa passa a vender ações na bolsa de valores.	When the company starts selling shares on the stock exchange.
 O fim da carreira: você vira CEO. Depois, dá para vender a empresa e recomeçar com bônus.	The end of the career: you become CEO. Afterwards you can sell the company and start over with bonuses.
+Consertar 25 PCs	Fix 25 PCs
+Hospedar 7 sites	Host 7 sites
+Caprichar na hospedagem	Polish the hosting
+Ter 4 servidores	Have 4 servers
+Resolver 40 incidentes	Resolve 40 incidents
+Contratar um funcionário	Hire an employee
+Faturar R$ 180 mil	Earn R$ 180K
+Resolver 400 incidentes	Resolve 400 incidents
+Atender 220 chamados	Handle 220 tickets
+Faturar R$ 6,5 mi	Earn R$ 6.5M
+Ter 12 racks cheios	Have 12 full racks
+Restaurar 20 backups	Restore 20 backups
+5 automações ativas	5 active automations
+Faturar R$ 170 mi	Earn R$ 170M
+18 hosts de containers	18 container hosts
+Resolver 600 incidentes	Resolve 600 incidents
+Restaurar 50 backups	Restore 50 backups
+Faturar R$ 5,8 bi	Earn R$ 5.8B
+Ter 20 nós Kubernetes	Have 20 Kubernetes nodes
+Superar 20 picos	Survive 20 peaks
+Atender 500 chamados	Handle 500 tickets
+Faturar R$ 18 bi	Earn R$ 18B
+Superar 60 picos	Survive 60 peaks
+Resolver 2.500 incidentes	Resolve 2,500 incidents
+Restaurar 120 backups	Restore 120 backups
+Faturar R$ 215 bi	Earn R$ 215B
+Ter 8 clusters de GPU	Have 8 GPU clusters
+Faturar R$ 1 tri	Earn R$ 1T
+As metas contam o que você fizer neste cargo.	Goals count what you do in this role.
+Ter 13 servidores	Have 13 servers

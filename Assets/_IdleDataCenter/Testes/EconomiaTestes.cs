@@ -222,39 +222,112 @@ namespace IdleDataCenter.Testes
 
         // ---------- Carreira ----------
 
-        [Test]
-        public void PromocaoExigeTodasAsMetas()
+        /// <summary>
+        /// Deixa a meta cumprida mexendo só no que ela mede (os testes de promoção não dependem dos alvos, que mudam no
+        /// balanceamento). As de contagem contam desde a chegada no cargo.
+        /// </summary>
+        static void Cumprir(Economia e, MetaDef m)
         {
-            var e = Nova();
-            Assert.IsFalse(e.PodePromover);
-            DefinirNivel(e, Catalogo.Servidor, 2);
-            e.Estado.totalGanho = 200000;
-            Assert.IsFalse(e.PodePromover, "faltam os incidentes");
-            e.Estado.incidentesResolvidos = 8;
-            Assert.IsTrue(e.PodePromover);
-
-            int novoCargo = -1;
-            e.Promoveu += c => novoCargo = c;
-            Assert.IsTrue(e.Promover());
-            Assert.AreEqual(Catalogo.CargoSysadmin, e.Cargo);
-            Assert.AreEqual(Catalogo.CargoSysadmin, novoCargo);
-            Assert.IsFalse(e.PodePromover, "o Sysadmin tem metas próprias");
+            var s = e.Estado; var i = s.inicioDoCargo;
+            int alvo = (int)Math.Ceiling(m.Alvo);
+            void Nivel(string id, int nivel) { s.melhorias.RemoveAll(x => x.id == id); DefinirNivel(e, id, nivel); }
+            switch (m.Tipo)
+            {
+                case TipoMeta.TotalGanho: s.totalGanho = i.totalGanho + m.Alvo; break;
+                case TipoMeta.IncidentesResolvidos: s.incidentesResolvidos = i.incidentes + alvo; break;
+                case TipoMeta.Consertos: s.chamadosAtendidos = i.chamados + alvo; break;
+                case TipoMeta.BackupsRestaurados: s.backupsRestaurados = i.backups + alvo; break;
+                case TipoMeta.PicosSobrevividos: s.picosSobrevividos = i.picos + alvo; break;
+                case TipoMeta.Melhoria: Nivel(m.Item, alvo); break;
+                case TipoMeta.Sites: Nivel(Catalogo.SiteCliente, alvo); break;
+                case TipoMeta.Servidores: Nivel(Catalogo.Servidor, Math.Max(0, alvo - e.TotalServidores + e.Nivel(Catalogo.Servidor))); break;
+                case TipoMeta.ServidoresRack: Nivel(Catalogo.Rack, 1); Nivel(Catalogo.Servidor1U, alvo); break;
+                case TipoMeta.HostsContainers: Nivel(Catalogo.Containers, alvo); break;
+                case TipoMeta.Datacenters: Nivel(Catalogo.Datacenter, alvo - 1); break;
+                case TipoMeta.Regioes: Nivel(Catalogo.Regiao, alvo - 1); break;
+                case TipoMeta.AutomacoesAtivas:
+                    foreach (var a in Catalogo.Automacoes) if (e.AutomacoesAtivas < alvo && !e.TemAutomacao(a.Id)) s.automacoes.Add(a.Id);
+                    break;
+            }
+            Assert.IsTrue(e.Cumprida(m), "não deu para cumprir: " + m.Texto);
         }
 
         [Test]
-        public void SysadminViraAnalistaComORackCheio()
+        public void CadaCargoTemQuatroMetasEPromoveSoComTodas()
+        {
+            for (int cargo = 0; cargo < Catalogo.Cargos.Count - 1; cargo++)
+            {
+                var e = Nova();
+                e.Estado.cargo = cargo;
+                var metas = e.CargoAtual.MetasParaPromocao;
+                Assert.AreEqual(4, metas.Length, "quatro metas no " + e.CargoAtual.Nome);
+                Assert.IsFalse(e.PodePromover);
+                for (int i = 0; i < metas.Length - 1; i++) Cumprir(e, metas[i]);
+                Assert.IsFalse(e.PodePromover, "falta a última meta do " + e.CargoAtual.Nome);
+                Cumprir(e, metas[metas.Length - 1]);
+                int novoCargo = -1;
+                e.Promoveu += c => novoCargo = c;
+                Assert.IsTrue(e.Promover());
+                Assert.AreEqual(cargo + 1, e.Cargo);
+                Assert.AreEqual(cargo + 1, novoCargo);
+                if (e.TemProximoCargo) Assert.IsFalse(e.PodePromover, "o " + e.CargoAtual.Nome + " tem metas próprias");
+            }
+            Assert.IsFalse(NoMundo().TemProximoCargo, "CTO é o último cargo");
+        }
+
+        [Test]
+        public void MetasDeContagemValemSoNoCargoAtual()
         {
             var e = Nova();
-            e.Estado.cargo = Catalogo.CargoSysadmin;
-            DefinirNivel(e, Catalogo.Rack, 1);
-            DefinirNivel(e, Catalogo.Servidor1U, 4);
-            e.Estado.totalGanho = 7200000;
-            e.Estado.incidentesResolvidos = 60;
-            Assert.IsFalse(e.PodePromover, "falta um 1U para encher o rack");
-            e.Estado.melhorias.Find(m => m.id == Catalogo.Servidor1U).nivel = 5;
+            e.Estado.incidentesResolvidos = 5000;   // muito mais do que qualquer meta: antes já chegava cumprindo a do próximo cargo
+            e.Estado.backupsRestaurados = 500;
+            foreach (var m in e.CargoAtual.MetasParaPromocao) Cumprir(e, m);
             Assert.IsTrue(e.Promover());
-            Assert.AreEqual("Analista de Infra", e.CargoAtual.Nome);
-            Assert.IsFalse(e.PodePromover, "o Analista tem metas próprias");
+            var incidentes = new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 10 };
+            var faturar = new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 10 };
+            var backups = new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 10 };
+            Assert.AreEqual(0, e.Progresso(incidentes));
+            Assert.AreEqual(0, e.Progresso(faturar));
+            Assert.AreEqual(0, e.Progresso(backups));
+            e.Estado.incidentesResolvidos += 3;
+            e.Ganhar(7);
+            Assert.AreEqual(3, e.Progresso(incidentes));
+            Assert.AreEqual(7, e.Progresso(faturar), 1e-9);
+        }
+
+        [Test]
+        public void SaveAntigoContaDesdeOComeco()
+        {
+            // saves de antes da versão 4 não têm o início do cargo: contam tudo, como antes
+            var e = new Economia(new EstadoJogo { versao = 3, cargo = Catalogo.CargoSysadmin, incidentesResolvidos = 50, inicioDoCargo = null });
+            Assert.AreEqual(50, e.Progresso(new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 400 }));
+        }
+
+        [Test]
+        public void IpoFechaACarreira()
+        {
+            var e = NoMundo();
+            Assert.IsFalse(e.PodeFazerIpo);
+            foreach (var m in e.CargoAtual.MetasParaPromocao) Cumprir(e, m);
+            Assert.AreEqual("CTO", e.NomeDoCargo);
+            Assert.IsTrue(e.PodeFazerIpo);
+            bool festa = false;
+            e.Ipo += () => festa = true;
+            Assert.IsTrue(e.FazerIpo());
+            Assert.IsTrue(festa && e.IpoFeito);
+            Assert.AreEqual("CEO", e.NomeDoCargo, "o IPO promove o CTO a CEO");
+            Assert.IsFalse(e.PodeFazerIpo, "só uma vez");
+        }
+
+        [Test]
+        public void MetasDoFreelancerTrazemAContratacao()
+        {
+            var e = Freelancer();
+            foreach (var m in e.CargoAtual.MetasParaPromocao) Cumprir(e, m);
+            int sites = e.Sites;
+            Assert.IsTrue(e.Promover());
+            Assert.AreEqual(Catalogo.CargoTecnico, e.Cargo);
+            Assert.AreEqual(sites, e.Sites, "os sites vêm junto para a empresa");
         }
 
         // ---------- Analista de Infra ----------
@@ -384,20 +457,6 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
-        public void AnalistaViraDevOpsComBackupEAutomacoes()
-        {
-            var e = Nova();
-            e.Estado.cargo = Catalogo.CargoAnalista;
-            e.Estado.totalGanho = 180000000;
-            e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.CronFaturamento });
-            Assert.IsFalse(e.PodePromover, "falta restaurar um backup");
-            e.Estado.backupsRestaurados = 1;
-            Assert.IsTrue(e.Promover());
-            Assert.AreEqual("Engenheiro DevOps", e.CargoAtual.Nome);
-            Assert.IsFalse(e.PodePromover, "o DevOps tem metas próprias");
-        }
-
-        [Test]
         public void HypervisorAumentaSoOsServidores()
         {
             var e = NoDevOps();
@@ -477,20 +536,6 @@ namespace IdleDataCenter.Testes
             DefinirNivel(e, Catalogo.NoKubernetes, nos);
             DefinirNivel(e, Catalogo.Link10G, 1);   // banda de sobra: o teste é sobre o cluster
             return e;
-        }
-
-        [Test]
-        public void DevOpsViraSre()
-        {
-            var e = NoDevOps();
-            DefinirNivel(e, Catalogo.Containers, 4);
-            e.Estado.totalGanho = 6000000000;
-            e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.Monitoramento, Catalogo.CronFaturamento, Catalogo.Plantao, Catalogo.Pipeline });
-            Assert.IsFalse(e.PodePromover, "faltam automações");
-            e.Estado.automacoes.Add(Catalogo.RollbackAutomatico);
-            Assert.IsTrue(e.Promover());
-            Assert.AreEqual("SRE", e.CargoAtual.Nome);
-            Assert.IsFalse(e.PodePromover, "o SRE tem metas próprias");
         }
 
         [Test]
@@ -593,21 +638,6 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
-        public void SreViraArquiteto()
-        {
-            var e = NoSre();
-            e.Estado.picosSobrevividos = 5;
-            e.Estado.totalGanho = 24000000000;
-            e.Estado.automacoes.AddRange(new[] { Catalogo.Watchdog, Catalogo.HotSpare, Catalogo.Monitoramento, Catalogo.CronFaturamento, Catalogo.Plantao,
-                                                 Catalogo.Pipeline, Catalogo.RollbackAutomatico, Catalogo.InfraComoCodigo, Catalogo.Autoscaling });
-            Assert.IsFalse(e.PodePromover, "faltam automações");
-            e.Estado.automacoes.Add(Catalogo.Chaos);
-            Assert.IsTrue(e.Promover());
-            Assert.AreEqual("Arquiteto", e.CargoAtual.Nome);
-            Assert.IsFalse(e.PodePromover, "o Arquiteto tem metas próprias");
-        }
-
-        [Test]
         public void DatacenterNovoRendeComFibraECdn()
         {
             var e = NoCampus();
@@ -663,19 +693,6 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
-        public void ArquitetoViraCto()
-        {
-            var e = NoCampus();
-            DefinirNivel(e, Catalogo.Datacenter, 3);
-            e.Estado.totalGanho = 240000000000;
-            for (int i = 0; i < 12; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
-            Assert.IsTrue(e.Promover());
-            Assert.AreEqual("CTO", e.CargoAtual.Nome);
-            Assert.IsFalse(e.TemProximoCargo, "CTO é o último cargo");
-            Assert.IsFalse(e.PodePromover);
-        }
-
-        [Test]
         public void RegiaoCaboRenovavelEGpuRendem()
         {
             var e = NoMundo();
@@ -700,24 +717,6 @@ namespace IdleDataCenter.Testes
             e.Estado.automacoes.Add(Catalogo.Multirregiao);
             e.Avancar(Catalogo.TempoFailoverMultirregiao);
             Assert.IsFalse(e.TemPaneRegional);
-        }
-
-        [Test]
-        public void IpoFechaACarreira()
-        {
-            var e = NoMundo();
-            Assert.IsFalse(e.PodeFazerIpo);
-            DefinirNivel(e, Catalogo.Regiao, 3);
-            e.Estado.totalGanho = 3600000000000;
-            for (int i = 0; i < 15; i++) e.Estado.automacoes.Add(Catalogo.Automacoes[i].Id);
-            Assert.AreEqual("CTO", e.NomeDoCargo);
-            Assert.IsTrue(e.PodeFazerIpo);
-            bool festa = false;
-            e.Ipo += () => festa = true;
-            Assert.IsTrue(e.FazerIpo());
-            Assert.IsTrue(festa && e.IpoFeito);
-            Assert.AreEqual("CEO", e.NomeDoCargo, "o IPO promove o CTO a CEO");
-            Assert.IsFalse(e.PodeFazerIpo, "só uma vez");
         }
 
         // ---------- Prestígio ----------
@@ -887,19 +886,6 @@ namespace IdleDataCenter.Testes
             Assert.IsTrue(e.TemChamado);
             double normal = Catalogo.IntervaloChamadoMin + 0.9999 * (Catalogo.IntervaloChamadoMax - Catalogo.IntervaloChamadoMin);
             Assert.AreEqual(normal * (1 - 2 * Catalogo.MaisPcsPorCartao), e.Estado.proximoChamado, 1e-6);
-        }
-
-        [Test]
-        public void MetasDoFreelancerTrazemAContratacao()
-        {
-            var e = Freelancer();
-            DefinirNivel(e, Catalogo.SiteCliente, 5);
-            e.Estado.totalGanho = 15000;
-            Assert.IsFalse(e.PodePromover, "faltam os consertos");
-            e.Estado.chamadosAtendidos = 10;
-            Assert.IsTrue(e.Promover());
-            Assert.AreEqual(Catalogo.CargoTecnico, e.Cargo);
-            Assert.AreEqual(R + 5 * Catalogo.ReceitaSite, e.ReceitaPorSegundo, 1e-9, "os sites vêm junto para a empresa");
         }
 
         // ---------- Escritório do Técnico ----------

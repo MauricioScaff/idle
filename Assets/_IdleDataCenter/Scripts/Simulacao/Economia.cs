@@ -853,23 +853,41 @@ namespace IdleDataCenter.Simulacao
             Estado.versao = EstadoJogo.VersaoAtual;
         }
 
+        /// <summary>
+        /// Quanto da meta já foi feito. As de contagem (faturar, incidentes, chamados, backups, picos) contam só o que
+        /// aconteceu desde a chegada no cargo: antes, os incidentes e os backups dos cargos anteriores já chegavam
+        /// cumprindo a meta nova. As de equipamento contam o que existe agora.
+        /// </summary>
         public double Progresso(MetaDef meta)
         {
+            var inicio = Estado.inicioDoCargo ?? (Estado.inicioDoCargo = new InicioDoCargo());
             switch (meta.Tipo)
             {
                 case TipoMeta.Servidores: return TotalServidores;
-                case TipoMeta.TotalGanho: return Estado.totalGanho;
+                case TipoMeta.TotalGanho: return Estado.totalGanho - inicio.totalGanho;
                 case TipoMeta.ServidoresRack: return ServidoresRack;
-                case TipoMeta.BackupsRestaurados: return Estado.backupsRestaurados;
+                case TipoMeta.BackupsRestaurados: return Estado.backupsRestaurados - inicio.backups;
                 case TipoMeta.AutomacoesAtivas: return AutomacoesAtivas;
                 case TipoMeta.HostsContainers: return HostsContainers;
-                case TipoMeta.PicosSobrevividos: return Estado.picosSobrevividos;
+                case TipoMeta.PicosSobrevividos: return Estado.picosSobrevividos - inicio.picos;
                 case TipoMeta.Datacenters: return TotalDatacenters;
                 case TipoMeta.Regioes: return TotalRegioes;
-                case TipoMeta.Consertos: return Estado.chamadosAtendidos;
+                case TipoMeta.Consertos: return Estado.chamadosAtendidos - inicio.chamados;
                 case TipoMeta.Sites: return Sites;
-                default: return Estado.incidentesResolvidos;
+                case TipoMeta.Melhoria: return Nivel(meta.Item);
+                default: return Estado.incidentesResolvidos - inicio.incidentes;
             }
+        }
+
+        /// <summary>Guarda os contadores de agora: as metas de contagem do novo cargo começam do zero.</summary>
+        void ComecarCargo()
+        {
+            var s = Estado;
+            s.inicioDoCargo = new InicioDoCargo
+            {
+                totalGanho = s.totalGanho, incidentes = s.incidentesResolvidos, chamados = s.chamadosAtendidos,
+                backups = s.backupsRestaurados, picos = s.picosSobrevividos,
+            };
         }
 
         public bool Cumprida(MetaDef meta) => Progresso(meta) >= meta.Alvo;
@@ -890,6 +908,7 @@ namespace IdleDataCenter.Simulacao
         {
             if (!PodePromover) return false;
             Estado.cargo++;
+            ComecarCargo();
             Promoveu?.Invoke(Estado.cargo);
             return true;
         }

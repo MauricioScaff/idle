@@ -246,6 +246,9 @@ namespace IdleDataCenter
             ui.Barra(new Rect(x + 12, 106, LarguraHud - 24, 10), E.Progresso(proxima) / proxima.Alvo, IsoGui.Cyan);
         }
 
+        /// <summary>Canto de cima da janela da sala na textura (segue o técnico com suavidade).</summary>
+        Vector2? camSala;
+
         void Sala(float x, float largura)
         {
             var r = new Rect(x, 6, largura, 116);
@@ -253,13 +256,26 @@ namespace IdleDataCenter
             var tex = sala.Textura;
             if (tex != null)
             {
-                // a câmera vai e volta pela sala, devagar; salas menores que a janela ficam centralizadas
+                // a câmera segue o técnico (antes ela ia e voltava sozinha e ele quase nunca aparecia); sem ele, vai e volta
+                // pela sala devagar. Salas menores que a janela ficam centralizadas
                 var area = sala.AreaDaSala;
                 float vw = largura - 4, vh = 112;
                 float folgaX = area.width - vw, folgaY = area.height - vh;
                 float vai = (Mathf.Sin(Time.unscaledTime * 0.2f) + 1) / 2;
-                float sx = folgaX > 0 ? area.x + Mathf.Round(folgaX * vai) : area.x + folgaX / 2;
-                float sy = folgaY > 0 ? area.y + Mathf.Round(folgaY * 0.55f) : area.y + folgaY / 2;
+                float alvoX = area.x + folgaX * vai, alvoY = area.y + folgaY * 0.55f;
+                var tecnico = sala.PosicaoDoTecnico;
+                if (tecnico.HasValue)
+                {
+                    alvoX = tecnico.Value.x - vw / 2;
+                    alvoY = tecnico.Value.y - sala.AlturaDasPessoas / 2 - vh / 2;
+                }
+                alvoX = folgaX > 0 ? Mathf.Clamp(alvoX, area.x, area.x + folgaX) : area.x + folgaX / 2;
+                alvoY = folgaY > 0 ? Mathf.Clamp(alvoY, area.y, area.y + folgaY) : area.y + folgaY / 2;
+                // anda até o alvo sem tranco (na primeira vez, já começa nele)
+                float k = camSala.HasValue ? 1 - Mathf.Exp(-Time.unscaledDeltaTime * 2.5f) : 1;
+                var atual = camSala ?? new Vector2(alvoX, alvoY);
+                camSala = new Vector2(Mathf.Lerp(atual.x, alvoX, k), Mathf.Lerp(atual.y, alvoY, k));
+                float sx = Mathf.Round(camSala.Value.x), sy = Mathf.Round(camSala.Value.y);
                 // recorte da textura (origem em cima) que cabe na janela
                 float x0 = Mathf.Max(sx, 0), y0 = Mathf.Max(sy, 0);
                 float x1 = Mathf.Min(sx + vw, tex.width), y1 = Mathf.Min(sy + vh, tex.height);

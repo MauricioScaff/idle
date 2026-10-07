@@ -263,10 +263,11 @@ namespace IdleDataCenter.Gerente
             }
             bool ipo = !E.TemProximoCargo;
             ui.Texto(ipo ? "Próximo: abrir o capital (IPO)" : "Próximo: " + Catalogo.Cargos[E.Cargo + 1].Nome, modal.x + 29, modal.y + 140, IsoGui.Laranja, 2);
+            ui.Texto("As metas contam o que você fizer neste cargo.", modal.x + 29, modal.y + 162, IsoGui.Muted, 2);
             for (int i = 0; i < metas.Length; i++)
             {
                 var m = metas[i];
-                float y = modal.y + 180 + i * 80;
+                float y = modal.y + 196 + i * 76;
                 bool ok = E.Cumprida(m);
                 ui.Texto(m.Texto, modal.x + 29, y, ok ? IsoGui.Verde : IsoGui.Branco, 3);
                 string prog = m.Tipo == TipoMeta.TotalGanho ? Dinheiro(Math.Min(E.Progresso(m), m.Alvo)) + " / " + Dinheiro(m.Alvo)

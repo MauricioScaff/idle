@@ -51,13 +51,14 @@ namespace IdleDataCenter.Simulacao
         public double Multiplicador;
     }
 
-    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos, Datacenters, Regioes, Consertos, Sites }
+    public enum TipoMeta { Servidores, TotalGanho, IncidentesResolvidos, ServidoresRack, BackupsRestaurados, AutomacoesAtivas, HostsContainers, PicosSobrevividos, Datacenters, Regioes, Consertos, Sites, Melhoria }
 
     public class MetaDef
     {
         public TipoMeta Tipo;
         public double Alvo;
         public string Texto;
+        public string Item;   // TipoMeta.Melhoria: o nível dessa melhoria
     }
 
     public class CargoDef
@@ -263,14 +264,17 @@ namespace IdleDataCenter.Simulacao
 
         public static readonly IReadOnlyList<CargoDef> Cargos = new[]
         {
+            // Metas (2026-10-07): 4 por cargo (dinheiro, equipamento, operação e mais uma), as de contagem valem só no cargo
+            // (ver Economia.Progresso) e os alvos saem da trilha do RitmoTestes: cada uma fecha entre ~60% e 100% do cargo
             // o começo: sozinho em casa, consertando PCs do bairro e hospedando sites; as metas trazem a proposta de emprego
             new CargoDef
             {
                 Nome = "Freelancer", Lugar = "Quarto",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 10, Texto = "Consertar 10 PCs" },
-                    new MetaDef { Tipo = TipoMeta.Sites, Alvo = 5, Texto = "Hospedar 5 sites" },
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 25, Texto = "Consertar 25 PCs" },
+                    new MetaDef { Tipo = TipoMeta.Sites, Alvo = 7, Texto = "Hospedar 7 sites" },
+                    new MetaDef { Tipo = TipoMeta.Melhoria, Item = Hospedagem, Alvo = 1, Texto = "Caprichar na hospedagem" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 15000, Texto = "Faturar R$ 15 mil" },
                 },
             },
@@ -279,9 +283,10 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Técnico de TI", Lugar = "Escritório",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.Servidores, Alvo = 3, Texto = "Ter 3 servidores" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 200000, Texto = "Faturar R$ 200 mil" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 8, Texto = "Resolver 8 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.Servidores, Alvo = 4, Texto = "Ter 4 servidores" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 40, Texto = "Resolver 40 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.Melhoria, Item = Funcionario, Alvo = 1, Texto = "Contratar um funcionário" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 180000, Texto = "Faturar R$ 180 mil" },
                 },
             },
             new CargoDef
@@ -289,9 +294,10 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Sysadmin", Lugar = "Salinha",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.ServidoresRack, Alvo = VagasNoRack, Texto = "Encher o rack" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 7200000, Texto = "Faturar R$ 7,2 mi" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 60, Texto = "Resolver 60 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.Servidores, Alvo = 13, Texto = "Ter 13 servidores" },   // encher o rack (10 vagas) acabava cedo demais
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 400, Texto = "Resolver 400 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 220, Texto = "Atender 220 chamados" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 6500000, Texto = "Faturar R$ 6,5 mi" },
                 },
             },
             new CargoDef
@@ -299,9 +305,10 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Analista de Infra", Lugar = "Sala de racks",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 1, Texto = "Restaurar um backup" },
-                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 3, Texto = "3 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 180000000, Texto = "Faturar R$ 180 mi" },
+                    new MetaDef { Tipo = TipoMeta.Melhoria, Item = RackCheio, Alvo = 12, Texto = "Ter 12 racks cheios" },
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 20, Texto = "Restaurar 20 backups" },
+                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 5, Texto = "5 automações ativas" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 170000000, Texto = "Faturar R$ 170 mi" },
                 },
             },
             new CargoDef
@@ -309,9 +316,10 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Engenheiro DevOps", Lugar = "Sala virtualizada",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 7, Texto = "7 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.HostsContainers, Alvo = 4, Texto = "4 hosts de containers" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 6000000000, Texto = "Faturar R$ 6 bi" },
+                    new MetaDef { Tipo = TipoMeta.HostsContainers, Alvo = 18, Texto = "18 hosts de containers" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 600, Texto = "Resolver 600 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 50, Texto = "Restaurar 50 backups" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 5800000000, Texto = "Faturar R$ 5,8 bi" },
                 },
             },
             new CargoDef
@@ -319,9 +327,10 @@ namespace IdleDataCenter.Simulacao
                 Nome = "SRE", Lugar = "Data center pequeno",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 5, Texto = "Superar 5 picos" },
-                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 10, Texto = "10 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 24000000000, Texto = "Faturar R$ 24 bi" },
+                    new MetaDef { Tipo = TipoMeta.Melhoria, Item = NoKubernetes, Alvo = 20, Texto = "Ter 20 nós Kubernetes" },
+                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 20, Texto = "Superar 20 picos" },
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 500, Texto = "Atender 500 chamados" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 18000000000, Texto = "Faturar R$ 18 bi" },
                 },
             },
             new CargoDef
@@ -329,9 +338,10 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Arquiteto", Lugar = "Campus de datacenters",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.Datacenters, Alvo = 4, Texto = "Ter 4 datacenters" },
-                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 12, Texto = "12 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 240000000000, Texto = "Faturar R$ 240 bi" },
+                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 60, Texto = "Superar 60 picos" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 2500, Texto = "Resolver 2.500 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 120, Texto = "Restaurar 120 backups" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 215000000000, Texto = "Faturar R$ 215 bi" },
                 },
             },
             // o último cargo: as "metas" do CTO são as do IPO (abrir o capital), o fim da carreira
@@ -341,8 +351,9 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.Regioes, Alvo = 4, Texto = "Estar em 4 regiões" },
-                    new MetaDef { Tipo = TipoMeta.AutomacoesAtivas, Alvo = 15, Texto = "15 automações ativas" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 3600000000000, Texto = "Faturar R$ 3,6 tri" },
+                    new MetaDef { Tipo = TipoMeta.Melhoria, Item = Gpu, Alvo = 8, Texto = "Ter 8 clusters de GPU" },
+                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 60, Texto = "Superar 60 picos" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 1000000000000, Texto = "Faturar R$ 1 tri" },
                 },
             },
         };

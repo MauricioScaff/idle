@@ -392,6 +392,8 @@ namespace IdleDataCenter
             AtualizarCamera();
             PixelTexto.EscalaTexto = EscalaRelativaDoPainel; // texto da faixa na mesma escala do painel
             Posicionar();
+            // minimizar no modo gerente leva para a faixa (sem mudar como o jogo abre da próxima vez)
+            if (gerente.Aberto && janela.Minimizada) FecharGerente(lembrar: false);
             if (gerente.Aberto) janela.DefinirClicavel(true);   // no modo gerente a janela inteira recebe cliques (OnGUI)
             else ProcessarCursor();
 

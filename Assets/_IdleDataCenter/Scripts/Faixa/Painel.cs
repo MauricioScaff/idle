@@ -266,7 +266,7 @@ namespace IdleDataCenter
             for (int i = 0; i < metas.Length; i++)
             {
                 var m = metas[i];
-                int y = 34 + i * 13;
+                int y = 34 + i * (metas.Length > 3 ? 10 : 13);   // quatro metas cabem antes do botão
                 bool ok = economia.Cumprida(m);
                 R(x + 5, y, 7, 7, "#171a2e");
                 if (ok) R(x + 6, y + 1, 5, 5, "#5cff8a");

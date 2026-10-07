@@ -697,6 +697,12 @@ namespace IdleDataCenter.Gerente
         }
 
         readonly Dictionary<string, Trabalhador> pessoas = new Dictionary<string, Trabalhador>();
+
+        /// <summary>Onde estão os pés do técnico agora, em pixels da textura (a câmera da faixa o segue); null sem ele na sala.</summary>
+        public Vector2? PosicaoDoTecnico => areaAtual == null && pessoas.TryGetValue("tecnico", out var p) ? PontoQuebrado(p.pos.x, p.pos.y) : (Vector2?)null;
+
+        /// <summary>Altura de quem anda pela sala em pixels da textura (para a câmera mirar no meio do corpo, não nos pés).</summary>
+        public float AlturaDasPessoas => 70 * Sala.pessoas;
         readonly System.Random sorteioDasPessoas = new System.Random();
         string salaDasPessoas;
         float ultimoT = -1;

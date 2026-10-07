@@ -7,15 +7,15 @@ namespace IdleDataCenter.Gerente
     /// <summary>
     /// O começo da carreira. Freelancer: o quarto em casa, com a torre velha e a bancada onde chegam os PCs do bairro.
     /// Técnico: o escritório da empresa (PixelLab Pro), com os funcionários nas mesas, a impressora, a cafeteira e o canto
-    /// da TI (bancada e armarinho de servidor). Aqui os chamados aparecem como balões sobre quem pediu (a pessoa, a
-    /// impressora, a bancada); clicar num balão atende e o técnico vai até lá resolver.
+    /// da TI (bancada e armarinho de servidor). Aqui os chamados aparecem como balões sobre quem pediu (a pessoa ou a
+    /// bancada); clicar num balão atende e o técnico vai até lá resolver.
     /// </summary>
     public partial class SalaIso
     {
         /// <summary>Onde um chamado pode aparecer: quem pediu, onde o técnico fica para resolver e onde flutua o balão.</summary>
         class LugarDeChamado
         {
-            public string tipo;          // "pessoa", "impressora" ou "bancada"
+            public string tipo;          // "pessoa" ou "bancada"
             public Vector2 grade;        // onde o técnico fica (em casas)
             public string olhar;
             public Vector2Int balao;     // ponta de baixo do balão (pixel da ilustração)
@@ -79,21 +79,23 @@ namespace IdleDataCenter.Gerente
             // o que ocupa o piso (em casas): planta do fundo, as duas fileiras de mesas, impressora, cafeteira, armarinho de
             // servidor, a bancada da TI e a mesinha da planta da frente (as torres e os funcionários se bloqueiam sozinhos)
             Bloquear(0, 0, 0.6f, 0.6f, 50);           // planta do fundo
-            Bloquear(0.4f, 1.1f, 3.4f, 2.6f, 45);     // mesas do fundo (com os monitores)
-            Bloquear(0.2f, 4.0f, 3.4f, 5.5f, 45);     // mesas da frente
+            // as mesas medidas pelos cantos dos pés na ilustração (antes estavam curtas e para trás: o técnico parava na
+            // ponta da mesa do fundo); a altura conta os monitores
+            Bloquear(1.1f, 2.25f, 4.55f, 3.05f, 60);  // mesas do fundo
+            Bloquear(1.05f, 4.95f, 4.25f, 6.0f, 60);  // mesas da frente
             Bloquear(2.9f, 0, 3.9f, 0.9f, 55);        // impressora no armarinho
             Bloquear(5.3f, 0, 7, 1.1f, 50);           // balcão da cafeteira
             Bloquear(6.0f, 2.5f, 7, 3.4f, 50);        // armarinho de servidor
-            Bloquear(5.85f, 3.6f, 7, 5.95f, 30);      // bancada da TI (pelos pés)
+            Bloquear(5.85f, 3.6f, 7, 5.95f, 55);      // bancada da TI (pelos pés; a altura conta o gabinete aberto em cima dela)
             Bloquear(6.35f, 6.25f, 7, 7, 45);         // mesinha da planta da frente
 
-            // a cafeteira é o café; a impressora e a bancada são de onde vêm os chamados
+            // a cafeteira é o café; a bancada é de onde vêm os chamados de máquina
             Alvos.Add(new Alvo { Area = new RectInt(450, 190, 36, 38), Tipo = "cafe", Prof = 1, Nome = "Café: renda em dobro" });
             Alvos.Add(new Alvo { Area = new RectInt(280, 285, 112, 62), Tipo = "equipamento", Prof = -20, Nome = "Bancada da TI" });
             pontoDaBancada = new Vector2Int(330, 300);
-            lugaresDeChamado.Add(new LugarDeChamado { tipo = "impressora", grade = new Vector2(3.45f, 1.25f), olhar = "ne", balao = new Vector2Int(374, 150) });
+            // a impressora fica atrás das mesas do fundo: quem fosse até ela apareceria por cima das mesas e dos monitores.
+            // O chamado da impressora vai para quem pediu (um funcionário), e ela não entra na ronda
             lugaresDeChamado.Add(new LugarDeChamado { tipo = "bancada", grade = LugarNaBancada.lugar, olhar = LugarNaBancada.olhar, balao = new Vector2Int(322, 282) });
-            pontosDeRonda.Add((new Vector2(3.45f, 1.25f), "ne"));    // impressora
             pontosDeRonda.Add((new Vector2(4.95f, 0.75f), "ne"));   // cafeteira (pelo lado: as torres ficam na frente do balcão)
             pontosDeRonda.Add((new Vector2(5.85f, 3.15f), "se"));    // armarinho de servidor
 
@@ -201,7 +203,7 @@ namespace IdleDataCenter.Gerente
         // ---------------- Chamados como balões ----------------
 
         /// <summary>
-        /// Quem pediu cada chamado: a impressora quando é dela, a bancada quando é máquina (PC, notebook, HD...), senão
+        /// Quem pediu cada chamado: a bancada quando é máquina (PC, notebook, HD...), senão
         /// um dos funcionários (sempre o mesmo para o mesmo chamado).
         /// </summary>
         LugarDeChamado LugarDo(ChamadoAberto c)
@@ -209,7 +211,6 @@ namespace IdleDataCenter.Gerente
             LugarDeChamado Do(string tipo) { foreach (var l in lugaresDeChamado) if (l.tipo == tipo) return l; return null; }
             if (lugaresDeChamado.Count == 1) return lugaresDeChamado[0];
             string txt = c.texto.ToLowerInvariant();
-            if (txt.Contains("impressora")) return Do("impressora") ?? lugaresDeChamado[0];
             foreach (var maquina in new[] { "pc", "notebook", "hd", "tela azul", "pendrive", "teclado", "mouse", "monitor", "celular" })
                 if (txt.Contains(maquina)) return Do("bancada") ?? lugaresDeChamado[0];
             var pessoas = lugaresDeChamado.FindAll(l => l.tipo == "pessoa");
