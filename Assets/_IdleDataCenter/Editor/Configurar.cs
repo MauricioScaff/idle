@@ -30,6 +30,30 @@ namespace IdleDataCenter.Ferramentas
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64, new[] { GraphicsDeviceType.Direct3D11 });
             PlayerSettings.SplashScreen.show = false;
+            DefinirIcone();
+        }
+
+        /// <summary>
+        /// O ícone do .exe (barra de tarefas e bandeja): a torre desenhada pixel a pixel em 16/32/48 px e o emblema
+        /// nos tamanhos grandes. As imagens saem de itch/gerar_icone.ps1.
+        /// </summary>
+        static void DefinirIcone()
+        {
+            const string Pasta = "Assets/_IdleDataCenter/Icone/icone_";
+            Texture2D Carregar(int lado) => AssetDatabase.LoadAssetAtPath<Texture2D>(Pasta + lado + ".png");
+            int[] disponiveis = { 16, 32, 48, 128, 256, 512, 1024 };
+            var standalone = UnityEditor.Build.NamedBuildTarget.Standalone;
+            var tamanhos = PlayerSettings.GetIconSizes(standalone, IconKind.Any);
+            var icones = new Texture2D[tamanhos.Length];
+            // cada tamanho pedido pelo Windows recebe o desenho daquele tamanho (ou o maior mais próximo)
+            for (int i = 0; i < tamanhos.Length; i++)
+            {
+                int pedido = tamanhos[i], lado = System.Array.Find(disponiveis, t => t >= pedido);
+                icones[i] = Carregar(lado > 0 ? lado : 1024);
+            }
+            if (System.Array.Exists(icones, t => t == null)) { Debug.LogWarning("Ícone: faltam imagens em " + Pasta + "*.png"); return; }
+            PlayerSettings.SetIcons(standalone, icones, IconKind.Any);
+            PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { Carregar(256) }, IconKind.Any);
         }
 
         /// <summary>

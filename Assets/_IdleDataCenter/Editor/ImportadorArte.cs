@@ -5,14 +5,14 @@ namespace IdleDataCenter.Ferramentas
 {
     /// <summary>
     /// Toda imagem em Resources/Arte entra como pixel art: sem suavização, sem compressão, sem mipmaps
-    /// e legível pelo código (o jogo recorta, recolore e acha os LEDs lendo os pixels).
+    /// e legível pelo código (o jogo recorta, recolore e acha os LEDs lendo os pixels). O ícone do jogo (pasta Icone) também.
     /// </summary>
     public class ImportadorArte : AssetPostprocessor
     {
         void OnPreprocessTexture()
         {
             string caminho = assetPath.Replace('\\', '/');
-            if (!caminho.Contains("/_IdleDataCenter/Resources/Arte/")) return;
+            if (!caminho.Contains("/_IdleDataCenter/Resources/Arte/") && !caminho.Contains("/_IdleDataCenter/Icone/")) return;
             var importador = (TextureImporter)assetImporter;
             importador.textureType = TextureImporterType.Default;
             importador.isReadable = true;

@@ -377,11 +377,14 @@ namespace IdleDataCenter
 
         float ocultarEm = -1;
 
-        /// <summary>Botão de esconder: avisa como voltar e some logo depois. O jogo continua rendendo escondido.</summary>
+        /// <summary>
+        /// Botão de esconder: avisa onde a faixa fica e some logo depois, virando um ícone na bandeja do Windows.
+        /// O jogo continua rendendo escondido.
+        /// </summary>
         public void Ocultar()
         {
             if (painel.Aberto) FecharPainel();
-            Avisar("Volta com " + JanelaDesktop.Atalho, 1.6f);
+            Avisar("Fica no ícone perto do relógio", 1.6f);
             ocultarEm = Time.time + 1.6f;
         }
 
@@ -390,6 +393,9 @@ namespace IdleDataCenter
         void Update()
         {
             if (ocultarEm > 0 && Time.time >= ocultarEm) { ocultarEm = -1; janela.AlternarOculta(); }
+            // o ícone da bandeja: clique traz a faixa de volta; "Sair" no menu dele fecha o jogo (salvando)
+            if (Bandeja.PedidoMostrar) { Bandeja.PedidoMostrar = false; if (janela.OcultaPeloJogador) janela.AlternarOculta(); }
+            if (Bandeja.PedidoSair) { Bandeja.PedidoSair = false; Application.Quit(); }   // OnApplicationQuit salva
             AtualizarCamera();
             PixelTexto.EscalaTexto = EscalaRelativaDoPainel; // texto da faixa na mesma escala do painel
             Posicionar();
@@ -482,6 +488,7 @@ namespace IdleDataCenter
         void OnApplicationQuit()
         {
             Salvamento.Salvar(economia.Estado);
+            Bandeja.Remover();          // senão o ícone fica perto do relógio até passarem o mouse nele
             Idiomas.SalvarFaltando();   // em inglês: lista o que apareceu sem tradução (para completar a tabela)
         }
 

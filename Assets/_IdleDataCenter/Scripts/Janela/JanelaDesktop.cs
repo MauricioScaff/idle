@@ -318,6 +318,8 @@ namespace IdleDataCenter
         public void AlternarOculta()
         {
             OcultaPeloJogador = !OcultaPeloJogador;
+            // escondida, a faixa vira um ícone perto do relógio (clicar nele traz a faixa de volta)
+            if (OcultaPeloJogador) Bandeja.Mostrar(); else Bandeja.Remover();
 #if !UNITY_EDITOR && UNITY_STANDALONE_WIN
             AplicarVisibilidade();
 #endif

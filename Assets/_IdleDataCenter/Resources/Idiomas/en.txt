@@ -1365,3 +1365,6 @@ Superar 40 picos	Survive 40 spikes
 Faturar R$ 12 tri	Earn R$ 12T
 Restaurar 10 backups	Restore 10 backups
 Restaurar 24 backups	Restore 24 backups
+Fica no ícone perto do relógio	Now an icon next to the clock
+Idle Data Center: clique para mostrar a faixa	Idle Data Center: click to show the strip
+Mostrar a faixa	Show the strip
