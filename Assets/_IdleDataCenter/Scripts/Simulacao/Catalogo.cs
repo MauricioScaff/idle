@@ -154,6 +154,7 @@ namespace IdleDataCenter.Simulacao
         public const string Cdn = "cdn";
         public const string Gerador = "gerador";
         public const string Regiao = "regiao";              // cargo 7 (CTO)
+        public const string ExpansaoCampus = "expcampus", ZonasDeDisponibilidade = "zonas";   // o que comprar no fim do Arquiteto e do CTO (salas cheias)
         public const string CaboSubmarino = "cabo";
         public const string Renovavel = "renovavel";
         public const string Gpu = "gpu";
@@ -332,9 +333,9 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.Servidores, Alvo = 16, Texto = "Ter 16 servidores" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 120, Texto = "Resolver 120 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 100, Texto = "Resolver 100 incidentes" },
                     new MetaDef { Tipo = TipoMeta.Melhoria, Item = Funcionario, Alvo = 2, Texto = "Contratar 2 funcionários" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 2400000, Texto = "Faturar R$ 2,4 mi" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 2000000, Texto = "Faturar R$ 2 mi" },
                 },
             },
             new CargoDef
@@ -342,9 +343,9 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Sysadmin", Lugar = "Salinha",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 15, Texto = "Restaurar 15 backups" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 900, Texto = "Resolver 900 incidentes" },
-                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 700, Texto = "Atender 700 chamados" },
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 10, Texto = "Restaurar 10 backups" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 600, Texto = "Resolver 600 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 580, Texto = "Atender 580 chamados" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 27000000, Texto = "Faturar R$ 27 mi" },
                 },
             },
@@ -353,9 +354,9 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Analista de Infra", Lugar = "Sala de racks",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 650, Texto = "Atender 650 chamados" },
-                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 42, Texto = "Restaurar 42 backups" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 600, Texto = "Resolver 600 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 640, Texto = "Atender 640 chamados" },
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 24, Texto = "Restaurar 24 backups" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 390, Texto = "Resolver 390 incidentes" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 850000000, Texto = "Faturar R$ 850 mi" },
                 },
             },
@@ -364,9 +365,9 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Engenheiro DevOps", Lugar = "Sala virtualizada",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 1200, Texto = "Atender 1.200 chamados" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 950, Texto = "Resolver 950 incidentes" },
-                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 52, Texto = "Restaurar 52 backups" },
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 880, Texto = "Atender 880 chamados" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 640, Texto = "Resolver 640 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 40, Texto = "Restaurar 40 backups" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 11000000000, Texto = "Faturar R$ 11 bi" },
                 },
             },
@@ -375,9 +376,9 @@ namespace IdleDataCenter.Simulacao
                 Nome = "SRE", Lugar = "Data center pequeno",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 23, Texto = "Restaurar 23 backups" },
-                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 26, Texto = "Superar 26 picos" },
-                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 1000, Texto = "Atender 1.000 chamados" },
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 11, Texto = "Restaurar 11 backups" },
+                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 16, Texto = "Superar 16 picos" },
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 730, Texto = "Atender 730 chamados" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 24000000000, Texto = "Faturar R$ 24 bi" },
                 },
             },
@@ -386,9 +387,9 @@ namespace IdleDataCenter.Simulacao
                 Nome = "Arquiteto", Lugar = "Campus de datacenters",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 66, Texto = "Superar 66 picos" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 1350, Texto = "Resolver 1.350 incidentes" },
-                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 50, Texto = "Restaurar 50 backups" },
+                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 40, Texto = "Superar 40 picos" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 850, Texto = "Resolver 850 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 36, Texto = "Restaurar 36 backups" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 255000000000, Texto = "Faturar R$ 255 bi" },
                 },
             },
@@ -398,10 +399,10 @@ namespace IdleDataCenter.Simulacao
                 Nome = "CTO", Lugar = "Mapa-múndi",
                 MetasParaPromocao = new[]
                 {
-                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 2400, Texto = "Atender 2.400 chamados" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 1500, Texto = "Resolver 1.500 incidentes" },
-                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 65, Texto = "Superar 65 picos" },
-                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 9700000000000, Texto = "Faturar R$ 9,7 tri" },
+                    new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 1730, Texto = "Atender 1.730 chamados" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 880, Texto = "Resolver 880 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 40, Texto = "Superar 40 picos" },
+                    new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 12000000000000, Texto = "Faturar R$ 12 tri" },
                 },
             },
         };
@@ -493,6 +494,9 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Cdn, Nome = "CDN", Efeito = "+30% de receita, -30% de tráfego", Cargo = Catalogo.CargoArquiteto, NivelMaximo = 3, CustoBase = 30000000, FatorCusto = 2 },
             new MelhoriaDef { Id = Gerador, Nome = "Geradores a diesel", Efeito = "Queda de luz: volta em 5 s", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 1, CustoBase = 20000000, FatorCusto = 1 },
             new MelhoriaDef { Id = ResfriamentoLiquido, Nome = "Resfriamento líquido", Efeito = "Datacenters +30%", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 3, Alvo = AlvoDatacenters, BonusPorNivel = 0.3, CustoBase = 100000000, FatorCusto = 2 },
+            new MelhoriaDef { Id = ExpansaoCampus, Nome = "Expansão do campus", Efeito = "Datacenters +25%", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 6, Alvo = AlvoDatacenters, BonusPorNivel = 0.25, FatorCusto = 1.7,
+                Produtos = new[] { new Produto("Novo data hall", 20000000000), new Produto("Segundo data hall", 35000000000), new Produto("Prédio anexo", 55000000000),
+                                   new Produto("Data hall de alta densidade", 80000000000), new Produto("Segundo prédio anexo", 110000000000), new Produto("Novo terreno no campus", 150000000000) } },
             new MelhoriaDef { Id = ContratoDeEnergia, Nome = "Contrato de energia", Efeito = "Datacenters +50%", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 1, Alvo = AlvoDatacenters, BonusPorNivel = 0.5, CustoBase = 900000000, FatorCusto = 1 },
             new MelhoriaDef { Id = DcRecuperacao, Nome = "DC de recuperação", Efeito = "Backup em outro prédio: perde só 1/32, +2% renda", Cargo = Catalogo.CargoArquiteto, Requisito = Datacenter, NivelMaximo = 1, CustoBase = 360000000, FatorCusto = 1 },
             new MelhoriaDef { Id = Soc, Nome = "SOC 24h", Efeito = "Centro de segurança: bloqueia 63/64", Cargo = Catalogo.CargoArquiteto, NivelMaximo = 1, CustoBase = 30000000, FatorCusto = 1 },
@@ -501,8 +505,11 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Regiao, Nome = "Região", Efeito = "Nova região: +200 mil/s", Cargo = Catalogo.CargoCto, NivelMaximo = 3, CustoBase = 9000000000, FatorCusto = 3 },
             new MelhoriaDef { Id = CaboSubmarino, Nome = "Cabo sub.", Efeito = "Liga uma região: +25%", Cargo = Catalogo.CargoCto, Requisito = Regiao, NivelMaximo = 3, CustoBase = 4800000000, FatorCusto = 3 },
             new MelhoriaDef { Id = Renovavel, Nome = "Renovável", Efeito = "Energia verde: +15%", Cargo = Catalogo.CargoCto, NivelMaximo = 3, CustoBase = 6000000000, FatorCusto = 2.5 },
-            new MelhoriaDef { Id = Gpu, Nome = "Cluster de GPU", Efeito = "Nuvem de IA: +120 mil/s", Cargo = Catalogo.CargoCto, NivelMaximo = 20, Gerador = true, CustoBase = 7200000000, FatorCusto = 1.1 },
+            new MelhoriaDef { Id = Gpu, Nome = "Cluster de GPU", Efeito = "Nuvem de IA: +120 mil/s", Cargo = Catalogo.CargoCto, NivelMaximo = 40, Gerador = true, CustoBase = 7200000000, FatorCusto = 1.12 },
             new MelhoriaDef { Id = Edge, Nome = "Edge computing", Efeito = "Regiões +30%", Cargo = Catalogo.CargoCto, Requisito = Regiao, NivelMaximo = 3, Alvo = AlvoRegioes, BonusPorNivel = 0.3, CustoBase = 12000000000, FatorCusto = 2.5 },
+            new MelhoriaDef { Id = ZonasDeDisponibilidade, Nome = "Zonas de disponibilidade", Efeito = "Regiões +25%", Cargo = Catalogo.CargoCto, Requisito = Regiao, NivelMaximo = 6, Alvo = AlvoRegioes, BonusPorNivel = 0.25, FatorCusto = 1.6,
+                Produtos = new[] { new Produto("Segunda zona de disponibilidade", 400000000000), new Produto("Terceira zona de disponibilidade", 900000000000), new Produto("Zona na América do Norte", 1800000000000),
+                                   new Produto("Zona na Europa", 3200000000000), new Produto("Zona na Ásia", 5500000000000), new Produto("Zona de borda nas capitais", 9000000000000) } },
             new MelhoriaDef { Id = ChipsProprios, Nome = "Chips próprios", Efeito = "GPU +50%", Cargo = Catalogo.CargoCto, Requisito = Gpu, NivelMaximo = 2, Alvo = AlvoGpu, BonusPorNivel = 0.5, CustoBase = 30000000000, FatorCusto = 3 },
             new MelhoriaDef { Id = BackupRegiao, Nome = "Backup em outra região", Efeito = "Backup do outro lado do mundo: não perde nada, +2% renda", Cargo = Catalogo.CargoCto, Requisito = Regiao, NivelMaximo = 1, CustoBase = 2000000000, FatorCusto = 1 },
             new MelhoriaDef { Id = ZeroTrust, Nome = "Programa Zero Trust", Efeito = "Ninguém é confiável: bloqueia quase todos", Cargo = Catalogo.CargoCto, NivelMaximo = 1, CustoBase = 150000000, FatorCusto = 1 },

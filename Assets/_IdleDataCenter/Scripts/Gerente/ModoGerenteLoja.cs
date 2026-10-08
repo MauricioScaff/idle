@@ -56,8 +56,8 @@ namespace IdleDataCenter.Gerente
                 case "Rede": return new[] { Catalogo.Link, Catalogo.Link10G };
                 case "NOC": return new[] { Catalogo.Observabilidade };
                 case "Equipe": return new[] { Catalogo.Funcionario, Catalogo.Estagiario, Catalogo.HelpDesk, Catalogo.ServiceDesk };
-                case "Campus": return new[] { Catalogo.Datacenter, Catalogo.Fibra, Catalogo.Cdn, Catalogo.Gerador };
-                case "Mundo": return new[] { Catalogo.Regiao, Catalogo.CaboSubmarino, Catalogo.Renovavel, Catalogo.Gpu };
+                case "Campus": return new[] { Catalogo.Datacenter, Catalogo.Fibra, Catalogo.Cdn, Catalogo.Gerador, Catalogo.ExpansaoCampus };
+                case "Mundo": return new[] { Catalogo.Regiao, Catalogo.CaboSubmarino, Catalogo.Renovavel, Catalogo.Gpu, Catalogo.ZonasDeDisponibilidade };
                 default:
                     return Catalogo.Melhorias.Select(m => m.Id).ToArray();   // "Melhorias" (aba TUDO): todos os setores
             }

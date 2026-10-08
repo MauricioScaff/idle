@@ -1335,3 +1335,33 @@ Faturar R$ 255 bi	Earn R$ 255B
 Atender 2.400 chamados	Handle 2,400 tickets
 Resolver 1.500 incidentes	Resolve 1,500 incidents
 Faturar R$ 9,7 tri	Earn R$ 9.7T
+Expansão do campus	Campus expansion
+Novo data hall	New data hall
+Segundo data hall	Second data hall
+Prédio anexo	Annex building
+Data hall de alta densidade	High-density data hall
+Segundo prédio anexo	Second annex building
+Novo terreno no campus	New land on the campus
+Datacenters +25%	Data centers +25%
+Zonas de disponibilidade	Availability zones
+Segunda zona de disponibilidade	Second availability zone
+Terceira zona de disponibilidade	Third availability zone
+Zona na América do Norte	Zone in North America
+Zona na Europa	Zone in Europe
+Zona na Ásia	Zone in Asia
+Zona de borda nas capitais	Edge zone in capital cities
+Regiões +25%	Regions +25%
+Faturar R$ 2 mi	Earn R$ 2M
+Restaurar 11 backups	Restore 11 backups
+Restaurar 27 backups	Restore 27 backups
+Restaurar 36 backups	Restore 36 backups
+Atender 580 chamados	Handle 580 tickets
+Atender 640 chamados	Handle 640 tickets
+Atender 730 chamados	Handle 730 tickets
+Atender 880 chamados	Handle 880 tickets
+Atender 1.730 chamados	Handle 1,730 tickets
+Superar 16 picos	Survive 16 spikes
+Superar 40 picos	Survive 40 spikes
+Faturar R$ 12 tri	Earn R$ 12T
+Restaurar 10 backups	Restore 10 backups
+Restaurar 24 backups	Restore 24 backups
