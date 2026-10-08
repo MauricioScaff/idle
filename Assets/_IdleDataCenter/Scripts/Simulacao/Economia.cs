@@ -184,7 +184,7 @@ namespace IdleDataCenter.Simulacao
             {
                 if (m.nivel <= 0) continue;
                 var def = Catalogo.Achar(m.id);
-                if (def != null && def.Alvo == alvo) soma += m.nivel * def.BonusPorNivel;
+                if (def != null && def.Alvo == alvo) soma += def.QuantidadeAte(m.nivel);   // com escada, cada produto maior dá mais
             }
             return soma;
         }
@@ -223,7 +223,7 @@ namespace IdleDataCenter.Simulacao
                                  + RacksCheios * Catalogo.ConsumoRackCheio + NivelStorage * Catalogo.ConsumoStorage
                                  + HostsContainers * Catalogo.ConsumoHostContainers + (TemCi ? Catalogo.ConsumoServidorCi : 0)
                                  + NosKubernetes * Catalogo.ConsumoNoKubernetes;
-        public double CapacidadeKw => Catalogo.CapacidadeBaseKw + Nivel(Catalogo.NoBreak) * Catalogo.CapacidadePorNoBreak
+        public double CapacidadeKw => Catalogo.CapacidadeBaseKw + Catalogo.Buscar(Catalogo.NoBreak).QuantidadeAte(Nivel(Catalogo.NoBreak))
                                     + (NaSalaDeRacks ? Catalogo.CapacidadeSalaDeRacksKw : 0)
                                     + (NaSalaVirtualizada ? Catalogo.CapacidadeSalaVirtualizadaKw : 0)
                                     + (NoDataCenter ? Catalogo.CapacidadeDataCenterKw : 0)
@@ -236,7 +236,7 @@ namespace IdleDataCenter.Simulacao
         /// <summary>O ar-condicionado esfria até um limite: a sala nunca fica abaixo de TemperaturaMinima.</summary>
         public double Temperatura => Math.Min(Catalogo.TemperaturaMaxima, Math.Max(Catalogo.TemperaturaMinima,
             Catalogo.TemperaturaAmbiente + ConsumoKw * Catalogo.GrausPorKw * (NaSalaDeRacks ? Catalogo.FatorCalorSalaDeRacks : 1)
-            - Nivel(Catalogo.ArCondicionado) * Catalogo.GrausPorArCondicionado
+            - Catalogo.Buscar(Catalogo.ArCondicionado).QuantidadeAte(Nivel(Catalogo.ArCondicionado))
             - (NaSalaDeRacks ? Catalogo.GrausArDePrecisao : 0)
             - (NaSalaVirtualizada ? Catalogo.GrausSalaVirtualizada : 0)
             - (NoDataCenter ? Catalogo.GrausDataCenter : 0)
@@ -248,7 +248,7 @@ namespace IdleDataCenter.Simulacao
         // Banda: com o link saturado, todo mundo fica lento e a receita cai na proporção
         public double TrafegoMbps => Torres * Catalogo.TrafegoTorre + ServidoresRack * Catalogo.TrafegoServidor1U
                                    + RacksCheios * Catalogo.TrafegoRackCheio + HostsContainers * Catalogo.TrafegoHostContainers + NosKubernetes * Catalogo.TrafegoNoKubernetes;
-        public double BandaMbps => Catalogo.BandaBase + Nivel(Catalogo.Link) * Catalogo.BandaPorLink + Nivel(Catalogo.Link10G) * Catalogo.BandaLink10G;
+        public double BandaMbps => Catalogo.BandaBase + Catalogo.Buscar(Catalogo.Link).QuantidadeAte(Nivel(Catalogo.Link)) + Catalogo.Buscar(Catalogo.Link10G).QuantidadeAte(Nivel(Catalogo.Link10G));
         /// <summary>A CDN entrega parte do conteúdo de fora: sobra banda no link do DC-01.</summary>
         double FatorTrafegoCdn => Math.Max(0.1, 1 - Nivel(Catalogo.Cdn) * Catalogo.ReducaoTrafegoCdn);
         public bool LinkSaturado => TrafegoMbps * FatorTrafegoCdn > BandaMbps + 1e-9;

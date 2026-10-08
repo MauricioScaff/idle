@@ -416,7 +416,7 @@ namespace IdleDataCenter
                 R(80, y, 472, passo - 3, "#252947");
                 int nivel = economia.Nivel(m.Id);
                 T(m.Nome, 86, y + (passo > 30 ? 6 : 3), "#fdf6e3", true, 2);
-                string detalhe = (m.Gerador ? $"{economia.UnidadesDoGerador(m.Id)} unidades" : $"Nível {nivel}/{m.NivelMaximo}") + "  " + m.Efeito;
+                string detalhe = (m.Gerador ? $"{economia.UnidadesDoGerador(m.Id)} unidades" : $"Nível {nivel}/{m.NivelMaximo}") + "  " + m.EfeitoDoNivel(nivel);
                 T(detalhe, 86, y + (passo > 30 ? 22 : 16), "#7d82ad", false);
 
                 bool max = economia.NoMaximo(m.Id), req = economia.RequisitoOk(m.Id);

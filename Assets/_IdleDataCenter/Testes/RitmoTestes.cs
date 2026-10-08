@@ -16,6 +16,45 @@ namespace IdleDataCenter.Testes
         /// <summary>Liga a trilha (contadores a cada 15 min de jogo) no log, para acertar os alvos das metas.</summary>
         const bool TRILHA = false;
 
+        /// <summary>Quanto tempo (min) cada cargo deve durar com o jogador ocioso: a calibração promove nesses tempos.</summary>
+        static readonly int[] DuracaoAlvo = { 46, 108, 488, 534, 734, 609, 1500, 1500 };
+
+        /// <summary>
+        /// Calibração dos alvos das metas (rodar à mão: -testFilter Calibrar): o mesmo jogador ocioso, mas promovido nos
+        /// tempos de DuracaoAlvo, sem olhar as metas. A trilha mostra quanto de cada coisa ele faz em cada cargo.
+        /// </summary>
+        [Test, Explicit, Timeout(1200000)]
+        public void Calibrar()
+        {
+            var e = new Economia(new EstadoJogo(), new Random(42));
+            double fimDoCargo = DuracaoAlvo[0] * 60, chegou = 0;
+            for (double t = 0; t < DuracaoAlvo.Sum() * 60; t += 1)
+            {
+                e.Avancar(1);
+                var sugerida = e.MelhoriaSugerida();
+                var barata = sugerida != null && e.PodeComprar(sugerida.Id) ? sugerida : null;
+                if (barata != null) e.Comprar(barata.Id);
+                var script = Catalogo.Automacoes.Where(a => e.PodeEscrever(a.Id)).OrderBy(a => a.Custo).FirstOrDefault();
+                if (script != null && barata == null) e.EscreverAutomacao(script.Id);
+                if (barata == null && e.PodeFazerRefresh) e.FazerRefresh();
+                if (t % 600 == 0)
+                {
+                    var s = e.Estado; var i0 = s.inicioDoCargo;
+                    UnityEngine.Debug.Log($"CALIB {e.Cargo} +{(t - chegou) / 60:0}: ganho {s.totalGanho - i0.totalGanho:0} incidentes {s.incidentesResolvidos - i0.incidentes} chamados {s.chamadosAtendidos - i0.chamados} " +
+                                          $"backups {s.backupsRestaurados - i0.backups} picos {s.picosSobrevividos - i0.picos} servidores {e.TotalServidores} sites {e.Sites} automações {e.AutomacoesAtivas} hosts {e.HostsContainers} " +
+                                          $"regiões {e.TotalRegioes} dcs {e.TotalDatacenters} " + string.Join(" ", Catalogo.Melhorias.Where(d => e.Nivel(d.Id) > 0 && d.Cargo == e.Cargo).Select(d => d.Id + "=" + e.Nivel(d.Id))));
+                }
+                if (t >= fimDoCargo && e.Cargo < Catalogo.Cargos.Count - 1)
+                {
+                    var s = e.Estado;
+                    s.cargo++;
+                    s.inicioDoCargo = new InicioDoCargo { totalGanho = s.totalGanho, incidentes = s.incidentesResolvidos, chamados = s.chamadosAtendidos, backups = s.backupsRestaurados, picos = s.picosSobrevividos };
+                    chegou = t;
+                    fimDoCargo = t + DuracaoAlvo[e.Cargo] * 60;
+                }
+            }
+        }
+
         [Test, Timeout(1200000)]   // simula umas 100 horas de jogo (com a máquina ocupada passa de 10 min)
         public void JogadorOciosoEvoluiNoRitmoPlanejado()
         {

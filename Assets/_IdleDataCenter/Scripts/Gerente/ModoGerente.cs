@@ -117,7 +117,7 @@ namespace IdleDataCenter.Gerente
                 return;
             }
             flashCompra = 1;
-            Notificar(NomeLongo(id) + " instalado. A receita já mudou.");
+            Notificar((def.Produtos != null ? def.NomeDoNivel(E.Nivel(id) - 1) : NomeLongo(id)) + " instalado. A receita já mudou.");
         }
 
         void Escrever(AutomacaoDef a)

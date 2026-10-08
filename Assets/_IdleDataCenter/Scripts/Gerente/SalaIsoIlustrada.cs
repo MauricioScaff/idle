@@ -534,7 +534,7 @@ namespace IdleDataCenter.Gerente
                 var lugares = Fileira();
                 int k = 0;
                 for (int i = 0; i < Mathf.Min(3, E.NivelHypervisor) && k < lugares.Count; i++, k++) MaquinaNaFileira(ComLeds("rack" + equip, LedHypervisor), lugares[k], "equipamento", "Hypervisor");
-                if (E.TemCi && k < lugares.Count) MaquinaNaFileira(ComLeds("rack" + equip, LedCi), lugares[k++], "containers", "Servidor de CI");
+                if (E.TemCi && k < lugares.Count) MaquinaNaFileira(ComLeds("rack" + equip, LedCi), lugares[k++], "containers", "Plataforma de CI/CD");
                 if (lugares.Count > 0) pontoDoHypervisor = lugares[0];
 
                 // containers (azul; o primeiro fica vermelho com o deploy quebrado)
@@ -542,7 +542,7 @@ namespace IdleDataCenter.Gerente
                 for (int i = 0; i < Mathf.Min(hosts.Count, E.HostsContainers); i++)
                 {
                     bool quebrado = i == 0 && E.DeployQuebrado;
-                    MaquinaNaFileira(ComLeds("rack" + equip, quebrado ? LedQuebrado : LedContainers), hosts[i], "containers", quebrado ? "Host de containers: deploy quebrado" : "Host de containers", quebrado);
+                    MaquinaNaFileira(ComLeds("rack" + equip, quebrado ? LedQuebrado : LedContainers), hosts[i], "containers", quebrado ? "Cluster de containers: deploy quebrado" : "Cluster de containers", quebrado);
                 }
                 if (principal == Catalogo.Containers) MarcarProxima(hosts, E.HostsContainers);
                 if (hosts.Count > 0) pontoDosContainers = hosts[Mathf.Clamp(E.HostsContainers - 1, 0, hosts.Count - 1)];
@@ -553,8 +553,8 @@ namespace IdleDataCenter.Gerente
                 var nos = Fileira();
                 bool pico = E.EmPico && !E.PicoFoiEscalado;
                 int vagasK8s = nos.Count - (E.TemBalanceador ? 1 : 0);
-                for (int i = 0; i < Mathf.Min(vagasK8s, E.NosKubernetes); i++) MaquinaNaFileira(ComLeds("rack" + equip, pico ? LedPico : LedK8s), nos[i], "k8s", pico ? "Nó Kubernetes: no pico, escale!" : "Nó Kubernetes");
-                if (E.TemBalanceador && nos.Count > 0) MaquinaNaFileira(ComLeds("rack" + equip, LedBalanceador), nos[nos.Count - 1], "equipamento", "Balanceador");
+                for (int i = 0; i < Mathf.Min(vagasK8s, E.NosKubernetes); i++) MaquinaNaFileira(ComLeds("rack" + equip, pico ? LedPico : LedK8s), nos[i], "k8s", pico ? "Rack de Kubernetes: no pico, escale!" : "Rack de Kubernetes");
+                if (E.TemBalanceador && nos.Count > 0) MaquinaNaFileira(ComLeds("rack" + equip, LedBalanceador), nos[nos.Count - 1], "equipamento", "Balanceador de carga");
                 if (principal == Catalogo.NoKubernetes) MarcarProxima(nos, E.NosKubernetes, vagasK8s);
                 if (nos.Count > 0) pontoDosNos = nos[Mathf.Clamp(E.NosKubernetes - 1, 0, nos.Count - 1)];
             }

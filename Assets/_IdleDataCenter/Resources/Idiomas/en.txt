@@ -1182,3 +1182,135 @@ Silkscreen, de Jason Kottke (SIL Open Font License)	Silkscreen, by Jason Kottke 
 Motor	Engine
 Obrigado por jogar!	Thanks for playing!
 Ver o resumo da carreira	See your career summary
+Ferramentas	Tools
+Jogo de chaves de precisão	Precision screwdriver set
+Kit com multímetro	Kit with a multimeter
+Estação de solda	Soldering station
+Divulgação	Marketing
+Cartões de visita	Business cards
+Anúncio no grupo do bairro	Ad in the neighborhood group
+Mais memória na torre	More memory in the tower
+Backup automático dos sites	Automatic site backups
+Internet de fibra em casa	Fiber internet at home
+Refrigeração da torre	Tower cooling
+Ventoinha extra	Extra fan
+Cooler de torre	Tower cooler
+Water cooler	Water cooler
+Energia do escritório	Office power
+Régua de tomadas	Pro power strip
+Estabilizador	Voltage regulator
+No-break 600 VA	UPS 600 VA
+No-break 1.200 VA	UPS 1,200 VA
+No-break 2 kVA	UPS 2 kVA
+No-break 3 kVA	UPS 3 kVA
+Circuito elétrico novo	New electrical circuit
+Quadro de energia dedicado	Dedicated breaker panel
+No-break 6 kVA	UPS 6 kVA
+Banco de baterias	Battery bank
+Energia trifásica	Three-phase power
+Refrigeração do escritório	Office cooling
+Ventilador de mesa	Desk fan
+Ventilador de coluna	Pedestal fan
+Ventilador de teto	Ceiling fan
+Climatizador	Evaporative cooler
+Ar-condicionado portátil	Portable AC
+Ar split 9.000 BTUs	Split AC 9,000 BTU
+Ar split 12.000 BTUs	Split AC 12,000 BTU
+Ar split 18.000 BTUs	Split AC 18,000 BTU
+Ar split 24.000 BTUs	Split AC 24,000 BTU
+Ar piso-teto	Floor-ceiling AC
+Ar de precisão pequeno	Small precision AC
+Ar de precisão	Precision AC
+Upgrade das torres	Tower upgrades
+Mais memória RAM	More RAM
+Processador novo	New CPU
+Organização dos cabos	Cable management
+Abraçadeiras e etiquetas	Cable ties and labels
+Organizadores de cabo	Cable organizers
+Cabeamento estruturado	Structured cabling
+Suporte do fabricante	Vendor support
+Firmware novo e suporte	New firmware and support
+Suporte 24x7	24x7 support
+~+{1} kW de energia	+{1} kW of power
+~Sala {1} °C mais fria	Room {1} °C cooler
+~+{1} Mbps de internet	+{1} Mbps of internet
+18 clusters de containers	18 container clusters
+Ter 20 racks de Kubernetes	Have 20 Kubernetes racks
+Equipamento	Equipment
+instalação	installation
+No-break de rack 3 kVA	Rack UPS 3 kVA
+No-break de rack 6 kVA	Rack UPS 6 kVA
+No-break 10 kVA	UPS 10 kVA
+No-break 20 kVA	UPS 20 kVA
+No-break modular 40 kVA	Modular UPS 40 kVA
+No-break modular 80 kVA	Modular UPS 80 kVA
+No-break 160 kVA	UPS 160 kVA
+Subestação de energia	Power substation
+Segunda subestação	Second substation
+Linha de energia dedicada	Dedicated power line
+Ar piso-teto 60.000 BTUs	Floor-ceiling AC 60,000 BTU
+Ar de precisão 10 TR	Precision AC 10 TR
+Ar de precisão 20 TR	Precision AC 20 TR
+Corredor frio confinado	Cold aisle containment
+Chiller	Chiller
+Segundo chiller	Second chiller
+Torre de resfriamento	Cooling tower
+Resfriamento a água gelada	Chilled water cooling
+Central de água gelada	Chilled water plant
+Link de internet	Internet link
+Link dedicado 100 Mbps	Dedicated 100 Mbps link
+Link dedicado 300 Mbps	Dedicated 300 Mbps link
+Link de 1 Gbps	1 Gbps link
+Segundo link de 1 Gbps	Second 1 Gbps link
+Link de 2 Gbps	2 Gbps link
+Link de 5 Gbps	5 Gbps link
+Link de 10 Gbps	10 Gbps link
+Segundo link de 10 Gbps	Second 10 Gbps link
+Link de 40 Gbps	40 Gbps link
+Link de 100 Gbps	100 Gbps link
+Ponto de troca de tráfego	Internet exchange point
+Fibra própria até a operadora	Own fiber to the carrier
+Plataforma de CI/CD	CI/CD platform
+Cluster de cache (Redis)	Cache cluster (Redis)
+Programa Zero Trust	Zero Trust program
+Balanceador de carga	Load balancer
+Otimização das imagens	Image optimization
+Licenças de virtualização	Virtualization licenses
+Geradores a diesel	Diesel generators
+Cluster de containers	Container cluster
+Rack de Kubernetes	Kubernetes rack
+Cluster de containers: deploy quebrado	Container cluster: broken deploy
+Rack de Kubernetes: no pico, escale!	Kubernetes rack: traffic spike, scale up!
+Consertar 35 PCs	Fix 35 PCs
+Hospedar 8 sites	Host 8 sites
+Melhorar a hospedagem 3 vezes	Upgrade the hosting 3 times
+Faturar R$ 25 mil	Earn R$ 25K
+Ter 9 servidores	Have 9 servers
+Resolver 100 incidentes	Resolve 100 incidents
+Contratar 2 funcionários	Hire 2 employees
+Faturar R$ 700 mil	Earn R$ 700K
+Ter 28 servidores	Have 28 servers
+Resolver 850 incidentes	Resolve 850 incidents
+Atender 600 chamados	Handle 600 tickets
+Faturar R$ 25 mi	Earn R$ 25M
+Ter 21 racks cheios	Have 21 full racks
+Restaurar 40 backups	Restore 40 backups
+Faturar R$ 550 mi	Earn R$ 550M
+24 clusters de containers	24 container clusters
+Resolver 900 incidentes	Resolve 900 incidents
+Restaurar 45 backups	Restore 45 backups
+Faturar R$ 9 bi	Earn R$ 9B
+Ter 23 racks de Kubernetes	Have 23 Kubernetes racks
+Superar 25 picos	Survive 25 spikes
+Atender 950 chamados	Handle 950 tickets
+Faturar R$ 21 bi	Earn R$ 21B
+Superar 65 picos	Survive 65 spikes
+Resolver 1.400 incidentes	Resolve 1,400 incidents
+Restaurar 52 backups	Restore 52 backups
+Faturar R$ 560 bi	Earn R$ 560B
+Resolver 1.600 incidentes	Resolve 1,600 incidents
+Ter 19 clusters de GPU	Have 19 GPU clusters
+Faturar R$ 7 tri	Earn R$ 7T
+Ter 26 servidores	Have 26 servers
+Restaurar 32 backups	Restore 32 backups
+Resolver 550 incidentes	Resolve 550 incidents

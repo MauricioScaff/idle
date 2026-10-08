@@ -372,8 +372,8 @@ namespace IdleDataCenter
             bool pode = E.PodeComprar(def.Id);
             ui.Caixa(r, pode ? IsoGui.Cor("173a2e") : IsoGui.Painel, pode ? IsoGui.Verde : IsoGui.Borda);
             ui.Texto("Próxima compra", r.x + 14, r.y + 12, IsoGui.Muted, 1);
-            ui.Texto(Cortar(def.Nome + (def.Gerador ? " nº " + (E.UnidadesDoGerador(def.Id) + 1) : def.NivelMaximo > 1 ? " " + (E.Nivel(def.Id) + 1) + "/" + def.NivelMaximo : ""), 21), r.x + 14, r.y + 26, pode ? IsoGui.Branco : IsoGui.Muted, 2);
-            ui.Texto(Cortar(def.Efeito, 30), r.x + 14, r.y + 42, IsoGui.Muted, 1);
+            ui.Texto(Cortar((def.Produtos != null ? def.NomeDoNivel(E.Nivel(def.Id)) : def.Nome) + (def.Produtos != null ? "" : def.Gerador ? " nº " + (E.UnidadesDoGerador(def.Id) + 1) : def.NivelMaximo > 1 ? " " + (E.Nivel(def.Id) + 1) + "/" + def.NivelMaximo : ""), 21), r.x + 14, r.y + 26, pode ? IsoGui.Branco : IsoGui.Muted, 2);
+            ui.Texto(Cortar(def.EfeitoDoNivel(E.Nivel(def.Id)), 30), r.x + 14, r.y + 42, IsoGui.Muted, 1);
             ui.Texto("R$ " + Faixa.Formatar(E.Custo(def.Id)), r.x + 14, r.y + 56, pode ? IsoGui.Verde : IsoGui.Muted, 2);
             var botao = new Rect(r.x + 14, r.y + 80, r.width - 28, 26);
             if (pode) Botao(botao, "Comprar", IsoGui.Verde, () => faixa.TentarComprar(def));

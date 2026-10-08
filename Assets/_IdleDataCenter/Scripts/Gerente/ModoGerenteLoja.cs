@@ -16,14 +16,14 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.Rack: return "Rack 42U";
                 case Catalogo.RackCheio: return "Rack cheio";
                 case Catalogo.Storage: return "Storage RAID";
-                case Catalogo.Backup: return "Backup em fita";
+                case Catalogo.Backup: return "Biblioteca de fitas";
                 case Catalogo.HdExterno: return "HD externo de backup";
                 case Catalogo.Nas: return "NAS de backup";
-                case Catalogo.Link: return "Link de fibra";
-                case Catalogo.ServidorCi: return "Servidor de CI";
-                case Catalogo.Containers: return "Host de containers";
-                case Catalogo.NoKubernetes: return "Nó Kubernetes";
-                case Catalogo.Balanceador: return "Balanceador";
+                case Catalogo.Link: return "Link de internet";
+                case Catalogo.ServidorCi: return "Plataforma de CI/CD";
+                case Catalogo.Containers: return "Cluster de containers";
+                case Catalogo.NoKubernetes: return "Rack de Kubernetes";
+                case Catalogo.Balanceador: return "Balanceador de carga";
                 case Catalogo.Observabilidade: return "Observabilidade";
                 case Catalogo.Datacenter: return "Novo datacenter";
                 case Catalogo.Fibra: return "Fibra entre DCs";
@@ -32,7 +32,7 @@ namespace IdleDataCenter.Gerente
                 case Catalogo.CaboSubmarino: return "Cabo submarino";
                 case Catalogo.Renovavel: return "Energia renovável";
                 case Catalogo.Gpu: return "Cluster de GPU";
-                case Catalogo.ArCondicionado: return "Ar-condicionado";
+                case Catalogo.ArCondicionado: return "Refrigeração";
                 default: return Catalogo.Buscar(id).Nome;
             }
         }
@@ -194,17 +194,28 @@ namespace IdleDataCenter.Gerente
             var def = Catalogo.Buscar(id);
             bool maximo = E.NoMaximo(id), cedo = def.Cargo > E.Cargo, req = E.RequisitoOk(id);
             ui.Caixa(r, cedo ? IsoGui.Cor("121e30") : IsoGui.Painel, maximo ? IsoGui.Cor("2f6a4a") : E.PodeComprar(id) ? IsoGui.Cyan : IsoGui.Borda);
-            string nome = NomeLongo(id);
+            // com escada de produtos, o título é o produto da vez (o que você compra) e embaixo vai a linha e o nível
+            bool escada = def.Produtos != null && !maximo;
+            string nome = escada ? def.NomeDoNivel(E.Nivel(id)) : NomeLongo(id);
             ui.Texto(nome, r.x + 16, r.y + 16, cedo ? IsoGui.Muted : IsoGui.Branco, ui.Largura(nome, 3) <= r.width - 32 ? 3 : 2);
             if (!cedo && req && def.Gerador)
             {
                 int marco = E.ProximoMarco(id);
                 ui.Texto(CaberEm(E.UnidadesDoGerador(id) + (marco > 0 ? "  ·  marco em " + marco + " (renda ×2)" : "  ·  todos os marcos"), r.width - 32, 2), r.x + 16, r.y + 44, IsoGui.Cyan, 2);
             }
-            else if (!cedo && req && def.NivelMaximo > 1) ui.Texto(E.Nivel(id) + "/" + def.NivelMaximo, r.x + 16, r.y + 44, IsoGui.Cyan, 2);
+            else if (!cedo && req && def.NivelMaximo > 1)
+                ui.Texto(CaberEm((escada ? Idiomas.T(NomeLongo(id)) + "  ·  " : "") + E.Nivel(id) + "/" + def.NivelMaximo, r.width - 32, 2), r.x + 16, r.y + 44, IsoGui.Cyan, 2);
             else ui.Texto(cedo ? "Libera no " + Catalogo.Cargos[def.Cargo].Nome : !req ? "Precisa: " + NomeLongo(def.Requisito) : "",
                 r.x + 16, r.y + 44, IsoGui.Laranja, 2);
-            TextoQuebrado(def.Efeito, r.x + 16, r.y + 70, r.width - 32, IsoGui.Muted);
+            double instalacao = E.Custo(id) - def.CustoBase;
+            if (def.Gerador && !maximo && !cedo && instalacao > 0)
+            {
+                // o preço sobe a cada unidade: o que sobe é a instalação (espaço, energia, cabeamento), não o equipamento
+                ui.Texto(CaberEm(def.EfeitoDoNivel(E.Nivel(id)), r.width - 32, 2), r.x + 16, r.y + 70, IsoGui.Muted, 2);
+                ui.Texto(CaberEm(Idiomas.T("Equipamento") + " " + Dinheiro(def.CustoBase) + " + " + Idiomas.T("instalação") + " " + Dinheiro(instalacao), r.width - 32, 2),
+                    r.x + 16, r.y + 92, IsoGui.Cor("6f8fa8"), 2);
+            }
+            else TextoQuebrado(def.EfeitoDoNivel(E.Nivel(id)), r.x + 16, r.y + 70, r.width - 32, IsoGui.Muted);
             if (!maximo && !cedo) ui.Texto(Dinheiro(E.Custo(id)), r.x + 16, r.y + 118, E.PodeComprar(id) ? IsoGui.Verde : IsoGui.Laranja, 3);
             string texto = maximo ? "Completo" : cedo ? "Bloqueado" : !req ? "Falta requisito" : E.PodeComprar(id) ? "Comprar" : "Sem dinheiro";
             if (ui.Botao(new Rect(r.x + 14, r.yMax - 50, r.width - 28, 38), texto, IsoGui.Verde, PodeComprarAqui(id), 3)) Comprar(id);

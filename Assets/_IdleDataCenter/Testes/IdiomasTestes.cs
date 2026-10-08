@@ -58,6 +58,18 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
+        public void TodoProdutoTemIngles()
+        {
+            Idiomas.Faltando.Clear();
+            foreach (var d in IdleDataCenter.Simulacao.Catalogo.Melhorias)
+            {
+                Idiomas.T(d.Nome);
+                if (d.Produtos != null) foreach (var p in d.Produtos) Idiomas.T(p.Nome);
+            }
+            Assert.IsEmpty(Idiomas.Faltando, "sem tradução: " + string.Join(" | ", Idiomas.Faltando));
+        }
+
+        [Test]
         public void DicionarioAchaOsTermosNoTexto()
         {
             Ajustes.Idioma = 0;

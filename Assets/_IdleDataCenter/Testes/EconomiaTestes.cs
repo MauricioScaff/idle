@@ -68,12 +68,16 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
-        public void CustoDaVentoinhaCresceAcadaNivel()
+        public void CadaNivelDaEscadaEUmProdutoComOPrecoDele()
         {
             var e = Nova(1_000_000);
-            Assert.AreEqual(Catalogo.Buscar(Catalogo.Ventoinha).CustoBase, e.Custo(Catalogo.Ventoinha), 1e-9);
-            e.Comprar(Catalogo.Ventoinha);
-            Assert.AreEqual(Math.Round(Catalogo.Buscar(Catalogo.Ventoinha).CustoBase * 2.2), e.Custo(Catalogo.Ventoinha), 1e-9);
+            var def = Catalogo.Buscar(Catalogo.FiltroDeLinha);
+            Assert.AreEqual("Filtro de linha", def.NomeDoNivel(0));
+            Assert.AreEqual(def.Produtos[0].Preco, e.Custo(Catalogo.FiltroDeLinha), 1e-9);
+            Assert.IsTrue(e.Comprar(Catalogo.FiltroDeLinha));
+            Assert.AreEqual("Régua de tomadas", def.NomeDoNivel(e.Nivel(Catalogo.FiltroDeLinha)));
+            Assert.AreEqual(def.Produtos[1].Preco, e.Custo(Catalogo.FiltroDeLinha), 1e-9);
+            Assert.Less(def.Produtos[0].Preco, 200, "um filtro de linha custa o que custa na loja");
         }
 
         [Test]
@@ -395,7 +399,7 @@ namespace IdleDataCenter.Testes
             e.Estado.melhorias.Find(m => m.id == Catalogo.RackCheio).nivel = 2; // 330 Mbps
             Assert.IsTrue(e.LinkSaturado);
             Assert.AreEqual(200.0 / 330.0, e.FatorBanda, 1e-9);
-            DefinirNivel(e, Catalogo.Link, 1);
+            DefinirNivel(e, Catalogo.Link, 2);   // link de 100 + 300 Mbps
             Assert.IsFalse(e.LinkSaturado);
             Assert.AreEqual(1, e.FatorBanda, 1e-9);
         }
