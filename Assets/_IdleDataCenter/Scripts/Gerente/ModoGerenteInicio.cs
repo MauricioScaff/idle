@@ -13,7 +13,7 @@ namespace IdleDataCenter.Gerente
         enum TelaDoMenu { Nenhuma, Inicio, ConfirmarNovo, Configuracoes, Dicionario, Creditos }
         TelaDoMenu menu = TelaDoMenu.Nenhuma;
         /// <summary>A versão no canto da tela inicial (a mesma do itch e da release do GitHub).</summary>
-        const string Versao = "v0.9";
+        const string Versao = "v0.9.1";
 
         bool menuDoInicio;          // aberta ao abrir o jogo (o botão diz "Continuar"; no meio do jogo, "Voltar ao jogo")
         double ganhoAoAbrir;
