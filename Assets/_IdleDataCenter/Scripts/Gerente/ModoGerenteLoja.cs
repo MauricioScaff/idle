@@ -133,12 +133,16 @@ namespace IdleDataCenter.Gerente
             ui.Texto(saldo, modal.xMax - 76 - ui.Largura(saldo, 4), modal.y + 26, Ouro, 4);
             if (ui.Botao(new Rect(modal.xMax - 58, modal.y + 18, 40, 40), "X", Vermelho)) { Abrir("Visao"); return; }
 
+            var sugerida0 = E.MelhoriaSugerida();
+            string sugeridaAgora = sugerida0 != null && PodeComprarAqui(sugerida0.Id) ? sugerida0.Id : null;
             float ax = modal.x + 28;
             foreach (var aba in abas)
             {
                 string nome = NomeDaAba(aba);
                 float larguraDaAba = ui.Largura(nome, 2) + folgaDaAba;
                 if (ui.Botao(new Rect(ax, modal.y + 76, larguraDaAba, 38), nome, janela == aba ? IsoGui.Cyan : IsoGui.Borda, true)) Abrir(aba);
+                // "!" na aba da compra que o "!" do botão da loja anunciou (a aba Tudo tem tudo: fica sem)
+                if (loja && aba != "Melhorias" && sugeridaAgora != null && ItensDoSetorNaOrdem(aba).Contains(sugeridaAgora)) Exclamacao(new Rect(ax, modal.y + 76, larguraDaAba, 38), 22);
                 ax += larguraDaAba + entreAbas;
             }
             if (abas.Length == 0) ui.Texto(Subtitulo(janela), modal.x + 28, modal.y + 80, IsoGui.Muted, 2);
@@ -219,6 +223,8 @@ namespace IdleDataCenter.Gerente
             if (!maximo && !cedo) ui.Texto(Dinheiro(E.Custo(id)), r.x + 16, r.y + 118, E.PodeComprar(id) ? IsoGui.Verde : IsoGui.Laranja, 3);
             string texto = maximo ? "Completo" : cedo ? "Bloqueado" : !req ? "Falta requisito" : E.PodeComprar(id) ? "Comprar" : "Sem dinheiro";
             if (ui.Botao(new Rect(r.x + 14, r.yMax - 50, r.width - 28, 38), texto, IsoGui.Verde, PodeComprarAqui(id), 3)) Comprar(id);
+            var sugerida = E.MelhoriaSugerida();
+            if (sugerida != null && sugerida.Id == id && PodeComprarAqui(id)) Exclamacao(r, 28);   // a compra que o "!" da loja anunciou
         }
 
         void CardAutomacao(Rect r, AutomacaoDef a)

@@ -393,7 +393,7 @@ namespace IdleDataCenter.Gerente
                 });
             else if (E.TemChamadoUrgente)
                 Alerta(r, "Chamado P" + E.PrioridadeDoChamado, Cortar(E.TextoDoChamado, 30), "Atender " + Numero(Mathf.Ceil((float)E.SegundosDoChamado)) + "s", () => AtenderChamado(new Vector2(r.center.x, r.y)), Ouro);
-            else ProximaCompra(r);
+            // sem nada pedindo atenção, o canto fica vazio (o cartão "Próxima compra" saiu: o "!" na loja avisa quando dá para comprar)
         }
 
         void Alerta(Rect r, string titulo, string detalhe, string botao, Action acao, Color? cor = null)
@@ -415,33 +415,6 @@ namespace IdleDataCenter.Gerente
                 if (E.AgirNoEvento()) Sons.Tique();
                 else Notificar("Falta dinheiro para isso.");
             }, bom ? Ouro : (Color?)null);
-        }
-
-        void ProximaCompra(Rect r)
-        {
-            var def = E.MelhoriaSugerida();
-            if (def == null)
-            {
-                ui.Caixa(r);
-                ui.Texto("Tudo comprado", r.x + 20, r.y + 16, IsoGui.Muted, 2);
-                ui.Texto("Neste cargo", r.x + 20, r.y + 40, IsoGui.Branco, 3);
-                if (ui.Botao(new Rect(r.x + 20, r.y + 124, r.width - 40, 46), "Ver metas", IsoGui.Cyan, Livre, 3)) Abrir("Carreira");
-                return;
-            }
-            bool pode = E.PodeComprar(def.Id);
-            ui.Caixa(r, pode ? IsoGui.Cor("173a2e") : IsoGui.Painel, pode ? IsoGui.Verde : IsoGui.Borda);
-            ui.Texto("Próxima compra", r.x + 20, r.y + 16, IsoGui.Muted, 2);
-            string nome = def.Produtos != null ? def.NomeDoNivel(E.Nivel(def.Id)) : NomeLongo(def.Id) + (def.Gerador ? " nº " + (E.UnidadesDoGerador(def.Id) + 1) : def.NivelMaximo > 1 ? " " + (E.Nivel(def.Id) + 1) + "/" + def.NivelMaximo : "");
-            ui.Texto(nome, r.x + 20, r.y + 40, pode ? IsoGui.Branco : IsoGui.Muted, ui.Largura(nome, 3) <= r.width - 40 ? 3 : 2);
-            ui.Texto(Cortar(def.EfeitoDoNivel(E.Nivel(def.Id)), 29), r.x + 20, r.y + 68, IsoGui.Muted, 2);
-            ui.Texto(Dinheiro(E.Custo(def.Id)), r.x + 20, r.y + 92, pode ? IsoGui.Verde : IsoGui.Laranja, 3);
-            var botao = new Rect(r.x + 20, r.y + 124, r.width - 40, 46);
-            if (pode) { if (ui.Botao(botao, "Comprar", IsoGui.Verde, Livre, 3)) Comprar(def.Id); }
-            else
-            {
-                ui.Barra(botao, E.Dinheiro / Math.Max(1, E.Custo(def.Id)), IsoGui.Borda);
-                ui.Texto("Juntando...", botao.center.x, botao.y + 18, IsoGui.Muted, 2, true);
-            }
         }
 
         // ---------------- Embaixo: os botões ----------------
@@ -506,11 +479,18 @@ namespace IdleDataCenter.Gerente
         {
             var sugerida = E.MelhoriaSugerida();
             if (sugerida == null || !PodeComprarAqui(sugerida.Id) || EmLoja) return;
-            float pulo = Mathf.Abs(Mathf.Sin(Time.unscaledTime * 5)) * 4;
-            var r = new Rect(botao.xMax - 22, botao.y - 14 - pulo, 30, 30);
+            Exclamacao(botao, 30);
+        }
+
+        /// <summary>O "!" pulando no canto de cima à direita de um botão ou card (o alerta de compra: loja, abas, card).</summary>
+        void Exclamacao(Rect alvo, float lado)
+        {
+            float pulo = Mathf.Abs(Mathf.Sin(Time.unscaledTime * 5)) * lado / 8;
+            var r = new Rect(alvo.xMax - lado * 0.75f, alvo.y - lado * 0.45f - pulo, lado, lado);
             ui.Caixa(r, Pisca ? IsoGui.Laranja : Ouro, IsoGui.Cor("1b1a2e"));
             ui.SemSublinhado = true;
-            ui.Texto("!", r.center.x, r.y + 8, IsoGui.Cor("1b1a2e"), 3, true);
+            int escala = lado >= 28 ? 3 : 2;
+            ui.Texto("!", r.center.x, r.center.y - escala * 2.5f, IsoGui.Cor("1b1a2e"), escala, true);
             ui.SemSublinhado = false;
         }
 
