@@ -1368,3 +1368,11 @@ Restaurar 24 backups	Restore 24 backups
 Fica no ícone perto do relógio	Now an icon next to the clock
 Idle Data Center: clique para mostrar a faixa	Idle Data Center: click to show the strip
 Mostrar a faixa	Show the strip
+Quando algo quebra e atrapalha alguém: servidor travado, disco queimado, site fora do ar, o PC lento de um colega.	When something breaks and gets in someone's way: a frozen server, a dead disk, a site down, a coworker's slow PC.
+Resolva rápido (clicando ou pelo terminal): enquanto dura, a receita cai. Cada chamado atendido também conta como incidente.	Fix it fast (by clicking or in the terminal): while it lasts, revenue drops. Every ticket you handle also counts as an incident.
+Resolver 160 incidentes	Resolve 160 incidents
+Resolver 1.180 incidentes	Resolve 1,180 incidents
+Resolver 1.020 incidentes	Resolve 1,020 incidents
+Resolver 1.510 incidentes	Resolve 1,510 incidents
+Resolver 2.550 incidentes	Resolve 2,550 incidents
+Resolver 2.580 incidentes	Resolve 2,580 incidents

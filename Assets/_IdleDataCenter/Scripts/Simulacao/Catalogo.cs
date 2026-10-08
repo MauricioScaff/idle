@@ -333,7 +333,7 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.Servidores, Alvo = 16, Texto = "Ter 16 servidores" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 100, Texto = "Resolver 100 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 160, Texto = "Resolver 160 incidentes" },
                     new MetaDef { Tipo = TipoMeta.Melhoria, Item = Funcionario, Alvo = 2, Texto = "Contratar 2 funcionários" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 2000000, Texto = "Faturar R$ 2 mi" },
                 },
@@ -344,7 +344,7 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 10, Texto = "Restaurar 10 backups" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 600, Texto = "Resolver 600 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 1180, Texto = "Resolver 1.180 incidentes" },
                     new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 580, Texto = "Atender 580 chamados" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 27000000, Texto = "Faturar R$ 27 mi" },
                 },
@@ -356,7 +356,7 @@ namespace IdleDataCenter.Simulacao
                 {
                     new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 640, Texto = "Atender 640 chamados" },
                     new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 24, Texto = "Restaurar 24 backups" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 390, Texto = "Resolver 390 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 1020, Texto = "Resolver 1.020 incidentes" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 850000000, Texto = "Faturar R$ 850 mi" },
                 },
             },
@@ -366,7 +366,7 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 880, Texto = "Atender 880 chamados" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 640, Texto = "Resolver 640 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 1510, Texto = "Resolver 1.510 incidentes" },
                     new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 40, Texto = "Restaurar 40 backups" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 11000000000, Texto = "Faturar R$ 11 bi" },
                 },
@@ -388,7 +388,7 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 40, Texto = "Superar 40 picos" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 850, Texto = "Resolver 850 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 2550, Texto = "Resolver 2.550 incidentes" },
                     new MetaDef { Tipo = TipoMeta.BackupsRestaurados, Alvo = 36, Texto = "Restaurar 36 backups" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 255000000000, Texto = "Faturar R$ 255 bi" },
                 },
@@ -400,7 +400,7 @@ namespace IdleDataCenter.Simulacao
                 MetasParaPromocao = new[]
                 {
                     new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 1730, Texto = "Atender 1.730 chamados" },
-                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 880, Texto = "Resolver 880 incidentes" },
+                    new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 2580, Texto = "Resolver 2.580 incidentes" },
                     new MetaDef { Tipo = TipoMeta.PicosSobrevividos, Alvo = 40, Texto = "Superar 40 picos" },
                     new MetaDef { Tipo = TipoMeta.TotalGanho, Alvo = 12000000000000, Texto = "Faturar R$ 12 tri" },
                 },

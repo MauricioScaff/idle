@@ -859,6 +859,12 @@ namespace IdleDataCenter.Simulacao
                 Estado.chegouNoCargoEm = new List<double>();
                 for (int c = 0; c <= Estado.cargo; c++) Estado.chegouNoCargoEm.Add(-1);
             }
+            if (Estado.versao < 6)
+            {
+                // os chamados passaram a contar como incidentes: os já atendidos entram também (no cargo atual e no total)
+                Estado.incidentesResolvidos += Estado.chamadosAtendidos;
+                if (Estado.inicioDoCargo != null) Estado.inicioDoCargo.incidentes += Estado.inicioDoCargo.chamados;
+            }
             Estado.versao = EstadoJogo.VersaoAtual;
         }
 

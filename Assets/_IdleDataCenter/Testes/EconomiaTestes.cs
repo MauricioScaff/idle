@@ -308,6 +308,32 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
+        public void ChamadoAtendidoContaComoIncidente()
+        {
+            // o amigo no Técnico atendia chamados e a meta "Resolver incidentes" não andava
+            var e = new Economia(new EstadoJogo { cargo = Catalogo.CargoTecnico });
+            e.Estado.proximoChamado = 1e9;
+            var meta = new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 160 };
+            e.AbrirChamado(3);
+            e.AtenderChamado();
+            Assert.AreEqual(1, e.Progresso(meta));
+            Assert.AreEqual(1, e.Progresso(new MetaDef { Tipo = TipoMeta.Consertos, Alvo = 10 }), "continua contando como chamado também");
+        }
+
+        [Test]
+        public void SaveAntigoGanhaOsChamadosComoIncidentes()
+        {
+            // antes da versão 6 chamado não contava como incidente: os atendidos no cargo entram na meta ao carregar
+            var e = new Economia(new EstadoJogo
+            {
+                versao = 5, cargo = Catalogo.CargoTecnico, incidentesResolvidos = 4, chamadosAtendidos = 30,
+                inicioDoCargo = new InicioDoCargo { incidentes = 4, chamados = 10 },
+            });
+            Assert.AreEqual(20, e.Progresso(new MetaDef { Tipo = TipoMeta.IncidentesResolvidos, Alvo = 160 }), "0 incidentes + 20 chamados no cargo");
+            Assert.AreEqual(34, e.Estado.incidentesResolvidos);
+        }
+
+        [Test]
         public void IpoFechaACarreira()
         {
             var e = NoMundo();

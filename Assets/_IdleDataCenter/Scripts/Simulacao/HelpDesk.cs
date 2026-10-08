@@ -187,6 +187,7 @@ namespace IdleDataCenter.Simulacao
             Estado.chamados.Remove(c);
             Ganhar(bonus);
             Estado.chamadosAtendidos++;
+            Estado.incidentesResolvidos++;   // um chamado também é um incidente (como no ITIL): conta nas metas de incidentes
             if (!porEquipe && c.prioridade == 1) Estado.chamadosP1++;
             ChamadoEncerrado?.Invoke(c, bonus, porEquipe);
             return bonus;

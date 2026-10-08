@@ -7,7 +7,7 @@ namespace IdleDataCenter.Simulacao
     [Serializable]
     public class EstadoJogo
     {
-        public const int VersaoAtual = 5;   // 3: o Freelancer entrou antes do Técnico; 4: as metas contam só o que foi feito no cargo; 5: tempo de jogo
+        public const int VersaoAtual = 6;   // 3: o Freelancer entrou antes do Técnico; 4: as metas contam só o que foi feito no cargo; 5: tempo de jogo; 6: chamados contam como incidentes
 
         public int versao = VersaoAtual;
         public double dinheiro;
