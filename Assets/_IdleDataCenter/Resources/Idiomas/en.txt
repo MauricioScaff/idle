@@ -1314,3 +1314,24 @@ Faturar R$ 7 tri	Earn R$ 7T
 Ter 26 servidores	Have 26 servers
 Restaurar 32 backups	Restore 32 backups
 Resolver 550 incidentes	Resolve 550 incidents
+Ter 16 servidores	Have 16 servers
+Resolver 120 incidentes	Resolve 120 incidents
+Faturar R$ 2,4 mi	Earn R$ 2.4M
+Restaurar 15 backups	Restore 15 backups
+Atender 700 chamados	Handle 700 tickets
+Faturar R$ 27 mi	Earn R$ 27M
+Atender 650 chamados	Handle 650 tickets
+Restaurar 42 backups	Restore 42 backups
+Faturar R$ 850 mi	Earn R$ 850M
+Atender 1.200 chamados	Handle 1,200 tickets
+Resolver 950 incidentes	Resolve 950 incidents
+Faturar R$ 11 bi	Earn R$ 11B
+Restaurar 23 backups	Restore 23 backups
+Superar 26 picos	Survive 26 spikes
+Atender 1.000 chamados	Handle 1,000 tickets
+Superar 66 picos	Survive 66 spikes
+Resolver 1.350 incidentes	Resolve 1,350 incidents
+Faturar R$ 255 bi	Earn R$ 255B
+Atender 2.400 chamados	Handle 2,400 tickets
+Resolver 1.500 incidentes	Resolve 1,500 incidents
+Faturar R$ 9,7 tri	Earn R$ 9.7T
