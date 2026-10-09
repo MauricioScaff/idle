@@ -58,6 +58,7 @@ namespace IdleDataCenter.Simulacao
         {
             Estado = estado ?? new EstadoJogo();
             MigrarSave();
+            LimitarNiveis();
             this.sorteio = sorteio ?? new Random();
         }
 
@@ -848,6 +849,19 @@ namespace IdleDataCenter.Simulacao
         }
 
         /// <summary>Saves da versão 2 não tinham o Freelancer: o cargo de todo mundo anda uma casa (o Técnico continua Técnico).</summary>
+        /// <summary>
+        /// Saves de antes das escadas de produtos (v0.9) têm níveis acima do máximo de hoje (no-break 36/10): ficam no
+        /// máximo. Cada nível a mais somava a capacidade do último produto, e o medidor de energia ia a 1%.
+        /// </summary>
+        void LimitarNiveis()
+        {
+            foreach (var m in Estado.melhorias)
+            {
+                var def = Catalogo.Achar(m.id);
+                if (def != null && m.nivel > def.NivelMaximo) m.nivel = def.NivelMaximo;
+            }
+        }
+
         void MigrarSave()
         {
             if (Estado.versao >= EstadoJogo.VersaoAtual) return;

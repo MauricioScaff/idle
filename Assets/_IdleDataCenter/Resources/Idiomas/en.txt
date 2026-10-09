@@ -1376,3 +1376,12 @@ Resolver 1.020 incidentes	Resolve 1,020 incidents
 Resolver 1.510 incidentes	Resolve 1,510 incidents
 Resolver 2.550 incidentes	Resolve 2,550 incidents
 Resolver 2.580 incidentes	Resolve 2,580 incidents
+No-break de rack 1,5 kVA	Rack UPS 1.5 kVA
+No-break modular 20 kVA	Modular UPS 20 kVA
+No-break modular 30 kVA	Modular UPS 30 kVA
+Segundo no-break modular 30 kVA	Second modular UPS 30 kVA
+Link de 500 Mbps	500 Mbps link
+Fibra de 1 Gbps	1 Gbps fiber
+Fibra redundante de 1 Gbps	Redundant 1 Gbps fiber
+Fibra de 2 Gbps	2 Gbps fiber
+Fibra redundante de 2 Gbps	Redundant 2 Gbps fiber

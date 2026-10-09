@@ -441,10 +441,12 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Rack, Nome = "Rack 42U", Efeito = "Vagas para servidores 1U", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 1, CustoBase = 48000, FatorCusto = 1 },
             new MelhoriaDef { Id = Servidor1U, Nome = "Servidor 1U", Efeito = "+18/s, gasta 0.4 kW", Cargo = Catalogo.CargoSysadmin, Requisito = Rack, NivelMaximo = 20, Gerador = true, CustoBase = 25000, FatorCusto = 1.1 },
             new MelhoriaDef { Id = NoBreak, Nome = "No-break", Efeito = "+{0} kW de energia", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 10, FatorCusto = 2,
-                Produtos = new[] { new Produto("No-break de rack 3 kVA", 9000, 2.4), new Produto("No-break de rack 6 kVA", 18000, 4.8), new Produto("No-break 10 kVA", 40000, 8),
-                                   new Produto("No-break 20 kVA", 90000, 16), new Produto("No-break modular 40 kVA", 220000, 32), new Produto("No-break modular 80 kVA", 450000, 64),
-                                   new Produto("No-break 160 kVA", 900000, 128), new Produto("Subestação de energia", 4000000, 250), new Produto("Segunda subestação", 6000000, 250),
-                                   new Produto("Linha de energia dedicada", 15000000, 500) } },
+                // do tamanho do que a empresa consome: ~14 kW no Sysadmin, ~54 no Analista, ~78 no DevOps, ~97 no SRE
+                // (antes ia até 1.255 kW e o medidor de energia ficava em 1%)
+                Produtos = new[] { new Produto("No-break de rack 1,5 kVA", 3500, 1.2), new Produto("No-break de rack 3 kVA", 9000, 2.4), new Produto("No-break 6 kVA", 18000, 4.8),
+                                   new Produto("No-break 10 kVA", 40000, 8), new Produto("No-break 20 kVA", 90000, 16), new Produto("Banco de baterias", 60000, 8),
+                                   new Produto("No-break modular 20 kVA", 150000, 16), new Produto("No-break modular 30 kVA", 250000, 24), new Produto("Segundo no-break modular 30 kVA", 250000, 24),
+                                   new Produto("Linha de energia dedicada", 1000000, 32) } },
             new MelhoriaDef { Id = ArCondicionado, Nome = "Refrigeração", Efeito = "Sala {0} °C mais fria", Cargo = Catalogo.CargoSysadmin, NivelMaximo = 10, FatorCusto = 2,
                 Produtos = new[] { new Produto("Ar split 24.000 BTUs", 7000, 6), new Produto("Ar piso-teto 60.000 BTUs", 18000, 10), new Produto("Ar de precisão 10 TR", 120000, 18),
                                    new Produto("Ar de precisão 20 TR", 250000, 30), new Produto("Corredor frio confinado", 600000, 45), new Produto("Chiller", 2000000, 70),
@@ -464,8 +466,9 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Backup, Nome = "Biblioteca de fitas", Efeito = "Backup: perde só 1/8, +2% renda", Cargo = Catalogo.CargoAnalista, NivelMaximo = 1, CustoBase = 250000, FatorCusto = 1 },
             new MelhoriaDef { Id = VpnMfa, Nome = "VPN e MFA", Efeito = "Segurança: bloqueia 7/8 dos ataques", Cargo = Catalogo.CargoAnalista, NivelMaximo = 1, CustoBase = 80000, FatorCusto = 1 },
             new MelhoriaDef { Id = Link, Nome = "Link de internet", Efeito = "+{0} Mbps de internet", Cargo = Catalogo.CargoAnalista, NivelMaximo = 6, FatorCusto = 2,
-                Produtos = new[] { new Produto("Link dedicado 100 Mbps", 3000, 100), new Produto("Link dedicado 300 Mbps", 8000, 300), new Produto("Link de 1 Gbps", 20000, 1000),
-                                   new Produto("Segundo link de 1 Gbps", 30000, 1000), new Produto("Link de 2 Gbps", 45000, 2000), new Produto("Link de 5 Gbps", 90000, 5000) } },
+                // do tamanho do tráfego: ~4,4 Gbps com os racks do Analista cheios
+                Produtos = new[] { new Produto("Link dedicado 100 Mbps", 3000, 100), new Produto("Link dedicado 300 Mbps", 8000, 300), new Produto("Link de 500 Mbps", 14000, 500),
+                                   new Produto("Link de 1 Gbps", 20000, 1000), new Produto("Segundo link de 1 Gbps", 30000, 1000), new Produto("Link de 2 Gbps", 45000, 2000) } },
             new MelhoriaDef { Id = PisoElevado, Nome = "Piso elevado", Efeito = "Racks cheios +30%", Cargo = Catalogo.CargoAnalista, Requisito = RackCheio, NivelMaximo = 3, Alvo = AlvoRackCheio, BonusPorNivel = 0.3, CustoBase = 400000, FatorCusto = 2 },
 
             // DevOps: a sala virtualizada.
@@ -473,8 +476,9 @@ namespace IdleDataCenter.Simulacao
             new MelhoriaDef { Id = Containers, Nome = "Cluster de containers", Efeito = "+500/s em apps, 1 kW, 120 Mbps", Cargo = Catalogo.CargoDevOps, NivelMaximo = 24, Gerador = true, CustoBase = 4800000, FatorCusto = 1.1 },
             new MelhoriaDef { Id = ServidorCi, Nome = "Plataforma de CI/CD", Efeito = "Deploy contínuo: apps +50%", Cargo = Catalogo.CargoDevOps, Requisito = Containers, NivelMaximo = 1, CustoBase = 600000, FatorCusto = 1 },
             new MelhoriaDef { Id = Link10G, Nome = "Link de fibra", Efeito = "+{0} Mbps de internet", Cargo = Catalogo.CargoDevOps, NivelMaximo = 6, FatorCusto = 2,
-                Produtos = new[] { new Produto("Link de 10 Gbps", 150000, 10000), new Produto("Segundo link de 10 Gbps", 300000, 10000), new Produto("Link de 40 Gbps", 1000000, 40000),
-                                   new Produto("Link de 100 Gbps", 3000000, 100000), new Produto("Ponto de troca de tráfego", 8000000, 200000), new Produto("Fibra própria até a operadora", 20000000, 400000) } },
+                // ~7,3 Gbps no DevOps e ~11 Gbps no SRE (antes ia até 760 Gbps e o medidor de rede ficava em 1%)
+                Produtos = new[] { new Produto("Fibra de 1 Gbps", 30000, 1000), new Produto("Fibra redundante de 1 Gbps", 30000, 1000), new Produto("Fibra de 2 Gbps", 60000, 2000),
+                                   new Produto("Fibra redundante de 2 Gbps", 60000, 2000), new Produto("Ponto de troca de tráfego", 250000, 3000), new Produto("Fibra própria até a operadora", 2000000, 4000) } },
             new MelhoriaDef { Id = ImagensEnxutas, Nome = "Otimização das imagens", Efeito = "Apps +30%", Cargo = Catalogo.CargoDevOps, Requisito = Containers, NivelMaximo = 3, Alvo = AlvoApps, BonusPorNivel = 0.3, CustoBase = 500000, FatorCusto = 2 },
             new MelhoriaDef { Id = CacheRedis, Nome = "Cluster de cache (Redis)", Efeito = "Apps +50%", Cargo = Catalogo.CargoDevOps, Requisito = Containers, NivelMaximo = 1, Alvo = AlvoApps, BonusPorNivel = 0.5, CustoBase = 400000, FatorCusto = 1 },
             new MelhoriaDef { Id = SalaBackup, Nome = "Sala de backup", Efeito = "Backup separado: perde só 1/16, +2% renda", Cargo = Catalogo.CargoDevOps, NivelMaximo = 1, CustoBase = 18000000, FatorCusto = 1 },

@@ -334,6 +334,29 @@ namespace IdleDataCenter.Testes
         }
 
         [Test]
+        public void SaveComNivelAcimaDoMaximoFicaNoMaximo()
+        {
+            // save de antes das escadas: no-break 36/10 somava 26 × 500 kW a mais e o medidor de energia ia a 1%
+            var estado = new EstadoJogo { cargo = Catalogo.CargoSre };
+            estado.melhorias.Add(new NivelMelhoria { id = Catalogo.NoBreak, nivel = 36 });
+            var e = new Economia(estado);
+            Assert.AreEqual(Catalogo.Buscar(Catalogo.NoBreak).NivelMaximo, e.Nivel(Catalogo.NoBreak));
+        }
+
+        [Test]
+        public void NoSreComTudoCompradoOsMedidoresDeEnergiaERedeFazemSentido()
+        {
+            // o SRE com todos os equipamentos e as escadas de energia e rede no máximo: os medidores não podem ficar em 1%
+            var e = NoSre(nos: 0);
+            e.Estado.melhorias.Clear();
+            foreach (var (id, nivel) in new[] { (Catalogo.Servidor, 15), (Catalogo.Servidor1U, 20), (Catalogo.RackCheio, 24), (Catalogo.Storage, 3), (Catalogo.Containers, 24),
+                                                 (Catalogo.ServidorCi, 1), (Catalogo.NoKubernetes, 24), (Catalogo.FiltroDeLinha, 12), (Catalogo.NoBreak, 10), (Catalogo.Link, 6), (Catalogo.Link10G, 6) })
+                DefinirNivel(e, id, nivel);
+            Assert.That(e.ConsumoKw / e.CapacidadeKw, Is.InRange(0.4, 0.95), $"energia {e.ConsumoKw:0.#} de {e.CapacidadeKw:0.#} kW");
+            Assert.That(e.TrafegoMbps / e.BandaMbps, Is.InRange(0.4, 0.95), $"rede {e.TrafegoMbps:0} de {e.BandaMbps:0} Mbps");
+        }
+
+        [Test]
         public void IpoFechaACarreira()
         {
             var e = NoMundo();
